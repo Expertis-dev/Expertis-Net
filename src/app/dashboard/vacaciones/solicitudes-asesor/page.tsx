@@ -20,6 +20,17 @@ const asesores = [
   "Miguel Torres",
   "Carmen Ruiz",
 ]
+interface HistorialVacaciones {
+  id: number
+  codMes: string
+  fechaInicio: string
+  fechaFin: string
+  diasTomados: number
+  diasHabiles: number
+  diasNoHabiles: number
+  estado: string
+  fechaSolicitud: string
+}
 
 // Datos de ejemplo
 const historialVacaciones = {
@@ -66,7 +77,7 @@ export default function SolicitudesAsesor() {
   const [selectedAsesor, setSelectedAsesor] = useState("")
   const [filteredAsesores, setFilteredAsesores] = useState<string[]>([])
   const [showAsesores, setShowAsesores] = useState(false)
-  const [historial, setHistorial] = useState<any[]>([])
+  const [historial, setHistorial] = useState<HistorialVacaciones[]>([])
 
   const handleAsesorChange = (value: string) => {
     setSelectedAsesor(value)

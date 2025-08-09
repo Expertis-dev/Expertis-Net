@@ -36,7 +36,7 @@ export default function SolicitarVacaciones() {
   const [showLoading, setShowLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
-  const handleDateSelect = (date: Date | undefined) => {
+/*const handleDateSelect = (date: Date | undefined) => {
     if (!date) return
 
     if (!dateRange.from || (dateRange.from && dateRange.to)) {
@@ -59,7 +59,7 @@ export default function SolicitarVacaciones() {
       }
       setSelectedDates(dates)
     }
-  }
+  }*/
 
   const calculateDays = () => {
     if (selectedDates.length === 0) return { total: 0, laborables: 0, noLaborables: 0 }
@@ -141,7 +141,7 @@ export default function SolicitarVacaciones() {
                 selected={dateRange}
                 onSelect={(range) => {
                   if (range?.from && range?.to) {
-                    setDateRange(range)
+                    setDateRange({ from: range.from, to: range.to })
                     const dates = []
                     for (let d = new Date(range.from); d <= range.to; d = addDays(d, 1)) {
                       dates.push(new Date(d))

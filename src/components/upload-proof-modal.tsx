@@ -8,12 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Upload, Image, Trash2 } from "lucide-react"
+import { X, Upload, Trash2 } from "lucide-react"
+
+interface Justification {
+  id: number
+  tipo: string
+  tipo2: string
+  fecha: string
+  asesor: string
+}
 
 interface UploadProofModalProps {
   isOpen: boolean
   onClose: () => void
-  justification: any
+  justification: Justification | null
 }
 
 export function UploadProofModal({ isOpen, onClose, justification }: UploadProofModalProps) {
@@ -109,7 +117,7 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                           className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <Image className="h-4 w-4 text-slate-500" />
+                            {/* <Image className="h-4 w-4 text-slate-500" /> */}
                             <span className="text-sm font-medium truncate">{file.name}</span>
                             <span className="text-xs text-slate-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                           </div>

@@ -16,6 +16,17 @@ import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { UploadProofModal } from "@/components/upload-proof-modal"
 
 // Datos de ejemplo
+interface Justification {
+  id: number
+  fecha: string
+  asesor: string
+  grupo: string
+  tipo: string
+  tipo2: string
+  estado: string
+  observacion: string
+}
+
 const justificaciones = [
   {
     id: 1,
@@ -58,7 +69,7 @@ export default function ListarJustificaciones() {
     tipo2: "Todos",
     search: "",
   })
-  const [selectedJustification, setSelectedJustification] = useState<any>(null)
+  const [selectedJustification, setSelectedJustification] = useState<Justification>({} as Justification)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
@@ -95,7 +106,7 @@ export default function ListarJustificaciones() {
     setFilteredData(filtered)
   }
 
-  const handleView = (justification: any) => {
+  const handleView = (justification: Justification) => {
     setSelectedJustification(justification)
     setShowViewModal(true)
   }
@@ -114,7 +125,7 @@ export default function ListarJustificaciones() {
     }
   }
 
-  const handleUploadProof = (justification: any) => {
+  const handleUploadProof = (justification: Justification) => {
     setSelectedJustification(justification)
     setShowUploadModal(true)
   }

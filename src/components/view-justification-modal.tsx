@@ -5,11 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Calendar, User, FileText } from "lucide-react"
-
+interface Justification {
+  id: number
+  fecha: string
+  asesor: string
+  grupo: string
+  tipo: string
+  tipo2: string
+  estado: string
+  observacion: string
+}
 interface ViewJustificationModalProps {
   isOpen: boolean
   onClose: () => void
-  justification: any
+  justification: Justification 
 }
 
 export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJustificationModalProps) {
