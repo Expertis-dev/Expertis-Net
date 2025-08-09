@@ -7,12 +7,12 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ModeToggle } from "@/components/mode-toggle"
 import { NotificationButton } from "@/components/notification-button"
 import { Sidebar } from "@/components/sidebar"
 import { Menu, Home, FileText, Calendar, User } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
+import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -188,7 +188,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             <NotificationButton />
-            <ModeToggle />
+            <AnimatedThemeToggler className="cursor-pointer"/>
           </div>
         </header>
 
@@ -207,7 +207,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Main Content */}
           <main className="flex-1 overflow-hidden">
-            <div className="p-4 lg:p-6 h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="lg:p-4 h-[calc(100vh-4rem)] overflow-y-auto">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: 20 }}

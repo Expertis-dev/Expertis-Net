@@ -197,9 +197,6 @@ export default function DashboardHome() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-              Dashboard Principal
-            </h1>
             <p className="text-muted-foreground mt-1">
               Bienvenido, {userInfo.name} • {userInfo.cargo}
             </p>
