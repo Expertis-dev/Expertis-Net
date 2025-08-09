@@ -23,6 +23,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [credentials, setCredentials] = useState({ username: "", password: "" })
+  const safeSetLocalStorage = (key: string, value: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(key, value)
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,10 +45,11 @@ export default function LoginPage() {
         document.cookie = `userCargo=${user.idCargo}; path=/; max-age=86400`
 
         // También en localStorage para acceso rápido
-        localStorage.setItem("isAuthenticated", "true")
-        localStorage.setItem("username", credentials.username)
-        localStorage.setItem("userName", user.name)
-        localStorage.setItem("userCargo", user.idCargo.toString())
+        safeSetLocalStorage("isAuthenticated", "true")
+        safeSetLocalStorage("username", credentials.username)
+        safeSetLocalStorage("userName", user.name)
+        safeSetLocalStorage("userCargo", user.idCargo.toString())
+
 
         window.location.href = "/dashboard"
       } else {
