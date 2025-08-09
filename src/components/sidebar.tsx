@@ -11,7 +11,7 @@ import Link from "next/link"
 interface MenuItem {
   id: string
   title: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: { title: string; href: string }[]
 }
@@ -25,7 +25,7 @@ interface SidebarProps {
   isMobile: boolean
 }
 
-export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogout, isMobile }: SidebarProps) {
+export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogout }: SidebarProps) {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <ScrollArea className="flex-1 px-4 py-6">

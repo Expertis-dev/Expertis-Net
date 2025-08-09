@@ -79,7 +79,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     type MenuItem = {
       id: string
       title: string
-      icon: React.ElementType
+      icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
       href: string
       subItems: SubItem[]
     }
@@ -140,7 +140,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <div className="min-h-screen bg-background transition-colors duration-300">
         {/* Header */}
-        <header className="bg-background/80 backdrop-blur-sm border-b border-border px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-40">
+        <header className="bg-background backdrop-blur-sm border-b border-border px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
@@ -194,7 +194,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <div className="flex">
           {/* Sidebar Desktop */}
-          <div className="hidden lg:block w-80 border-r border-border bg-card">
+          <div className="hidden lg:block w-80 border-r border-border bg-background backdrop-blur-sm">
             <Sidebar
               menuItems={getMenuItems()}
               expandedMenus={expandedMenus}

@@ -202,21 +202,13 @@ body {
   }
 
   .sidebar-item-active {
-    background-color: #001529;
-    color: white;
-  }
-
-  .sidebar-item-active:hover {
-    background-color: #002040;
+    background-color: #eaecf0;
+    color: black;
   }
 
   .dark .sidebar-item-active {
-    background-color: rgb(51 65 85);
+    background-color: rgb(23, 23, 24);
     color: white;
-  }
-
-  .dark .sidebar-item-active:hover {
-    background-color: rgb(71 85 105);
   }
 
   /* Card Styles */

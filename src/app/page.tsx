@@ -59,7 +59,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center"
+        className="w-full max-w-6xl grid lg:grid-cols-2 gap-4 items-center"
       >
         {/* Formulario de Login */}
         <motion.div
@@ -74,11 +74,11 @@ export default function LoginPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="mx-auto w-16 h-16 bg-[#001529] dark:bg-slate-700 rounded-full flex items-center justify-center mb-4"
+                className="mx-auto w-16 h-16 flex items-center justify-center"
               >
-                <span className="text-white font-bold text-xl">IN</span>
+                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} className="text-white w-full h-auto" />
               </motion.div>
-              <CardTitle className="text-3xl font-bold text-[#001529] dark:text-white">Intranet</CardTitle>
+              <CardTitle className="text-3xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-400">
                 Ingresa tus credenciales para acceder
               </CardDescription>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                     value={credentials.username}
                     onValueChange={(value) => setCredentials((prev) => ({ ...prev, username: value }))}
                   >
-                    <SelectTrigger className="h-12">
+                    <SelectTrigger className="h-12 w-full">
                       <SelectValue placeholder="Selecciona un usuario" />
                     </SelectTrigger>
                     <SelectContent>
@@ -125,14 +125,14 @@ export default function LoginPage() {
                       placeholder="Ingresa tu contraseña"
                       value={credentials.password}
                       onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
-                      className="h-12 pr-12 border-slate-300 dark:border-slate-600 focus:border-[#001529] dark:focus:border-slate-400"
+                      className="h-10 pr-12 focus:right-1 right-1  outline-none"
                       required
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      className="cursor-pointer absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -167,7 +167,7 @@ export default function LoginPage() {
                 </motion.div>
               </form>
 
-              {/* Información de usuarios de prueba */}
+              {/* Información de usuarios de prueba 
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -180,7 +180,7 @@ export default function LoginPage() {
                   <div>• supervisor / super123 (Supervisor)</div>
                   <div>• asesor / asesor123 (Asesor)</div>
                 </div>
-              </motion.div>
+              </motion.div>*/}
             </CardContent>
           </Card>
         </motion.div>
@@ -193,7 +193,7 @@ export default function LoginPage() {
           className="hidden lg:block"
         >
           <div className="relative h-[600px] rounded-2xl overflow-hidden shadow-2xl">
-            <Image src="/placeholder.svg?height=600&width=500" alt="Intranet Login" fill className="object-cover" />
+            <Image src="/IMAGEN-OPORTUNIDAD-UNETE.png" alt="Intranet Login" fill className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#001529]/80 to-transparent" />
             <div className="absolute bottom-8 left-8 text-white">
               <h2 className="text-3xl font-bold mb-2">Bienvenido</h2>

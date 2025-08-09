@@ -17,6 +17,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react"
+import { Loading } from "@/components/Loading"
 
 // Datos simulados para el dashboard
 const dashboardData = {
@@ -179,9 +180,12 @@ export default function DashboardHome() {
   }
 
   if (!isAuthenticated) {
-    return <div>Cargando...</div>
+    return (
+      <div className="bg-white/80 dark:bg-slate-900 h-screen">
+        <Loading/>
+      </div>
+    )
   }
-
   return (
     <DashboardLayout>
       <motion.div
