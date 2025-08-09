@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -22,26 +21,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
   const [userInfo, setUserInfo] = useState({ name: "", cargo: "" })
+  const [userCargo, setUserCargo] = useState<number>(1)
   const pathname = usePathname()
 
-  // Obtener información del usuario
+  // Obtener cargo y datos de usuario solo en cliente
   useEffect(() => {
-    const userName = localStorage.getItem("userName") || "Usuario"
-    const userCargo = localStorage.getItem("userCargo") || "1"
+    if (typeof window !== "undefined") {
+      const storedCargo = Number.parseInt(localStorage.getItem("userCargo") || "1")
+      setUserCargo(storedCargo)
 
-    const cargoNames = {
-      "1": "Administrador",
-      "2": "Supervisor",
-      "3": "Asesor",
+      const userName = localStorage.getItem("userName") || "Usuario"
+      const cargoNames = {
+        "1": "Administrador",
+        "2": "Supervisor",
+        "3": "Asesor",
+      }
+      setUserInfo({
+        name: userName,
+        cargo: cargoNames[String(storedCargo) as keyof typeof cargoNames] || "Usuario",
+      })
     }
-
-    setUserInfo({
-      name: userName,
-      cargo: cargoNames[userCargo as keyof typeof cargoNames] || "Usuario",
-    })
   }, [])
 
-  // Auto-expand menus based on current path
+  // Auto-expand menus
   useEffect(() => {
     if (pathname.includes("/justificaciones")) {
       setExpandedMenus((prev) => (prev.includes("justificaciones") ? prev : [...prev, "justificaciones"]))
@@ -56,23 +58,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const handleLogout = () => {
-    // Limpiar cookies
-    document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-    document.cookie = "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-    document.cookie = "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-    document.cookie = "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    if (typeof window !== "undefined") {
+      // Limpiar cookies
+      document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie = "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie = "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie = "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
 
-    // Limpiar localStorage
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("username")
-    localStorage.removeItem("userName")
-    localStorage.removeItem("userCargo")
+      // Limpiar localStorage
+      localStorage.removeItem("isAuthenticated")
+      localStorage.removeItem("username")
+      localStorage.removeItem("userName")
+      localStorage.removeItem("userCargo")
 
-    window.location.href = "/"
+      window.location.href = "/"
+    }
   }
-
-  // Obtener cargo del usuario para filtrar menús
-  const userCargo = Number.parseInt(localStorage.getItem("userCargo") || "1")
 
   const getMenuItems = () => {
     type SubItem = { title: string; href: string }
@@ -94,7 +95,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       },
     ]
 
-    // Menú de justificaciones (solo admin y supervisor)
     if (userCargo <= 2) {
       baseItems.push({
         id: "justificaciones",
@@ -108,20 +108,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       })
     }
 
-    // Menú de vacaciones
     const vacacionesSubItems = [
       { title: "Enviar Solicitud", href: "/dashboard/vacaciones/solicitar" },
       { title: "Mis Solicitudes", href: "/dashboard/vacaciones/mis-solicitudes" },
     ]
 
-    // Agregar opciones adicionales según el cargo
     if (userCargo === 1) {
-      // Solo administrador
       vacacionesSubItems.push({ title: "Registrar Vacaciones Asesor", href: "/dashboard/vacaciones/registrar-asesor" })
     }
 
     if (userCargo <= 2) {
-      // Admin y supervisor
       vacacionesSubItems.push({ title: "Solicitudes Asesor", href: "/dashboard/vacaciones/solicitudes-asesor" })
     }
 
@@ -165,20 +161,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Image src="/icono-logo.png" alt="Logo Central" fill className="object-contain" />
               </div>
               <div>
-                <span className="font-bold text-lg 
-                      bg-gradient-to-r from-cyan-700 to-teal-500 
-                    dark:from-cyan-400 dark:to-teal-200 
-                      bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 
+                  dark:from-cyan-400 dark:to-teal-200 bg-clip-text text-transparent">
                   ExpertisNet
                 </span>
-
                 <div className="text-xs text-muted-foreground -mt-1">Intranet</div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Información del usuario */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
               <div className="text-sm">
@@ -188,12 +180,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             <NotificationButton />
-            <AnimatedThemeToggler className="cursor-pointer"/>
+            <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>
 
         <div className="flex">
-          {/* Sidebar Desktop */}
           <div className="hidden lg:block w-80 border-r border-border bg-background backdrop-blur-sm">
             <Sidebar
               menuItems={getMenuItems()}
@@ -205,7 +196,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             />
           </div>
 
-          {/* Main Content */}
           <main className="flex-1 overflow-hidden">
             <div className="lg:p-4 h-[calc(100vh-4rem)] overflow-y-auto">
               <motion.div
