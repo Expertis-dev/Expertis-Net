@@ -95,14 +95,14 @@ const dashboardData = {
       title: "Control de Vacaciones",
       subtitle: "Planificación simplificada",
       description: "Administra el tiempo libre de tu equipo sin complicaciones",
-      gradient: "from-brand-secondary to-orange-600",
+      gradient: "from-orange-800 to-orange-600",
     },
     {
       id: 2,
       title: "Gestión de Justificaciones",
       subtitle: "Proceso automatizado",
       description: "Aprueba y gestiona justificaciones de manera eficiente",
-      gradient: "from-brand-primary to-cyan-600",
+      gradient: "from-cyan-800 to-cyan-600",
     },
     {
       id: 3,

@@ -60,12 +60,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center ">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-6xl grid lg:grid-cols-2 gap-4 items-center"
+        className="w-full grid lg:grid-cols-2 gap-4 items-center"
       >
         {/* Formulario de Login */}
         <motion.div
@@ -84,7 +84,7 @@ export default function LoginPage() {
               >
                 <Image src="/icono-logo.png" alt="Logo" width={80} height={80} className="text-white w-full h-auto" />
               </motion.div>
-              <CardTitle className="text-3xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
+              <CardTitle className="text-4xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-400">
                 Ingresa tus credenciales para acceder
               </CardDescription>
@@ -172,21 +172,6 @@ export default function LoginPage() {
                   </Button>
                 </motion.div>
               </form>
-
-              {/* Información de usuarios de prueba 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 1 }}
-                className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg"
-              >
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 font-semibold">Usuarios de prueba:</p>
-                <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
-                  <div>• admin / admin123 (Administrador)</div>
-                  <div>• supervisor / super123 (Supervisor)</div>
-                  <div>• asesor / asesor123 (Asesor)</div>
-                </div>
-              </motion.div>*/}
             </CardContent>
           </Card>
         </motion.div>
@@ -198,14 +183,27 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="hidden lg:block"
         >
-          <div className="relative h-[600px] rounded-2xl overflow-hidden shadow-2xl">
-            <Image src="/IMAGEN-OPORTUNIDAD-UNETE.png" alt="Intranet Login" fill className="object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#001529]/80 to-transparent" />
-            <div className="absolute bottom-8 left-8 text-white">
-              <h2 className="text-3xl font-bold mb-2">Bienvenido</h2>
-              <p className="text-lg opacity-90">Accede a tu panel de control empresarial</p>
+          <div className="relative h-screen overflow-hidden shadow-2xl">
+            <Image
+              src="/IMAGEN-OPORTUNIDAD-UNETE.png"
+              alt="Intranet Login"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-[#001529]/70" />
+            {/* Contenedor centrado con flex */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative h-96 w-96">
+                <Image
+                  src="/LOGO-CENTRAL.png"
+                  alt="Intranet Login"
+                  fill
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
+
         </motion.div>
       </motion.div>
     </div>

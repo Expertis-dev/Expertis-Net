@@ -169,7 +169,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
@@ -197,7 +196,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <main className="flex-1 overflow-hidden">
-            <div className="lg:p-4 h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: 20 }}
