@@ -8,21 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
-
-// Usuarios de ejemplo
-const users = {
-  admin: { name: "Juan Pérez", idCargo: 1, password: "admin123" },
-  supervisor: { name: "María García", idCargo: 2, password: "super123" },
-  asesor: { name: "Carlos López", idCargo: 3, password: "asesor123" },
-}
+import { toast } from "sonner"
+import { useUser } from "@/Provider/UserProvider"
 
 export default function LoginPage() {
+  const {setUser} = useUser()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [credentials, setCredentials] = useState({ username: "", password: "" })
+  const [credentials, setCredentials] = useState({ usuario: "", password: "" })
   const safeSetLocalStorage = (key: string, value: string) => {
     if (typeof window !== "undefined") {
       localStorage.setItem(key, value)
@@ -32,33 +27,28 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    // Simular autenticación
-    setTimeout(() => {
-      const user = users[credentials.username as keyof typeof users]
-
-      if (user && user.password === credentials.password) {
-        // Guardar información en cookies
-        document.cookie = `isAuthenticated=true; path=/; max-age=86400`
-        document.cookie = `username=${credentials.username}; path=/; max-age=86400`
-        document.cookie = `userName=${user.name}; path=/; max-age=86400`
-        document.cookie = `userCargo=${user.idCargo}; path=/; max-age=86400`
-
-        // También en localStorage para acceso rápido
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signIn`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+    })
+    if (response.status === 200) {
+      toast.success("Credenciales Correctas")
+      const data = await response.json()
+      setTimeout(() => {
         safeSetLocalStorage("isAuthenticated", "true")
-        safeSetLocalStorage("username", credentials.username)
-        safeSetLocalStorage("userName", user.name)
-        safeSetLocalStorage("userCargo", user.idCargo.toString())
-
-
+        safeSetLocalStorage("token", data.token)
+        safeSetLocalStorage("user", JSON.stringify(data.user))
+        setUser(data.user)
         window.location.href = "/dashboard"
-      } else {
-        alert("Credenciales incorrectas")
-      }
+      }, 500)
+    } else {
+      toast.error("Credenciales incorrectas")
       setIsLoading(false)
-    }, 2000)
+    }
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center ">
       <motion.div
@@ -82,7 +72,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mx-auto w-16 h-16 flex items-center justify-center"
               >
-                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} className="text-white w-full h-auto" />
+                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} priority className="text-white w-full h-auto" />
               </motion.div>
               <CardTitle className="text-4xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-400">
@@ -97,22 +87,19 @@ export default function LoginPage() {
                   transition={{ duration: 0.5, delay: 0.6 }}
                   className="space-y-2"
                 >
-                  <Label htmlFor="username" className="text-slate-700 dark:text-slate-300">
+                  <Label htmlFor="usuario" className="text-slate-700 dark:text-slate-300">
                     Usuario
                   </Label>
-                  <Select
-                    value={credentials.username}
-                    onValueChange={(value) => setCredentials((prev) => ({ ...prev, username: value }))}
-                  >
-                    <SelectTrigger className="h-12 w-full">
-                      <SelectValue placeholder="Selecciona un usuario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">admin - Juan Pérez (Administrador)</SelectItem>
-                      <SelectItem value="supervisor">supervisor - María García (Supervisor)</SelectItem>
-                      <SelectItem value="asesor">asesor - Carlos López (Asesor)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="usuario"
+                    type={"text"}
+                    placeholder="Ingresa tu usuario"
+                    value={credentials.usuario}
+                    onChange={(e) => setCredentials((prev) => ({ ...prev, usuario: e.target.value }))}
+                    className="h-10 pr-12 focus:right-1 right-1  outline-none"
+                    required
+                    autoComplete="username"
+                  />
                 </motion.div>
 
                 <motion.div
@@ -133,6 +120,7 @@ export default function LoginPage() {
                       onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
                       className="h-10 pr-12 focus:right-1 right-1  outline-none"
                       required
+                      autoComplete="current-password"
                     />
                     <Button
                       type="button"
@@ -188,6 +176,8 @@ export default function LoginPage() {
               src="/IMAGEN-OPORTUNIDAD-UNETE.png"
               alt="Intranet Login"
               fill
+              sizes="5xl"
+              priority
               className="object-cover"
             />
             <div className="absolute inset-0 bg-[#001529]/70" />
@@ -198,6 +188,7 @@ export default function LoginPage() {
                   src="/LOGO-CENTRAL.png"
                   alt="Intranet Login"
                   fill
+                  sizes="5xl"
                   className="object-contain"
                 />
               </div>

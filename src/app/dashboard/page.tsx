@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { Loading } from "@/components/Loading"
+import { useUser } from "@/Provider/UserProvider"
 
 // Datos simulados para el dashboard
 const dashboardData = {
@@ -115,9 +116,9 @@ const dashboardData = {
 }
 
 export default function DashboardHome() {
+  const {user} = useUser()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userInfo, setUserInfo] = useState({ name: "", cargo: "" })
 
   useEffect(() => {
     const auth = localStorage.getItem("isAuthenticated")
@@ -125,29 +126,15 @@ export default function DashboardHome() {
       window.location.href = "/"
       return
     }
+    console.log("user", user)
     setIsAuthenticated(true)
-
-    // Obtener información del usuario
-    const userName = localStorage.getItem("userName") || "Usuario"
-    const userCargo = localStorage.getItem("userCargo") || "1"
-    const cargoNames = {
-      "1": "Administrador",
-      "2": "Supervisor",
-      "3": "Asesor",
-    }
-
-    setUserInfo({
-      name: userName,
-      cargo: cargoNames[userCargo as keyof typeof cargoNames] || "Usuario",
-    })
-
     // Auto-advance carousel
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % dashboardData.carouselSlides.length)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [user])
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % dashboardData.carouselSlides.length)
@@ -198,7 +185,7 @@ export default function DashboardHome() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground mt-1">
-              Bienvenido, {userInfo.name} • {userInfo.cargo}
+              Bienvenido, {user?.alias} • {user?.cargo}
             </p>
           </div>
           <div className="text-sm text-muted-foreground">

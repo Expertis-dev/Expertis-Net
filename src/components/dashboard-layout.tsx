@@ -1,47 +1,35 @@
 "use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
-import { NotificationButton } from "@/components/notification-button"
+//import { NotificationButton } from "@/components/notification-button"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, Users, AlertTriangle } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
+import { useUser } from "@/Provider/UserProvider"
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  readonly children: React.ReactNode
+}
+interface SubItem { title: string; href: string }
+interface MenuItem  {
+  id: string
+  title: string
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  href: string
+  subItems: SubItem[]
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { user } = useUser()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
-  const [userInfo, setUserInfo] = useState({ name: "", cargo: "" })
-  const [userCargo, setUserCargo] = useState<number>(1)
   const pathname = usePathname()
-
-  // Obtener cargo y datos de usuario solo en cliente
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedCargo = Number.parseInt(localStorage.getItem("userCargo") || "1")
-      setUserCargo(storedCargo)
-
-      const userName = localStorage.getItem("userName") || "Usuario"
-      const cargoNames = {
-        "1": "Administrador",
-        "2": "Supervisor",
-        "3": "Asesor",
-      }
-      setUserInfo({
-        name: userName,
-        cargo: cargoNames[String(storedCargo) as keyof typeof cargoNames] || "Usuario",
-      })
-    }
-  }, [])
 
   // Auto-expand menus
   useEffect(() => {
@@ -76,61 +64,115 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const getMenuItems = () => {
-    type SubItem = { title: string; href: string }
-    type MenuItem = {
-      id: string
-      title: string
-      icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-      href: string
-      subItems: SubItem[]
-    }
-
     const baseItems: MenuItem[] = [
       {
         id: "home",
-        title: "Dashboard",
+        title: "Home",
         icon: Home,
         href: "/dashboard",
         subItems: [],
       },
     ]
 
-    if (userCargo <= 2) {
+    if (!user) return baseItems // si no hay user aún
+
+    // 🔹 EJEMPLO: SOLO CARGO 1 ve "Empleados"
+    if (user.idCargo === 1) {
+      baseItems.push({
+        id: "empleados",
+        title: "Empleados",
+        icon: Users,
+        href: "/dashboard/empleados",
+        subItems: [],
+      })
+      baseItems.push({
+        id: "alertaVacaciones",
+        title: "Alerta Vacaciones",
+        icon: AlertTriangle,
+        href: "/dashboard/empleados/alerta-vacaciones",
+        subItems: [],
+      })
+    }
+
+    // 🔹 JUSTIFICACIONES
+    if (
+      user.idCargo !== 9 &&
+      [5, 7, 8, 1, 3, 21, 4].includes(user.idCargo)
+    ) {
+      const subItems: SubItem[] = []
+
+      if ([5, 7, 8].includes(user.idCargo)) {
+        subItems.push({
+          title: "Nueva Justificación",
+          href: "/dashboard/justificaciones/nueva",
+        })
+      }
+
+      subItems.push({
+        title: "Listar Justificaciones",
+        href: "/dashboard/justificaciones/listar",
+      })
+
       baseItems.push({
         id: "justificaciones",
         title: "Justificaciones",
         icon: FileText,
         href: "#",
-        subItems: [
-          { title: "Nueva Justificación", href: "/dashboard/justificaciones/nueva" },
-          { title: "Listar Justificaciones", href: "/dashboard/justificaciones/listar" },
-        ],
+        subItems,
       })
     }
 
-    const vacacionesSubItems = [
-      { title: "Enviar Solicitud", href: "/dashboard/vacaciones/solicitar" },
-      { title: "Mis Solicitudes", href: "/dashboard/vacaciones/mis-solicitudes" },
-    ]
+    // 🔹 VACACIONES
+    if (user.idCargo !== 6) {
+      const vacacionesSubItems: SubItem[] = []
 
-    if (userCargo === 1) {
-      vacacionesSubItems.push({ title: "Registrar Vacaciones Asesor", href: "/dashboard/vacaciones/registrar-asesor" })
+      if (user.idCargo !== 9) {
+        vacacionesSubItems.push(
+          { title: "Enviar Solicitud", href: "/dashboard/vacaciones/solicitar" },
+          { title: "Mis Solicitudes", href: "/dashboard/vacaciones/mis-solicitudes" },
+        )
+      }
+
+      if (user.idCargo === 5) {
+        vacacionesSubItems.push(
+          { title: "Registrar Vacaciones Asesor", href: "/dashboard/vacaciones/registrar-asesor" },
+          { title: "Solicitudes Asesores", href: "/dashboard/vacaciones/solicitudes-asesor" },
+        )
+      }
+
+      if ((user.idEmpleado === user.idJefe && user.idCargo !== 9) || user.idEmpleado === 214) {
+        vacacionesSubItems.push({
+          title: "Solicitudes Equipo",
+          href: "/dashboard/vacaciones/solicitudes-equipo",
+        })
+      }
+
+      if (user.idCargo === 9 || user.idEmpleado === 179) {
+        vacacionesSubItems.push({
+          title: "Solicitudes Aprobadas",
+          href: "/dashboard/vacaciones/solicitudes-aprobadas",
+        })
+      }
+
+      if (user.idCargo === 9) {
+        vacacionesSubItems.push(
+          { title: "Solicitudes Pendientes", href: "/dashboard/vacaciones/solicitudes-pendientes" },
+          { title: "Calendario Jefes Área", href: "/dashboard/vacaciones/calendario" },
+        )
+      }
+
+      baseItems.push({
+        id: "vacaciones",
+        title: "Vacaciones",
+        icon: Calendar,
+        href: "#",
+        subItems: vacacionesSubItems,
+      })
     }
-
-    if (userCargo <= 2) {
-      vacacionesSubItems.push({ title: "Solicitudes Asesor", href: "/dashboard/vacaciones/solicitudes-asesor" })
-    }
-
-    baseItems.push({
-      id: "vacaciones",
-      title: "Vacaciones",
-      icon: Calendar,
-      href: "#",
-      subItems: vacacionesSubItems,
-    })
 
     return baseItems
   }
+
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -173,12 +215,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
               <div className="text-sm">
-                <div className="font-medium text-foreground">{userInfo.name}</div>
-                <div className="text-xs text-muted-foreground">{userInfo.cargo}</div>
+                <div className="font-medium text-foreground">{user?.alias}</div>
+                <div className="text-xs text-muted-foreground">{user?.cargo}</div>
               </div>
             </div>
 
-            <NotificationButton />
+            {/* <NotificationButton /> */}
             <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>

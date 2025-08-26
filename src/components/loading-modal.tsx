@@ -2,13 +2,10 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-
 interface LoadingModalProps {
-  isOpen: boolean
-  message: string
+  readonly isOpen: boolean
+  readonly message: string
 }
-
 export function LoadingModal({ isOpen, message }: LoadingModalProps) {
   return (
     <AnimatePresence>
@@ -26,15 +23,16 @@ export function LoadingModal({ isOpen, message }: LoadingModalProps) {
             transition={{ type: "spring", duration: 0.3 }}
           >
             <Card className="w-full max-w-sm">
-              <CardContent className="p-8 text-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  className="mx-auto w-12 h-12 mb-4"
-                >
-                  <Loader2 className="h-12 w-12 text-[#001529] dark:text-slate-400" />
-                </motion.div>
-                <p className="text-slate-600 dark:text-slate-400">{message}</p>
+              <CardContent className="px-8 py-2 text-center">
+                  <div className="flex flex-col items-center justify-center py-0">
+                    <div className="relative w-16 h-16">
+                      <div className="absolute inset-0 rounded-full border-4 border-t-blue-400 border-r-blue-400 border-b-transparent border-l-transparent animate-spin"></div>
+                      <div className="absolute inset-2 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-blue-500 animate-spin"></div>
+                    </div>
+                    <p className="mt-4 text-gray-500 font-medium">
+                      {message}
+                    </p>
+                  </div>
               </CardContent>
             </Card>
           </motion.div>

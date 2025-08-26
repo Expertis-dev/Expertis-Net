@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 
 interface SuccessModalProps {
-  isOpen: boolean
-  message: string
+  readonly isOpen: boolean
+  readonly message: string
 }
 
 export function SuccessModal({ isOpen, message }: SuccessModalProps) {
@@ -26,14 +26,14 @@ export function SuccessModal({ isOpen, message }: SuccessModalProps) {
             transition={{ type: "spring", duration: 0.3 }}
           >
             <Card className="w-full max-w-sm">
-              <CardContent className="p-8 text-center">
+              <CardContent className="p-4 text-center">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", duration: 0.5 }}
-                  className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4"
+                  className="mx-auto w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-2"
                 >
-                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <CheckCircle className="h-14 w-14 text-green-600 dark:text-green-400" />
                 </motion.div>
                 <p className="text-slate-600 dark:text-slate-400 font-medium">{message}</p>
               </CardContent>
