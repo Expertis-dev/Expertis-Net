@@ -225,12 +225,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 )
               }
             </div>
-
             {/* <NotificationButton /> */}
             <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>
-
         <div className="flex">
           <div className="hidden lg:block w-80 border-r border-border bg-background backdrop-blur-sm">
             <Sidebar
