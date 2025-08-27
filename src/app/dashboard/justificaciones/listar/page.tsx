@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Eye, Trash2, Upload, Search, Filter } from "lucide-react"
+import { Eye, Trash2, Upload, Filter } from "lucide-react"
 import { ViewJustificationModal } from "@/components/view-justification-modal"
 import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { UploadProofModal } from "@/components/upload-proof-modal"
@@ -69,8 +69,8 @@ export default function ListarJustificaciones() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      const updated = filteredData.filter((item) => item.id !== itemToDelete)
-      setFilteredData(updated)
+      //const updated = filteredData.filter((item) => item.id !== itemToDelete)
+      //setFilteredData(updated)
       setShowDeleteModal(false)
       setItemToDelete(null)
     }
@@ -250,13 +250,12 @@ export default function ListarJustificaciones() {
         title="Eliminar Justificación"
         message="¿Estás seguro de que deseas eliminar esta justificación? Esta acción no se puede deshacer."
       />
-      {/*
+      
       <UploadProofModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         justification={selectedJustification}
       />
-    */}
     </DashboardLayout >
   )
 }

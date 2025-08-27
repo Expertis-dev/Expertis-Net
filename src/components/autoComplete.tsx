@@ -69,7 +69,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
                             <Button
                                 key={employee.id}
                                 variant="ghost"
-                                className="w-full justify-start px-3 py-2 text-sm font-normal hover:bg-gray-100 dark:hover:bg-neutral-700"
+                                className="w-full justify-start px-3 py-2 text-sm font-normal hover:bg-gray-300 dark:hover:bg-neutral-700"
                                 onClick={() => handleSelect(employee)}
                             >
                                 <div className="flex flex-col items-start">

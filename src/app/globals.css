@@ -571,3 +571,28 @@ body {
     animation: none;
     mix-blend-mode: normal;
 }
+
+
+.ant-upload-drag {
+  @apply bg-neutral-100 dark:bg-neutral-800 rounded-2xl border-2 border-dashed border-gray-400 cursor-pointer;
+}
+.ant-upload-drag:hover {
+  @apply border-blue-500 cursor-pointer;
+}
+/* Cambiar color de texto en lista de archivos */
+.ant-upload-list-item {
+  @apply text-black dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 cursor-pointer; 
+}
+
+/* Por si el nombre del archivo tiene hover */
+.ant-upload-list-item-name {
+  @apply text-black dark:text-neutral-200 cursor-pointer;
+}
+
+.ant-upload-list-item-action .anticon {
+  color: #e40202 !important; /* Tailwind red-600 */
+}
+
+.dark .ant-upload-list-item-action .anticon {
+  color: #ef4444 !important; /* Tailwind red-500 */
+}

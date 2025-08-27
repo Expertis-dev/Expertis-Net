@@ -1,55 +1,71 @@
 "use client"
-
-import type React from "react"
-
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Upload, Trash2 } from "lucide-react"
-
-interface Justification {
-  id: number
-  tipo: string
-  tipo2: string
-  fecha: string
-  asesor: string
-}
+import { X } from "lucide-react"
+import { Justificaciones } from "../../types/Justificaciones"
+import { InboxOutlined, UploadOutlined } from "@ant-design/icons"
+import { Upload, UploadFile, Image } from "antd"
+import type { UploadProps } from "antd"
+import type { RcFile } from "antd/es/upload"
+import { toast } from "sonner"
 
 interface UploadProofModalProps {
-  isOpen: boolean
-  onClose: () => void
-  justification: Justification | null
+  readonly isOpen: boolean
+  readonly onClose: () => void
+  readonly justification: Justificaciones | null
 }
 
-export function UploadProofModal({ isOpen, onClose, justification }: UploadProofModalProps) {
-  const [files, setFiles] = useState<File[]>([])
-  const [uploading, setUploading] = useState(false)
+const getBase64 = (file: RcFile): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (error) => reject(error)
+  })
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files)
-      setFiles((prev) => [...prev, ...newFiles])
+export function UploadProofModal({ isOpen, onClose, justification }: UploadProofModalProps) {
+  const [uploading, setUploading] = useState(false)
+  const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState("")
+
+  const beforeUpload = (file: RcFile) => {
+    const isImage = file.type.startsWith("image/")
+    if (!isImage) {
+      toast.error("Solo se permiten imágenes")
+      return Upload.LIST_IGNORE
     }
+    const isLt2M = file.size / 1024 / 1024 < 2
+    if (!isLt2M) {
+      toast.error("La imagen debe ser menor a 2MB")
+      return Upload.LIST_IGNORE
+    }
+    return true
   }
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
+  const handleChange: UploadProps["onChange"] = ({ fileList }) => {
+    setFileList(fileList)
+  }
+
+  const handlePreview = async (file: UploadFile) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj as RcFile)
+    }
+    setPreviewImage(file.url || (file.preview as string))
+    setPreviewOpen(true)
   }
 
   const handleUpload = async () => {
-    if (files.length === 0) return
-
+    if (fileList.length === 0) return
     setUploading(true)
-
-    // Simular upload
     setTimeout(() => {
       setUploading(false)
-      setFiles([])
+      setFileList([]) // limpiar después de subir
       onClose()
-      // Aquí podrías mostrar un toast de éxito
+      toast.success("Imágenes subidas correctamente ✅")
     }, 2000)
   }
 
@@ -76,73 +92,43 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
+                  <UploadOutlined className="h-5 w-5" />
                   Cargar Pruebas - {justification.asesor}
                 </CardTitle>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">Justificación:</div>
-                  <div className="font-semibold">
-                    {justification.tipo} - {justification.tipo2}
-                  </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">Fecha: {justification.fecha}</div>
-                </div>
-
+              <CardContent className="space-y-4">
                 <div className="space-y-4">
-                  <Label htmlFor="file-upload">Seleccionar Archivos</Label>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    multiple
+                  <Label>Seleccionar Imágenes</Label>
+                  <Upload.Dragger
                     accept="image/*"
-                    onChange={handleFileChange}
-                    className="cursor-pointer"
-                  />
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Puedes seleccionar múltiples imágenes como prueba de la justificación
-                  </p>
+                    listType="picture"
+                    fileList={fileList}
+                    beforeUpload={beforeUpload}
+                    onChange={handleChange}
+                    onPreview={handlePreview}
+                    multiple
+                    maxCount={4}
+                    //style={{ width: "100%", backgroundColor: "#f5f5f5" , dark: background:"#212121" }}
+                  >
+                    <p className="ant-upload-drag-icon">
+                      <InboxOutlined/>
+                    </p>
+                    <p className="dark:text-neutral-100">Haga clic o arrastre imágenes aquí</p>
+                    <p className="dark:text-neutral-400">Máximo 4 imágenes, tamaño menor a 2MB</p>
+                  </Upload.Dragger>
                 </div>
-
-                {files.length > 0 && (
-                  <div className="space-y-3">
-                    <Label>Archivos Seleccionados ({files.length})</Label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {files.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            {/* <Image className="h-4 w-4 text-slate-500" /> */}
-                            <span className="text-sm font-medium truncate">{file.name}</span>
-                            <span className="text-xs text-slate-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFile(index)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1" onClick={onClose}>
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-[#001529] hover:bg-[#002040] dark:bg-slate-700 dark:hover:bg-slate-600"
+                    className="flex-1 bg-[#0e1924] hover:bg-[#002040] dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
                     onClick={handleUpload}
-                    disabled={files.length === 0 || uploading}
+                    disabled={uploading || fileList.length === 0}
                   >
                     {uploading ? (
                       <motion.div
@@ -151,13 +137,30 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                         className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
                       />
                     ) : (
-                      <Upload className="h-4 w-4 mr-2" />
+                      <UploadOutlined className="h-4 w-4 mr-2" />
                     )}
-                    {uploading ? "Subiendo..." : "Subir Archivos"}
+                    {uploading ? "Subiendo..." : "Subir Imágenes"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Modal de preview real */}
+            {previewImage && (
+              <Image
+                wrapperStyle={{ display: "none" }}
+                preview={{
+                  visible: previewOpen,
+                  onVisibleChange: (visible) => setPreviewOpen(visible),
+                  afterOpenChange: (visible) => !visible && setPreviewImage(""),
+                }}
+                src={previewImage}
+                width={200}
+                height={200}
+                alt="IMAGENES DE PRUEBA"
+                className="object-cover rounded-lg"
+              />
+            )}
           </motion.div>
         </motion.div>
       )}

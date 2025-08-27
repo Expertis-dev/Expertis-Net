@@ -1,5 +1,4 @@
 "use client"
-
 import { motion, AnimatePresence } from "framer-motion"
 import { Image } from "antd"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,32 +7,25 @@ import { Badge } from "@/components/ui/badge"
 import { X, Calendar, User, FileText } from "lucide-react"
 import { Justificaciones } from "../../types/Justificaciones"
 import { useEffect, useState } from "react"
-
+import { getURLs } from "../../services/URLs"
 interface ViewJustificationModalProps {
   readonly isOpen: boolean
   readonly onClose: () => void
   readonly justification: Justificaciones
 }
-
 export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJustificationModalProps) {
   const [urls, setUrls] = useState<{ urlPrueba: string }[]>([])
-
   useEffect(() => {
     const ObtenerURLImagenes = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerPruebas/${justification.id}`, {
-        method: "GET",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-      })
-      if (!res.ok) throw new Error("Error al obtener pruebas")
-      const data = await res.json()
+      const data = await getURLs({ id: justification.id })
+      console.log("URLs obtenidas:", data) // Verifica la respuesta completa
       setUrls(data.data)
     }
-    if (justification) ObtenerURLImagenes()
+    if (justification.id) {
+      console.log("Justification:", justification) // Verifica que el ID esté presente
+      ObtenerURLImagenes()
+    }
   }, [justification])
-
-  if (!justification) return null
-
   const getStatusBadge = (estado: string) => {
     switch (estado) {
       case "PERMISO":
@@ -55,7 +47,10 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={onClose}
+          onClick={() => {
+            onClose()
+            setUrls([])
+          }}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -63,7 +58,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", duration: 0.3 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-7xl"
+            className="w-full max-w-7xl "
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -76,63 +71,42 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Datos */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                        <User className="h-4 w-4" />
-                        Asesor
-                      </div>
-                      <div className="font-semibold">{justification.asesor}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                        <Calendar className="h-4 w-4" />
-                        Fecha
-                      </div>
-                      <div className="font-semibold">{justification.fecha.split("T")[0]}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Nivel 1</div>
-                      <div>{getStatusBadge(justification.nivel1)}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Nivel 2</div>
-                      <div className="font-semibold">{justification.nivel2.split("_")[1]}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Nivel 3</div>
-                      <div className="font-semibold">{justification.nivel3}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Penalidad</div>
-                      <div className="font-semibold">{justification.penalidad}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Descuento</div>
-                      <div className="font-semibold">{justification.descuento}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Descripción</div>
-                      <div className="font-semibold">{justification.descripcion}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Minutos Permiso</div>
-                      <div className="font-semibold">{justification.minutos_permiso}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Observación</div>
-                      <div className=" font-semibold">{justification.observacion || "Sin observaciones"}</div>
-                    </div>
+                <div className="flex justify-center gap-4">
+                  <div className="w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 border-r-2 border-slate-300 pr-4">
+                    {[
+                      { label: "Asesor", value: justification.asesor, icon: <User className="h-4 w-4 text-blue-500" /> },
+                      { label: "Fecha", value: justification.fecha.split("T")[0], icon: <Calendar className="h-4 w-4 text-purple-500" /> },
+                      { label: "Nivel 1", value: getStatusBadge(justification.nivel1) },
+                      { label: "Nivel 2", value: justification.nivel2.split("_")[1] },
+                      { label: "Nivel 3", value: justification.nivel3 },
+                      { label: "Penalidad", value: justification.penalidad },
+                      { label: "Descuento", value: justification.descuento },
+                      { label: "Descripción", value: justification.descripcion },
+                      { label: "Minutos Permiso", value: justification.minutos_permiso },
+                      { label: "Observación", value: justification.observacion || "Sin observaciones" },
+                    ].map((item) => (
+                      <motion.div
+                        key={item.label}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="p-2 rounded-xl shadow-md bg-neutral-50 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600"
+                      >
+                        <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 mb-1">
+                          {item.icon}
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                          {item.value}
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-
                   {/* Imágenes */}
-                  <div>
+                  <div className="w-1/3">
                     <p className="mb-2 font-semibold">Pruebas</p>
-                    {urls.length > 0 ? (
+                    {urls && urls.length > 0 ? (
                       <Image.PreviewGroup>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                           {urls.slice(0, 4).map((url, index) => (
                             <motion.div
                               key={url.urlPrueba}
@@ -141,8 +115,8 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                               className="rounded-lg overflow-hidden cursor-pointer"
                             >
                               <Image
-                              width={200}
-                              height={200}
+                                width={200}
+                                height={150}
                                 src={url.urlPrueba}
                                 alt={`Prueba ${index + 1}`}
                                 className="object-cover rounded-lg"
@@ -159,7 +133,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                         </div>
                       </Image.PreviewGroup>
                     ) : (
-                      <p className="text-sm text-slate-500">No hay pruebas disponibles</p>
+                      <p className="text-sm text-neutral-500">No hay pruebas disponibles</p>
                     )}
                   </div>
                 </div>

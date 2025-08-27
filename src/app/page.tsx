@@ -72,7 +72,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mx-auto w-16 h-16 flex items-center justify-center"
               >
-                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} priority className="text-white w-full h-auto" />
+                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} priority  className="text-white w-full h-auto" />
               </motion.div>
               <CardTitle className="text-4xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-400">

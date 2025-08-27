@@ -17,7 +17,7 @@ interface DashboardLayoutProps {
   readonly children: React.ReactNode
 }
 interface SubItem { title: string; href: string }
-interface MenuItem  {
+interface MenuItem {
   id: string
   title: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
@@ -200,7 +200,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10">
-                <Image src="/icono-logo.png" alt="Logo Central" fill className="object-contain" />
+                <Image src="/icono-logo.png" alt="Logo Central" fill sizes="4xl" className="object-contain" />
               </div>
               <div>
                 <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 
@@ -214,10 +214,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <div className="font-medium text-foreground">{user?.alias}</div>
-                <div className="text-xs text-muted-foreground">{user?.cargo}</div>
-              </div>
+              {
+                user ? (
+                  <div className="text-sm">
+                    <div className="font-medium text-foreground">{user?.alias}</div>
+                    <div className="text-xs text-muted-foreground">{user?.cargo}</div>
+                  </div>
+                ) : (
+                  <div className="text-sm">Cargando...</div>
+                )
+              }
             </div>
 
             {/* <NotificationButton /> */}
