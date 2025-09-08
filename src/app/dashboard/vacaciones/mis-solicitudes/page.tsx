@@ -106,7 +106,7 @@ export default function MisSolicitudes() {
         {/* Estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <Calendar className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -120,9 +120,8 @@ export default function MisSolicitudes() {
               </div>
             </CardContent>
           </Card>
-
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                   <Calendar className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
@@ -136,9 +135,8 @@ export default function MisSolicitudes() {
               </div>
             </CardContent>
           </Card>
-
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                   <Calendar className="h-6 w-6 text-red-600 dark:text-red-400" />
