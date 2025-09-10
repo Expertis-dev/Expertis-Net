@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 
 interface ConfirmationModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  title: string
-  message: string
+  readonly isOpen: boolean
+  readonly onClose: () => void
+  readonly onConfirm: () => void
+  readonly title: string
+  readonly message: string
 }
 
 export function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }: ConfirmationModalProps) {
@@ -45,7 +45,7 @@ export function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-[#001529] hover:bg-[#002040] dark:bg-slate-700 dark:hover:bg-slate-600"
+                    className="flex-1 bg-[#001529] hover:bg-[#002040] dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white"
                     onClick={onConfirm}
                   >
                     Continuar

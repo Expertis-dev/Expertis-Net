@@ -17,12 +17,11 @@ interface MenuItem {
 }
 
 interface SidebarProps {
-  menuItems: MenuItem[]
-  expandedMenus: string[]
-  toggleMenu: (menuId: string) => void
-  pathname: string
-  onLogout: () => void
-  isMobile: boolean
+  readonly menuItems: readonly MenuItem[]
+  readonly expandedMenus: readonly string[]
+  readonly toggleMenu: (menuId: string) => void
+  readonly pathname: string
+  readonly onLogout: () => void
 }
 
 export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogout }: SidebarProps) {
@@ -39,7 +38,7 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                     className="sidebar-item w-full justify-between h-12 px-4 text-left font-medium"
                     onClick={() => toggleMenu(item.id)}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
                     </div>
@@ -60,7 +59,7 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
-                        <div className="ml-8 mt-2 space-y-1">
+                        <div className="ml-4 mt-1 space-y-1">
                           {item.subItems.map((subItem) => (
                             <motion.div
                               key={subItem.href}
@@ -71,11 +70,10 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                               <Link href={subItem.href}>
                                 <Button
                                   variant="ghost"
-                                  className={`w-full justify-start h-10 px-4 text-sm transition-all duration-200 ${
-                                    pathname === subItem.href ? "sidebar-item-active" : "sidebar-item"
-                                  }`}
+                                  className={`w-full justify-start h-10 px-4 text-sm transition-all duration-200 ${pathname === subItem.href ? "sidebar-item-active" : "sidebar-item"
+                                    }`}
                                 >
-                                  <ChevronRight className="h-3 w-3 mr-2" />
+                                  <ChevronRight className="h-3 w-3" />
                                   {subItem.title}
                                 </Button>
                               </Link>
@@ -90,9 +88,8 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                 <Link href={item.href}>
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start h-12 px-4 transition-all duration-200 ${
-                      pathname === item.href ? "sidebar-item-active" : "sidebar-item"
-                    }`}
+                    className={`w-full justify-start px- transition-all duration-200 ${pathname === item.href ? "sidebar-item-active" : "sidebar-item"
+                      }`}
                   >
                     <item.icon className="h-5 w-5 mr-3" />
                     {item.title}

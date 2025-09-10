@@ -1,44 +1,18 @@
-"use client"
 import { motion, AnimatePresence } from "framer-motion"
 import { Image } from "antd"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { X, Calendar, User, FileText } from "lucide-react"
-import { Justificaciones } from "../../types/Justificaciones"
-import { useEffect, useState } from "react"
-import { getURLs } from "../../services/URLs"
+import { Justificaciones } from "../types/Justificaciones"
+import { BadgeStatus } from "./BadgeStatus"
+import { useURL } from "@/hooks/useURL"
 interface ViewJustificationModalProps {
   readonly isOpen: boolean
   readonly onClose: () => void
   readonly justification: Justificaciones
 }
 export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJustificationModalProps) {
-  const [urls, setUrls] = useState<{ urlPrueba: string }[]>([])
-  useEffect(() => {
-    const ObtenerURLImagenes = async () => {
-      const data = await getURLs({ id: justification.id })
-      console.log("URLs obtenidas:", data) // Verifica la respuesta completa
-      setUrls(data.data)
-    }
-    if (justification.id) {
-      console.log("Justification:", justification) // Verifica que el ID esté presente
-      ObtenerURLImagenes()
-    }
-  }, [justification])
-  const getStatusBadge = (estado: string) => {
-    switch (estado) {
-      case "PERMISO":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm">PERMISO</Badge>
-      case "TARDANZA":
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-sm">TARDANZA</Badge>
-      case "FALTA":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm">FALTA</Badge>
-      default:
-        return <Badge variant="secondary">{estado}</Badge>
-    }
-  }
-
+  const { urls } = useURL(justification?.id ?? "");
   return (
     <AnimatePresence>
       {isOpen && (
@@ -49,7 +23,6 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => {
             onClose()
-            setUrls([])
           }}
         >
           <motion.div
@@ -76,7 +49,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                     {[
                       { label: "Asesor", value: justification.asesor, icon: <User className="h-4 w-4 text-blue-500" /> },
                       { label: "Fecha", value: justification.fecha.split("T")[0], icon: <Calendar className="h-4 w-4 text-purple-500" /> },
-                      { label: "Nivel 1", value: getStatusBadge(justification.nivel1) },
+                      { label: "Nivel 1", value: <BadgeStatus estado={justification.nivel1} /> },
                       { label: "Nivel 2", value: justification.nivel2.split("_")[1] },
                       { label: "Nivel 3", value: justification.nivel3 },
                       { label: "Penalidad", value: justification.penalidad },

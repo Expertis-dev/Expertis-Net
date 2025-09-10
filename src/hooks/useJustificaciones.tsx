@@ -10,7 +10,7 @@ export const useJustificaciones = () => {
     useEffect(() => {
         const fetchJustificaciones = async () => {
             setIsLoadingJustificaciones(true);
-            const data = await getJustificaciones({grupo: user?.idGrupo, cargo: user?.idCargo});
+            const data = await getJustificaciones({grupo: user?.id_cargo, cargo: user?.id_cargo});
             setJustificaciones(data.data);
             setIsLoadingJustificaciones(false);
         };

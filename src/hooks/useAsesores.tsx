@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import { getAsesores } from "../services/asesoresService";
 import { ArrayAsesores } from "../types/Asesores";
 
-
-
 export const useAsesores = (grupo: string | undefined) => {
     const [asesores, setAsesores] = useState<ArrayAsesores>([]);
     const [loading, setLoading] = useState(true);
@@ -18,6 +16,5 @@ export const useAsesores = (grupo: string | undefined) => {
         };
         fetchAsesores();
     }, [grupo]);
-
     return { asesores, loading };
 };

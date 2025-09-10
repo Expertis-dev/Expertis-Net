@@ -2,7 +2,7 @@ import { Search } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
-import { ArrayAsesores, Asesores } from "../../types/Asesores"
+import { ArrayAsesores, Asesores } from "../types/Asesores"
 
 interface EmployeeAutocompleteProps {
     employees: ArrayAsesores
@@ -46,7 +46,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
             {/* Input */}
             <div className="flex items-center border rounded-md dark:bg-[#1b1a1a] ">
                 <Input
-                    placeholder="Buscar empleado..."
+                    placeholder="Buscar asesor..."
                     value={searchTerm}
                     onFocus={() => setOpen(true)}
                     onChange={(e) => {
@@ -59,7 +59,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
             </div>
             {/* Dropdown */}
             {open  && (
-                <div className="absolute top-full left-0 w-full bg-neutral-100 dark:bg-neutral-800 border shadow-md rounded-md mt-1 z-50 max-h-60 overflow-auto">
+                <div className="absolute top-full left-0 w-full bg-neutral-50 dark:bg-neutral-800 border shadow-md rounded-md mt-1 z-50 max-h-60 overflow-auto">
                     {filteredEmployees.length === 0 ? (
                         <div className="py-3 text-center text-sm text-muted-foreground">
                             No se encontraron empleados
@@ -69,7 +69,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
                             <Button
                                 key={employee.id}
                                 variant="ghost"
-                                className="w-full justify-start px-3 py-2 text-sm font-normal hover:bg-gray-300 dark:hover:bg-neutral-700"
+                                className="w-full justify-start px-3 py-2 text-sm font-normal hover:bg-gray-100 dark:hover:bg-neutral-700"
                                 onClick={() => handleSelect(employee)}
                             >
                                 <div className="flex flex-col items-start">

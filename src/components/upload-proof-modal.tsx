@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { X } from "lucide-react"
-import { Justificaciones } from "../../types/Justificaciones"
+import { Justificaciones } from "../types/Justificaciones"
 import { InboxOutlined, UploadOutlined } from "@ant-design/icons"
 import { Upload, UploadFile, Image } from "antd"
 import type { UploadProps } from "antd"
@@ -34,6 +34,11 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
 
   const beforeUpload = (file: RcFile) => {
     const isImage = file.type.startsWith("image/")
+    console.log(file)
+    if (fileList.length === 4) {
+      toast.error("Solo se permiten 4 imágenes")
+      return Upload.LIST_IGNORE
+    }
     if (!isImage) {
       toast.error("Solo se permiten imágenes")
       return Upload.LIST_IGNORE
@@ -87,9 +92,9 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", duration: 0.3 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl"
+            className="w-full max-w-xl"
           >
-            <Card>
+            <Card className="max-h-[98vh] overflow-y-auto ">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <UploadOutlined className="h-5 w-5" />
@@ -99,8 +104,8 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
+              <CardContent className="space-y-2">
+                <div className="space-y-2">
                   <Label>Seleccionar Imágenes</Label>
                   <Upload.Dragger
                     accept="image/*"
@@ -111,7 +116,6 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                     onPreview={handlePreview}
                     multiple
                     maxCount={4}
-                    //style={{ width: "100%", backgroundColor: "#f5f5f5" , dark: background:"#212121" }}
                   >
                     <p className="ant-upload-drag-icon">
                       <InboxOutlined/>
@@ -120,8 +124,7 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                     <p className="dark:text-neutral-400">Máximo 4 imágenes, tamaño menor a 2MB</p>
                   </Upload.Dragger>
                 </div>
-
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={onClose}>
                     Cancelar
                   </Button>
@@ -144,7 +147,6 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                 </div>
               </CardContent>
             </Card>
-
             {/* Modal de preview real */}
             {previewImage && (
               <Image

@@ -3,10 +3,10 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, Users, AlertTriangle } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
   const pathname = usePathname()
-
+  const [mounted, setMounted] = useState(false);
   // Auto-expand menus
   useEffect(() => {
     if (pathname.includes("/justificaciones")) {
@@ -38,8 +38,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname.includes("/vacaciones")) {
       setExpandedMenus((prev) => (prev.includes("vacaciones") ? prev : [...prev, "vacaciones"]))
     }
+    setMounted(true);
   }, [pathname])
-
   const toggleMenu = (menuId: string) => {
     setExpandedMenus((prev) => (prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]))
   }
@@ -72,35 +72,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         subItems: [],
       },
     ]
-
     if (!user) return baseItems // si no hay user aún
 
-    // 🔹 EJEMPLO: SOLO CARGO 1 ve "Empleados"
-    if (user.idCargo === 1) {
-      baseItems.push({
-        id: "empleados",
-        title: "Empleados",
-        icon: Users,
-        href: "/dashboard/empleados",
-        subItems: [],
-      })
-      baseItems.push({
-        id: "alertaVacaciones",
-        title: "Alerta Vacaciones",
-        icon: AlertTriangle,
-        href: "/dashboard/empleados/alerta-vacaciones",
-        subItems: [],
-      })
-    }
 
     // 🔹 JUSTIFICACIONES
     if (
-      user.idCargo !== 9 &&
-      [5, 7, 8, 1, 3, 21, 4].includes(user.idCargo)
+      user.id_cargo !== 9 &&
+      [5, 7, 8, 1, 3, 21, 4].includes(user.id_cargo)
     ) {
       const subItems: SubItem[] = []
 
-      if ([5, 7, 8].includes(user.idCargo)) {
+      if ([5, 7, 8].includes(user.id_cargo)) {
         subItems.push({
           title: "Nueva Justificación",
           href: "/dashboard/justificaciones/nueva",
@@ -120,40 +102,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         subItems,
       })
     }
-
     // 🔹 VACACIONES
-    if (user.idCargo !== 6) {
+    if (user.id_cargo !== 6) {
       const vacacionesSubItems: SubItem[] = []
-
-      if (user.idCargo !== 9) {
+      if (user.id_cargo !== 9) {
         vacacionesSubItems.push(
           { title: "Enviar Solicitud", href: "/dashboard/vacaciones/solicitar" },
           { title: "Mis Solicitudes", href: "/dashboard/vacaciones/mis-solicitudes" },
         )
       }
-
-      if (user.idCargo === 5) {
+      if (user.id_cargo === 5) {
         vacacionesSubItems.push(
           { title: "Registrar Vacaciones Asesor", href: "/dashboard/vacaciones/registrar-asesor" },
           { title: "Solicitudes Asesores", href: "/dashboard/vacaciones/solicitudes-asesor" },
         )
       }
 
-      if ((user.idEmpleado === user.idJefe && user.idCargo !== 9) || user.idEmpleado === 214) {
+      if ((user.idEmpleado === user.idJefe && user.id_cargo !== 9) || user.idEmpleado === 214) {
         vacacionesSubItems.push({
           title: "Solicitudes Equipo",
           href: "/dashboard/vacaciones/solicitudes-equipo",
         })
       }
 
-      if (user.idCargo === 9 || user.idEmpleado === 179) {
+      if (user.id_cargo === 9 || user.idEmpleado === 179) {
         vacacionesSubItems.push({
           title: "Solicitudes Aprobadas",
           href: "/dashboard/vacaciones/solicitudes-aprobadas",
         })
       }
 
-      if (user.idCargo === 9) {
+      if (user.id_cargo === 9) {
         vacacionesSubItems.push(
           { title: "Solicitudes Pendientes", href: "/dashboard/vacaciones/solicitudes-pendientes" },
           { title: "Calendario Jefes Área", href: "/dashboard/vacaciones/calendario" },
@@ -167,12 +146,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         href: "#",
         subItems: vacacionesSubItems,
       })
+      baseItems.push({
+        id: "nuevo-empleado",
+        title: "Crear nuevo empleado",
+        icon: UserPlus,
+        href: "/dashboard/admin/crear-empleado",
+        subItems: [],
+      })
     }
 
     return baseItems
   }
-
-
+  if (!mounted) return null;
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <div className="min-h-screen bg-background transition-colors duration-300">
@@ -185,19 +170,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-80">
+              <SheetContent side="left" className="w-72 max-h-screen overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <div className="relative w-10 h-10">
+                      <Image src="/icono-logo.png" alt="Logo Central" fill sizes="4xl" className="object-contain" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 dark:from-cyan-400 dark:to-teal-200 bg-clip-text text-transparent">
+                        ExpertisNet
+                      </span>
+                      <div className="text-xs text-muted-foreground -mt-1">Intranet</div>
+                    </div>
+                  </SheetTitle>
+                  <SheetDescription className="py-1">
+                    <div className="font-medium text-foreground">{user?.usuario}, {user?.cargo}</div>
+                  </SheetDescription>
+                </SheetHeader>
                 <Sidebar
                   menuItems={getMenuItems()}
                   expandedMenus={expandedMenus}
                   toggleMenu={toggleMenu}
                   pathname={pathname}
                   onLogout={handleLogout}
-                  isMobile={true}
                 />
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="relative w-10 h-10">
                 <Image src="/icono-logo.png" alt="Logo Central" fill sizes="4xl" className="object-contain" />
               </div>
@@ -213,30 +213,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
-              {
-                user ? (
-                  <div className="text-sm">
-                    <div className="font-medium text-foreground">{user?.alias}</div>
-                    <div className="text-xs text-muted-foreground">{user?.cargo}</div>
-                  </div>
-                ) : (
-                  <div className="text-sm">Cargando...</div>
-                )
-              }
+              {user && (
+                <div className="text-sm">
+                  <div className="font-medium text-foreground">{user.usuario}</div>
+                  <div className="text-xs text-muted-foreground">{user.cargo}</div>
+                </div>
+              )}
             </div>
             {/* <NotificationButton /> */}
             <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>
         <div className="flex">
-          <div className="hidden lg:block w-80 border-r border-border bg-background backdrop-blur-sm">
+          <div className="hidden lg:block w-72 border-r border-border bg-background backdrop-blur-sm">
             <Sidebar
               menuItems={getMenuItems()}
               expandedMenus={expandedMenus}
               toggleMenu={toggleMenu}
               pathname={pathname}
               onLogout={handleLogout}
-              isMobile={false}
             />
           </div>
 

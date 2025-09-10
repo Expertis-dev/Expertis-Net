@@ -185,7 +185,7 @@ export default function DashboardHome() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground mt-1">
-              Bienvenido, {user?.alias} • {user?.cargo}
+              Bienvenido, {user?.usuario} • {user?.cargo}
             </p>
           </div>
           <div className="text-sm text-muted-foreground">

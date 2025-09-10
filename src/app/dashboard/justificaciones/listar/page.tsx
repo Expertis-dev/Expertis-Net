@@ -12,8 +12,9 @@ import { Eye, Trash2, Upload, Filter } from "lucide-react"
 import { ViewJustificationModal } from "@/components/view-justification-modal"
 import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { UploadProofModal } from "@/components/upload-proof-modal"
-import { Justificaciones } from '../../../../../types/Justificaciones';
-import { useJustificaciones } from "../../../../../hooks/useJustificaciones"
+import { Justificaciones } from '../../../../types/Justificaciones';
+import { useJustificaciones } from "@/hooks/useJustificaciones"
+
 export default function ListarJustificaciones() {
   const { justificaciones } = useJustificaciones();
   const [filters, setFilters] = useState({
@@ -87,13 +88,12 @@ export default function ListarJustificaciones() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-6"
+        className="space-y-4"
       >
         <div>
           <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Listar Justificaciones</h1>
           <p className="text-slate-600 dark:text-slate-400">Gestiona y consulta todas las justificaciones</p>
         </div>
-
         {/* Filtros */}
         <Card>
           <CardHeader>
@@ -199,7 +199,7 @@ export default function ListarJustificaciones() {
                       <TableCell className="font-medium">{item.asesor}</TableCell>
                       <TableCell>{item.grupo}</TableCell>
                       <TableCell>{item.nivel1}</TableCell>
-                      <td className="w-40 p-2 align-middle">{item.nivel3}</td>
+                      <td className="w-40 p-1 align-middle">{item.nivel3}</td>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
@@ -236,13 +236,11 @@ export default function ListarJustificaciones() {
           </CardContent>
         </Card>
       </motion.div>
-
       <ViewJustificationModal
         isOpen={showViewModal}
         onClose={() => setShowViewModal(false)}
         justification={selectedJustification}
       />
-
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -250,7 +248,6 @@ export default function ListarJustificaciones() {
         title="Eliminar Justificación"
         message="¿Estás seguro de que deseas eliminar esta justificación? Esta acción no se puede deshacer."
       />
-      
       <UploadProofModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}

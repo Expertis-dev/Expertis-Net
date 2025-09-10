@@ -17,12 +17,13 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
-import { useAsesores } from "../../../../../hooks/useAsesores"
+
 import { useUser } from "@/Provider/UserProvider"
 import { AutoComplete } from "@/components/autoComplete"
-import { Asesores } from "../../../../../types/Asesores"
+import { Asesores } from "../../../../types/Asesores"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import { useAsesores } from "@/hooks/useAsesores"
 
 
 

@@ -1,18 +1,17 @@
 "use client"
-
 import { createContext } from "react";
-
 // Context/UserContext.ts
 export type User = {
   idEmpleado: number;
-  alias: string;
+  usuario: string;
   cargo: string;
-  idCargo: number;
+  id_cargo: number;
   grupo: string;
-  idGrupo: number;
+  id_grupo: number;
   area: string;
   idArea: number;
   idJefe: number;
+  estado: number;
 } | null;
 
 type UserContextType = {
