@@ -4,11 +4,9 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "sonner"
 import { UserProvider } from "@/Provider/UserProvider"
-
 const inter = Inter({ subsets: ["latin"] })
-
 export const metadata: Metadata = {
-  title: "Intranet - Panel de Control",
+  title: "ExpertisNet - Panel de Control",
   description: "Sistema de gestión empresarial",
 }
 
