@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,8 @@ import { LoadingModal } from "@/components/loading-modal"
 import { SuccessModal } from "@/components/success-modal"
 import { addDays, isWeekend, format } from "date-fns"
 import { es } from "date-fns/locale"
+import { useUser } from "@/Provider/UserProvider"
+import { toast } from "sonner" // Ajusta según tu implementación de toast
 
 // Días no laborables (ejemplo)
 const diasNoLaborables = [
@@ -21,7 +23,42 @@ const diasNoLaborables = [
   new Date(2024, 11, 25), // Navidad
 ]
 
+interface DiasDesabilitar {
+  fecFinal: string,
+  fecInicial: string
+}
+
+// Función para sumar días a una fecha
+const addDaysToDate = (date: Date, days: number): Date => {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+// Función para normalizar fechas (ignorar la hora) y ajustar por zona horaria
+const normalizeAndAdjustDate = (dateString: string): Date => {
+  if (!dateString) return new Date()
+
+  // Parsear la fecha
+  let date: Date;
+  if (dateString.includes('T')) {
+    // Si es una fecha ISO, extraemos la parte de la fecha
+    const datePart = dateString.split('T')[0]
+    const [year, month, day] = datePart.split('-').map(Number)
+    date = new Date(year, month - 1, day)
+  } else {
+    // Para fechas simples YYYY-MM-DD
+    const [year, month, day] = dateString.split('-').map(Number)
+    date = new Date(year, month - 1, day)
+  }
+
+  // Ajustar por zona horaria sumando 1 día
+  return addDaysToDate(date, 0)
+}
+
 export default function SolicitarVacaciones() {
+  const { user } = useUser()
+  const [diasDesabilitar, setDiasDesabilitar] = useState<DiasDesabilitar[]>([])
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
@@ -31,13 +68,72 @@ export default function SolicitarVacaciones() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showLoading, setShowLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDiasOcupados/${user?.idArea}`);
+        const data = await response.json();
+        console.log("DATA", data.data);
+
+        // Para pruebas - descomenta estas líneas para probar
+        // const dataCompleta = data.data;
+        // const dataPrueba = {
+        //   fecInicial: "2025-10-23T00:00:00.000Z",
+        //   fecFinal: "2025-10-24T00:00:00.000Z"
+        // }
+        // dataCompleta.push(dataPrueba);
+        // console.log("DATA COMPLETA", dataCompleta);
+        // setDiasDesabilitar(dataCompleta);
+
+        setDiasDesabilitar(data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    fetchData();
+  }, [user?.idArea])
+
+  // Función para verificar si hay fechas deshabilitadas dentro del rango seleccionado
+  const hasDisabledDatesInRange = (from: Date, to: Date): boolean => {
+    for (const disabledRange of diasDesabilitar) {
+      // Ajustar las fechas deshabilitadas sumando 1 día
+      const disabledStart = normalizeAndAdjustDate(disabledRange.fecInicial)
+      const disabledEnd = normalizeAndAdjustDate(disabledRange.fecFinal)
+
+      // Verificar si el rango seleccionado se superpone con algún rango deshabilitado
+      if (
+        (from <= disabledEnd && to >= disabledStart) ||
+        (disabledStart <= to && disabledEnd >= from)
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Función para verificar si las fechas seleccionadas son válidas
+  const isValidDateSelection = (from: Date, to: Date): boolean => {
+    // Verificar si el rango seleccionado contiene fechas deshabilitadas
+    if (hasDisabledDatesInRange(from, to)) {
+      return false
+    }
+
+    // Aquí puedes agregar más validaciones si es necesario
+    return true
+  }
+
   const calculateDays = () => {
     if (selectedDates.length === 0) return { total: 0, laborables: 0, noLaborables: 0 }
     const total = selectedDates.length
     let laborables = 0
     let noLaborables = 0
     selectedDates.forEach((date) => {
-      const isHoliday = diasNoLaborables.some((holiday) => holiday.getTime() === date.getTime())
+      const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const isHoliday = diasNoLaborables.some((holiday) => {
+        const normalizedHoliday = new Date(holiday.getFullYear(), holiday.getMonth(), holiday.getDate())
+        return normalizedHoliday.getTime() === normalizedDate.getTime()
+      })
       const isWeekendDay = isWeekend(date)
       if (isHoliday || isWeekendDay) {
         noLaborables++
@@ -53,6 +149,13 @@ export default function SolicitarVacaciones() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedDates.length === 0) return
+
+    // Validar las fechas seleccionadas
+    if (dateRange.from && dateRange.to && !isValidDateSelection(dateRange.from, dateRange.to)) {
+      toast.error("Las fechas seleccionadas contienen días no disponibles. Por favor, elige otro rango.")
+      return
+    }
+
     setShowConfirmation(true)
   }
 
@@ -75,8 +178,47 @@ export default function SolicitarVacaciones() {
   }
 
   const isDateDisabled = (date: Date) => {
+    const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const today = new Date()
+    const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
     // Deshabilitar fechas pasadas
-    return date < new Date()
+    if (normalizedDate < normalizedToday) return true
+
+    // Deshabilitar fechas que estén dentro de los rangos deshabilitados (ajustados)
+    for (const disabledRange of diasDesabilitar) {
+      const disabledStart = normalizeAndAdjustDate(disabledRange.fecInicial)
+      const disabledEnd = normalizeAndAdjustDate(disabledRange.fecFinal)
+
+      if (normalizedDate >= disabledStart && normalizedDate <= disabledEnd) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  const handleDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (!range) return
+
+    if (range.from && range.to) {
+      // Validar el rango seleccionado
+      if (!isValidDateSelection(range.from, range.to)) {
+        toast.error("El rango de fechas seleccionado contiene días no disponibles. Por favor, elige otro rango.")
+        return
+      }
+
+      setDateRange({ from: range.from, to: range.to })
+      const dates = []
+      for (let d = new Date(range.from); d <= range.to; d = addDays(d, 1)) {
+        dates.push(new Date(d))
+      }
+      setSelectedDates(dates)
+      toast.success("Rango de fechas seleccionado correctamente")
+    } else if (range.from) {
+      setDateRange({ from: range.from, to: undefined })
+      setSelectedDates([range.from])
+    }
   }
 
   return (
@@ -105,19 +247,7 @@ export default function SolicitarVacaciones() {
                 mode="range"
                 numberOfMonths={2}
                 selected={dateRange}
-                onSelect={(range) => {
-                  if (range?.from && range?.to) {
-                    setDateRange({ from: range.from, to: range.to })
-                    const dates = []
-                    for (let d = new Date(range.from); d <= range.to; d = addDays(d, 1)) {
-                      dates.push(new Date(d))
-                    }
-                    setSelectedDates(dates)
-                  } else if (range?.from) {
-                    setDateRange({ from: range.from, to: undefined })
-                    setSelectedDates([range.from])
-                  }
-                }}
+                onSelect={handleDateSelect}
                 disabled={isDateDisabled}
                 className="rounded-md border"
                 locale={es}

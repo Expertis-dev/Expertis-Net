@@ -20,10 +20,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <UserProvider>
           {children}
-          <Toaster position="top-center" richColors theme="system" />
+          <Toaster position="top-right" richColors theme="system" />
         </UserProvider>
       </body>
-
     </html>
   )
 }

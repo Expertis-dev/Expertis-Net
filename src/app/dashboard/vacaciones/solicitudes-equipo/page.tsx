@@ -69,7 +69,7 @@ export default function SolicitudesEquipo() {
                     <CardContent className="px-4">
                         <Table>
                             <TableHeader>
-                                <TableRow className="hover:bg-transparent">
+                                <TableRow>
                                     <TableHead className="font-medium">Fecha de Solicitud</TableHead>
                                     <TableHead className="font-medium">Fecha de Inicio</TableHead>
                                     <TableHead className="font-medium">Fecha Final</TableHead>

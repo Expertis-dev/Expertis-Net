@@ -112,12 +112,11 @@ export default function MisSolicitudes() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {solicitudes.map((item) => (
-                    <motion.tr
-                      key={item.idVacacionesSolicitudes}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
+                  {solicitudes.map((item, index) => (
+                    <TableRow
+                      key={`${item.idVacacionesSolicitudes}`}
+                      className="animate-in slide-in-from-left-5 duration-300"
+                      style={{ animationDelay: `${index * 100} ms` }}
                     >
                       <TableCell>{item.fecSolicitud.split("T")[0]}</TableCell>
                       <TableCell>{item.fecInicial.split("T")[0]}</TableCell>
@@ -134,16 +133,15 @@ export default function MisSolicitudes() {
                           size="sm"
                           onClick={() => handleDelete(item.idVacacionesSolicitudes)}
                           disabled={!canDelete(item.estado)}
-                          className={`${
-                            canDelete(item.estado)
-                              ? "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                              : "text-slate-400 cursor-not-allowed"
-                          }`}
+                          className={`${canDelete(item.estado)
+                            ? "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                            : "text-slate-400 cursor-not-allowed"
+                            }`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>

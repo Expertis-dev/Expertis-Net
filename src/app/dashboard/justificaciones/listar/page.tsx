@@ -187,13 +187,11 @@ export default function ListarJustificaciones() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map((item) => (
-                    <motion.tr
+                  {filteredData.map((item, index) => (
+                    <TableRow
                       key={item.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="dark:hover:bg-white/5 hover:bg-black/10"
+                      className="animate-in slide-in-from-left-5 duration-300"
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <TableCell>{item.fecha.split("T")[0]}</TableCell>
                       <TableCell className="font-medium">{item.asesor}</TableCell>
@@ -228,7 +226,7 @@ export default function ListarJustificaciones() {
                           </Button>
                         </div>
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>

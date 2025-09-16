@@ -12,6 +12,7 @@ import { AutoComplete } from "@/components/autoComplete"
 import { ArraySolicitudes } from "../../../../types/Vacaciones"
 import { BadgeStatus } from "@/components/BadgeStatus"
 import { useAsesores } from "@/hooks/useAsesores"
+import { toast } from "sonner"
 
 export default function SolicitudesAsesor() {
   const { user } = useUser()
@@ -39,6 +40,11 @@ export default function SolicitudesAsesor() {
         body: JSON.stringify({ idEmpleado: json.data[0].idEmpleado }),
       });
       const json2 = await res2.json();
+      if(json2.message){
+        toast.error("No tiene historial de vacaciones")
+        setHistorial([])
+        return
+      }
       console.log("awdawdwa", json2)
       setHistorial(json2.data)
     }

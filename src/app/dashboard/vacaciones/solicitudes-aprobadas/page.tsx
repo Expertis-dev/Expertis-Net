@@ -90,7 +90,7 @@ export default function SolicitudesAprobadas() {
                 {/* Table */}
                 <Table>
                     <TableHeader>
-                        <TableRow className="hover:bg-transparent">
+                        <TableRow>
                             <TableHead className="font-semibold">Fecha de Solicitud</TableHead>
                             <TableHead className="font-semibold">Fecha de Inicio</TableHead>
                             <TableHead className="font-semibold">Fecha Final</TableHead>
