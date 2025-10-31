@@ -14,9 +14,11 @@ import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { UploadProofModal } from "@/components/upload-proof-modal"
 import { Justificaciones } from '../../../../types/Justificaciones';
 import { useJustificaciones } from "@/hooks/useJustificaciones"
+import { LoadingModal } from "@/components/loading-modal"
 
 export default function ListarJustificaciones() {
   const { justificaciones } = useJustificaciones();
+  const [showLoading, setShowLoading] = useState(false)
   const [filters, setFilters] = useState({
     asesor: "",
     grupo: "",
@@ -68,12 +70,29 @@ export default function ListarJustificaciones() {
     setShowDeleteModal(true)
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      //const updated = filteredData.filter((item) => item.id !== itemToDelete)
-      //setFilteredData(updated)
+      setShowLoading(true)
       setShowDeleteModal(false)
       setItemToDelete(null)
+      //const updated = filteredData.filter((item) => item.id !== itemToDelete)
+      //setFilteredData(updated)
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/eliminarJustifPorID/${itemToDelete}`, {
+          method: "DELETE",
+        }).then((response) => {
+          if (response.status === 200) {
+            console.log("Justificación eliminada con éxito")
+          } else {
+            console.error("Error al eliminar la justificación")
+          }
+        })
+        setShowLoading(false)
+      }
+      catch (error) {
+        console.error("Error al eliminar la justificación:", error)
+      }
+      setShowLoading(false)
     }
   }
 
@@ -251,6 +270,7 @@ export default function ListarJustificaciones() {
         onClose={() => setShowUploadModal(false)}
         justification={selectedJustification}
       />
+      <LoadingModal isOpen={showLoading} message="Procesando justificación..." />
     </DashboardLayout >
   )
 }

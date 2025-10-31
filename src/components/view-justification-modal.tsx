@@ -171,7 +171,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                     </div>
 
                     {/* Descripción y observaciones */}
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 space-x-2">
                       <div className="space-y-2">
                         <h3 className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -179,11 +179,8 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                         </h3>
                         <motion.div
                           whileHover={{ scale: 1.01 }}
-                          className="p-4 rounded-lg bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700"
+                          className="p-3 rounded-lg bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700"
                         >
-                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                            Detalles de la justificación
-                          </div>
                           <div className="font-semibold text-slate-900 dark:text-slate-100">
                             {justification.descripcion || "Sin descripción"}
                           </div>
@@ -197,11 +194,8 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                         </h3>
                         <motion.div
                           whileHover={{ scale: 1.01 }}
-                          className="p-4 rounded-lg bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700"
+                          className="p-3 rounded-lg bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700"
                         >
-                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                            Comentarios adicionales
-                          </div>
                           <div className="font-semibold text-slate-900 dark:text-slate-100">
                             {justification.observacion || "Sin observaciones"}
                           </div>
@@ -220,7 +214,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                       {urls && urls.length > 0 ? (
                         <Image.PreviewGroup>
                           <div className="grid grid-cols-2 gap-3">
-                            {urls.slice(0, 4).map((url, index) => (
+                            {urls.map((url, index) => (
                               <motion.div
                                 key={url.urlPrueba}
                                 whileHover={{ scale: 1.05 }}
@@ -241,16 +235,6 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                                 />
                               </motion.div>
                             ))}
-                            {urls.length > 4 && (
-                              <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="h-32 flex items-center justify-center bg-slate-100 dark:bg-neutral-700 rounded-lg cursor-pointer border-2 border-slate-200 dark:border-neutral-700"
-                              >
-                                <span className="text-slate-700 dark:text-slate-200 font-semibold text-lg">
-                                  +{urls.length - 4}
-                                </span>
-                              </motion.div>
-                            )}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                             {urls.length} imagen(es) - Haz clic para ampliar

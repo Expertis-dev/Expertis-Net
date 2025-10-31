@@ -129,7 +129,7 @@ export default function NuevaJustificacion() {
     setShowConfirmation(true)
   }
 
-  const confirmSubmit = () => {
+  const confirmSubmit = async () => {
     const cuerpo = {
       fecha: formData.fecha,
       asesor: asesor?.usuario,
@@ -144,6 +144,21 @@ export default function NuevaJustificacion() {
     console.log(cuerpo)
     setShowConfirmation(false)
     setShowLoading(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacion`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cuerpo),
+      })
+      if (!response.ok) {
+        throw new Error("Error al crear la justificación")
+      }
+    } catch (error) {
+      console.error("Error al crear la justificación:", error)
+      toast.error("Error al crear la justificación. Inténtalo de nuevo.")
+    }
     setTimeout(() => {
       setShowLoading(false)
       toast.success("¡Justificación enviada exitosamente!")
@@ -158,8 +173,8 @@ export default function NuevaJustificacion() {
           hora: 0
         })
         setasesor(null)
-      }, 2000)
-    }, 3000)
+      }, 1500)
+    }, 500)
   }
   function parseLocalDate(str: string) {
     const [year, month, day] = str.split("-").map(Number)

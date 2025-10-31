@@ -11,6 +11,7 @@ import { Upload, UploadFile, Image } from "antd"
 import type { UploadProps } from "antd"
 import type { RcFile } from "antd/es/upload"
 import { toast } from "sonner"
+import { LoadingModal } from "./loading-modal"
 
 interface UploadProofModalProps {
   readonly isOpen: boolean
@@ -33,6 +34,7 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
   const [previewImage, setPreviewImage] = useState("")
 
   const beforeUpload = (file: RcFile) => {
+    console.log(file)
     const isImage = file.type.startsWith("image/")
     console.log(file)
     if (fileList.length === 4) {
@@ -65,13 +67,61 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
 
   const handleUpload = async () => {
     if (fileList.length === 0) return
+    console.log("Subiendo archivos:", fileList)
     setUploading(true)
-    setTimeout(() => {
+    try {
+      const uploadPromises = fileList.map(async (file) => {
+        if (!file.originFileObj) {
+          throw new Error("Missing file object")
+        }
+        const formData = new FormData();
+        formData.append("file", file.originFileObj as Blob);
+        formData.append("upload_preset", "zjilxjgo");
+        formData.append("api_key", "348638695531547");
+        formData.append("folder", "EXPERTIS");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_CLOUDINARY_URL}`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+        const data = await res.json();
+        return data.secure_url;
+      });
+      const urls = await Promise.all(uploadPromises);
+      console.log("URLs de las imágenes subidas:", urls);
+      try {
+        for (const url of urls) {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearPruebaaaa`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id_justificacion: justification?.id, urlPrueba: url }),
+          });
+          if (response.status === 200) {
+            console.log("Prueba guardada con éxito:", url);
+            setUploading(false)
+            toast.success("Imágenes subidas con éxito")
+            setFileList([])
+            onClose()
+          } else {
+            toast.error("Error al guardar las imágenes. Inténtalo de nuevo.")
+            setUploading(false)
+          }
+        }
+      } catch (error) {
+        console.log("Error al guardar archivos:", error)
+        toast.error("Error al guardar las imágenes. Inténtalo de nuevo.")
+        setUploading(false)
+      }
       setUploading(false)
-      setFileList([]) // limpiar después de subir
-      onClose()
-      toast.success("Imágenes subidas correctamente ✅")
-    }, 2000)
+    } catch (error) {
+      console.log("Error al subir archivos:", error)
+      toast.error("Error al subir las imágenes. Inténtalo de nuevo.")
+      setUploading(false)
+    }
   }
 
   if (!justification) return null
@@ -118,7 +168,7 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
                     maxCount={4}
                   >
                     <p className="ant-upload-drag-icon">
-                      <InboxOutlined/>
+                      <InboxOutlined />
                     </p>
                     <p className="dark:text-neutral-100">Haga clic o arrastre imágenes aquí</p>
                     <p className="dark:text-neutral-400">Máximo 4 imágenes, tamaño menor a 2MB</p>
@@ -164,6 +214,7 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
               />
             )}
           </motion.div>
+          <LoadingModal isOpen={uploading} message="Subiendo Imagenes..." />
         </motion.div>
       )}
     </AnimatePresence>
