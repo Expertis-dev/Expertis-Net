@@ -153,6 +153,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         href: "/dashboard/admin/crear-empleado",
         subItems: [],
       })
+      baseItems.push({
+        id: "bases-manuales",
+        title: "Bases Manuales",
+        icon: UserPlus,
+        href: "/dashboard/bases",
+        subItems: [],
+      })
     }
 
     return baseItems
