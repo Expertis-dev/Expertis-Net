@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -156,7 +156,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       baseItems.push({
         id: "bases-manuales",
         title: "Bases Manuales",
-        icon: UserPlus,
+        icon: BookCheck,
         href: "/dashboard/bases",
         subItems: [],
       })
