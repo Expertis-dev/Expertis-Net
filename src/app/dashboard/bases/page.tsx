@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import TablaDinamica from "@/components/base-Table";
@@ -35,7 +35,6 @@ const columnasHoras = [
   "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
 ];
 
-
 export default function Bases() {
   const [vistaActiva, setVistaActiva] = useState<VistaActiva>("nvl1");
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<File | null>(null);
@@ -49,6 +48,40 @@ export default function Bases() {
 
   const [date, setDate] = useState<string>(today);
   const [dateY, setDateY] = useState<string>(yesterday);
+
+  // Límite y control diario
+  const LIMITE_PROCESOS = 2;
+  const [contadorProcesos, setContadorProcesos] = useState<number>(0);
+  const [bloqueado, setBloqueado] = useState<boolean>(false);
+
+  useEffect(() => {
+    const hoy = new Date().toISOString().split("T")[0];
+    const contadorGuardado = localStorage.getItem("procesos_realizados");
+    const fechaGuardada = localStorage.getItem("fecha_procesos");
+
+    if (!fechaGuardada || fechaGuardada !== hoy) {
+      localStorage.setItem("procesos_realizados", "0");
+      localStorage.setItem("fecha_procesos", hoy);
+      setContadorProcesos(0);
+      setBloqueado(false);
+    } else {
+      const num = parseInt(contadorGuardado || "0");
+      setContadorProcesos(num);
+      if (num >= LIMITE_PROCESOS) setBloqueado(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const datosGuardados = localStorage.getItem("datos_backend");
+    if (datosGuardados) {
+      try {
+        setDatosBackend(JSON.parse(datosGuardados));
+      } catch (err) {
+        console.error("Error al leer datos:", err);
+      }
+    }
+  }, []);
+
 
   const handleChangeStartDate = (value: string) => {
     setDateY(value);
@@ -70,6 +103,7 @@ export default function Bases() {
 
     setArchivoSeleccionado(file);
     setError(null);
+    e.target.value = "";
   };
 
   const handleClearFile = () => {
@@ -78,12 +112,18 @@ export default function Bases() {
   };
 
   const ProcesarInformacion = async () => {
+    if (bloqueado) {
+      setError(`Has alcanzado el límite de ${LIMITE_PROCESOS} procesos por día.`);
+      return;
+    }
+
     if (!archivoSeleccionado) {
       setError("Debe seleccionar un archivo antes de procesar");
       return;
     }
-    setError(null);
+
     setCargando(true);
+    setError(null);
 
     const fd = new FormData();
     fd.append("end_date", date);
@@ -97,24 +137,25 @@ export default function Bases() {
       });
 
       const data: ResponseData = await response.json();
+      if (!response.ok) throw new Error(data.error || "Error al procesar el archivo");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Error al procesar el archivo");
-      }
-
-      console.log("Respuesta del servidor:", data);
       setDatosBackend(data);
-      setArchivoSeleccionado(null);
+      localStorage.setItem("datos_backend", JSON.stringify(data));
+
+
+      const nuevoContador = contadorProcesos + 1;
+      setContadorProcesos(nuevoContador);
+      localStorage.setItem("procesos_realizados", nuevoContador.toString());
+      localStorage.setItem("fecha_procesos", new Date().toISOString().split("T")[0]);
+
+      if (nuevoContador >= LIMITE_PROCESOS) setBloqueado(true);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Error al procesar el archivo");
-      }
+      setError(err instanceof Error ? err.message : "Error al procesar el archivo");
     } finally {
       setCargando(false);
     }
   };
+
 
   // Mapear datos para NVL1
   const datosNvl1: FilaNvl1[] = datosBackend?.asesores.map(asesor => ({
@@ -278,7 +319,7 @@ export default function Bases() {
               </Button>
               <Button
                 onClick={ProcesarInformacion}
-                disabled={cargando}
+                disabled={cargando || bloqueado}
                 className="bg-teal-500 hover:bg-teal-600 text-white disabled:bg-gray-400"
               >
                 {cargando ? "Procesando..." : "Procesar"}
