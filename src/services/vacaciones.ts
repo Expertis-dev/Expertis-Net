@@ -60,7 +60,6 @@ export const getSolicitudesAprobadasTodas = async () => {
             })
             const json = await res.json();
             if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas todas");
-            console.log("SOLICITUDES TOTALTES", json)
             return json;
     } catch (error) {
         console.error("Error en getSolicitudesAprobadasTodas", error);
@@ -76,7 +75,6 @@ export const getDetalleSolicitud = async () => {
             })
             const json = await res.json();
             if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas");
-            console.log("detalle solicitudes", json)
             return json;
     } catch (error) {
         console.error("Error en getDetalleSolicitud", error);

@@ -13,7 +13,7 @@ export function NotificationButton() {
       description: "Haz clic para ver todas las notificaciones",
       action: {
         label: "Ver todas",
-        onClick: () => console.log("Ver todas las notificaciones"),
+        onClick: () =>,
       },
     })
   }

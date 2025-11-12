@@ -7,14 +7,15 @@ export const useJustificaciones = () => {
     const {user} = useUser()
     const [justificaciones, setJustificaciones] = useState<ArrayJustificaciones>([])
     const [isLoadingJustificaciones, setIsLoadingJustificaciones] = useState(true);
-    useEffect(() => {
-        const fetchJustificaciones = async () => {
+    const fetchJustificaciones = async () => {
             setIsLoadingJustificaciones(true);
-            const data = await getJustificaciones({grupo: user?.id_grupo , cargo: user?.id_cargo});
-            setJustificaciones(data.data);
+            const data = await getJustificaciones({idUsuario: user?.idEmpleado, usuario : user?.usuario});
+            setJustificaciones(data);
             setIsLoadingJustificaciones(false);
+            console.log("Justificaciones fetched:", data);
         };
+    useEffect(() => {
         fetchJustificaciones();
     }, [user]);
-    return { justificaciones, isLoadingJustificaciones };
+    return { justificaciones,fetchJustificaciones, isLoadingJustificaciones };
 }

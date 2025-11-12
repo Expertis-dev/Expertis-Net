@@ -8,16 +8,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Eye, Trash2, Upload, Filter } from "lucide-react"
+import { Eye, Trash2, Upload, Filter, Pen } from "lucide-react"
 import { ViewJustificationModal } from "@/components/view-justification-modal"
 import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { UploadProofModal } from "@/components/upload-proof-modal"
 import { Justificaciones } from '../../../../types/Justificaciones';
 import { useJustificaciones } from "@/hooks/useJustificaciones"
 import { LoadingModal } from "@/components/loading-modal"
+import { toast } from "sonner"
+import { useUser } from "@/Provider/UserProvider"
+import { ActualizarJustificaciones } from "@/components/ActualizarJustificaciones"
 
 export default function ListarJustificaciones() {
-  const { justificaciones } = useJustificaciones();
+  const { user } = useUser()
+  const { justificaciones, fetchJustificaciones } = useJustificaciones();
   const [showLoading, setShowLoading] = useState(false)
   const [filters, setFilters] = useState({
     asesor: "",
@@ -57,17 +61,19 @@ export default function ListarJustificaciones() {
   const [showViewModal, setShowViewModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [setShowUppdateModal, setSetShowUppdateModal] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<number | null>(null)
-
   const handleView = (justification: Justificaciones) => {
-    console.log(justificaciones)
     setSelectedJustification(justification)
     setShowViewModal(true)
   }
-
   const handleDelete = (id: number) => {
     setItemToDelete(id)
     setShowDeleteModal(true)
+  }
+  const handleEditar = (justification: Justificaciones) => {
+    setSelectedJustification(justification)
+    setSetShowUppdateModal(true)
   }
 
   const confirmDelete = async () => {
@@ -82,14 +88,14 @@ export default function ListarJustificaciones() {
           method: "DELETE",
         }).then((response) => {
           if (response.status === 200) {
-            console.log("Justificación eliminada con éxito")
-          } else {
-            console.error("Error al eliminar la justificación")
+            toast.success("Justificacion eliminada exitosamente");
           }
         })
+        await fetchJustificaciones()
         setShowLoading(false)
       }
       catch (error) {
+        toast.error("Error al eliminar la justificación")
         console.error("Error al eliminar la justificación:", error)
       }
       setShowLoading(false)
@@ -100,7 +106,10 @@ export default function ListarJustificaciones() {
     setSelectedJustification(justification)
     setShowUploadModal(true)
   }
-
+  const onCloseActualizarJustificaciones = async () => {
+    await fetchJustificaciones()
+    setSetShowUppdateModal(false)
+  }
   return (
     <DashboardLayout>
       <motion.div
@@ -243,6 +252,18 @@ export default function ListarJustificaciones() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          {
+                            user?.usuario === "MAYRA LLIMPE" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditar(item)}
+                                className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                              >
+                                <Pen className="h-4 w-4" />
+                              </Button>
+                            )
+                          }
                         </div>
                       </TableCell>
                     </TableRow>
@@ -268,6 +289,11 @@ export default function ListarJustificaciones() {
       <UploadProofModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
+        justification={selectedJustification}
+      />
+      <ActualizarJustificaciones
+        isOpen={setShowUppdateModal}
+        onClose={onCloseActualizarJustificaciones}
         justification={selectedJustification}
       />
       <LoadingModal isOpen={showLoading} message="Procesando justificación..." />

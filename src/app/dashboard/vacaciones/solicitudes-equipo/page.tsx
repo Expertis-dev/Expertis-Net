@@ -15,8 +15,6 @@ export default function SolicitudesEquipo() {
         const ObtenerInfo = async () => {
             const pendientes = await getSolicitudesProceso({ id: user?.idArea })
             const aprobadas = await getSolicitudesAprobadas({ id: user?.idArea })
-            console.log("PENDIENTE", pendientes.data)
-            console.log("APROBADAS", aprobadas.data)
             setSolicitudesPendientes(pendientes.data)
             setSolicitudesAprobadas(aprobadas.data)
         }

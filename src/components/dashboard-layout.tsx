@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, Bot } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -131,30 +131,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           href: "/dashboard/vacaciones/solicitudes-aprobadas",
         })
       }
-
       if (user.id_cargo === 9) {
         vacacionesSubItems.push(
           { title: "Solicitudes Pendientes", href: "/dashboard/vacaciones/solicitudes-pendientes" },
           { title: "Calendario Jefes Área", href: "/dashboard/vacaciones/calendario" },
         )
       }
-
       baseItems.push({
-        id: "vacaciones",
-        title: "Vacaciones",
-        icon: Calendar,
-        href: "#",
-        subItems: vacacionesSubItems,
-      })
-      baseItems.push({
-        id: "nuevo-empleado",
-        title: "Crear nuevo empleado",
-        icon: UserPlus,
-        href: "/dashboard/admin/crear-empleado",
+        id: "mcp",
+        title: "Consultas Expertito",
+        icon: Bot,
+        href: "/dashboard/consultas",
         subItems: [],
       })
+      baseItems.push(
+        {
+          id: "vacaciones",
+          title: "Vacaciones",
+          icon: Calendar,
+          href: "#",
+          subItems: vacacionesSubItems,
+        },
+        {
+          id: "admin",
+          title: "Admin",
+          icon: UserPlus,
+          href: "#",
+          subItems: [
+            {
+              title: "Crear nuevo empleado",
+              href: "/dashboard/admin/crear-empleado",
+            },
+            {
+              title: "Eliminar Empleado",
+              href: "/dashboard/admin/eliminar-empleado",
+            },
+            {
+              title: "Carga Masiva Empleados",
+              href: "/dashboard/admin/carga-masiva",
+            }
+          ],
+        }
+      )
     }
-
     return baseItems
   }
   if (!mounted) return null;

@@ -2,31 +2,37 @@ import { Search } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
-import { ArrayAsesores, Asesores } from "../types/Asesores"
-
-interface EmployeeAutocompleteProps {
-    employees: ArrayAsesores
-    onSelect: (employee: Asesores | null) => void
+// Tipo mínimo que necesita el autocomplete para funcionar
+type BaseEmpleado = {
+    usuario: string
+    dni: string
 }
 
-export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps) => {
+interface EmployeeAutocompleteProps<T extends BaseEmpleado> {
+    employees: T[]
+    onSelect: (employee: T | null) => void
+    placeholder?: string
+}
+
+export const AutoComplete = <T extends BaseEmpleado>({
+    employees,
+    onSelect,
+    placeholder = "Buscar asesor...",
+}: EmployeeAutocompleteProps<T>) => {
     const [open, setOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const wrapperRef = useRef<HTMLDivElement>(null) 
-
+    const wrapperRef = useRef<HTMLDivElement>(null)
     // Filtrar empleados
     const filteredEmployees = employees.filter((employee) => {
         const searchLower = searchTerm.toLowerCase()
         return (
             employee.usuario.toLowerCase().includes(searchLower) ||
-            employee.dni?.toLowerCase().includes(searchLower) ||
-            employee.grupo?.toLowerCase().includes(searchLower) ||
-            employee.apellido1?.toLowerCase().includes(searchLower)
+            employee.dni?.toLowerCase().includes(searchLower)
         )
     })
 
-    const handleSelect = (employee: Asesores) => {
-        setSearchTerm(employee.usuario) // 👈 puedes mostrar usuario o nombre
+    const handleSelect = (employee: T) => {
+        setSearchTerm(employee.usuario) // 👈 puedes mostrar COLABORADOR o nombre
         onSelect(employee)
         setOpen(false)
     }
@@ -46,7 +52,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
             {/* Input */}
             <div className="flex items-center border rounded-md dark:bg-[#1b1a1a] ">
                 <Input
-                    placeholder="Buscar asesor..."
+                    placeholder={placeholder}
                     value={searchTerm}
                     onFocus={() => setOpen(true)}
                     onChange={(e) => {
@@ -58,7 +64,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
                 <Search className="absolute left-2 h-4 w-4 shrink-0 opacity-50" />
             </div>
             {/* Dropdown */}
-            {open  && (
+            {open && (
                 <div className="absolute top-full left-0 w-full bg-neutral-50 dark:bg-neutral-800 border shadow-md rounded-md mt-1 z-50 max-h-60 overflow-auto">
                     {filteredEmployees.length === 0 ? (
                         <div className="py-3 text-center text-sm text-muted-foreground">
@@ -67,7 +73,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
                     ) : (
                         filteredEmployees.map((employee) => (
                             <Button
-                                key={employee.id}
+                                key={employee.usuario}
                                 variant="ghost"
                                 className="w-full justify-start px-3 py-2 text-sm font-normal hover:bg-gray-100 dark:hover:bg-neutral-700"
                                 onClick={() => handleSelect(employee)}
@@ -75,7 +81,7 @@ export const AutoComplete = ({ employees, onSelect }: EmployeeAutocompleteProps)
                                 <div className="flex flex-col items-start">
                                     <span className="font-medium">{employee.usuario}</span>
                                     <span className="text-xs text-muted-foreground">
-                                        {employee.dni} {employee.grupo && `• ${employee.grupo}`}
+                                        {employee.dni}
                                     </span>
                                 </div>
                             </Button>

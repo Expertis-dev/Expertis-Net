@@ -20,12 +20,10 @@ import { LoadingModal } from "@/components/loading-modal"
 
 import { useUser } from "@/Provider/UserProvider"
 import { AutoComplete } from "@/components/autoComplete"
-import { Asesores } from "../../../../types/Asesores"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
-import { useAsesores } from "@/hooks/useAsesores"
-
-
+import { useColaboradores } from "@/hooks/useColaboradores"
+import { Empleado } from "@/types/Empleado"
 
 // NIVEL 1
 const nivel1Options = [
@@ -35,50 +33,51 @@ const nivel1Options = [
 ]
 
 // NIVEL 2 (subtipos según el nivel1)
-// NIVEL 2 (subtipos según el nivel1)
 const nivel2Options = {
   FALTA: [
-    { value: "FALTA JUSTIFICADA", label: "Falta Justificada" },
-    { value: "FALTA INJUSTIFICADA", label: "Falta Injustificada" },
+    { value: "FALTA_JUSTIFICADA", label: "Falta Justificada" },
+    { value: "FALTA_INJUSTIFICADA", label: "Falta Injustificada" },
   ],
   TARDANZA: [
-    { value: "TARDANZA JUSTIFICADA", label: "Tardanza Justificada" },
+    { value: "TARDANZA_JUSTIFICADA", label: "Tardanza Justificada" },
   ],
   PERMISO: [
-    { value: "PERMISO JUSTIFICADO", label: "Permiso Justificado" },
-    { value: "PERMISO INJUSTIFICADO", label: "Permiso Injustificado" },
+    { value: "PERMISO_JUSTIFICADO", label: "Permiso Justificado" },
+    { value: "PERMISO_INJUSTIFICADO", label: "Permiso Injustificado" },
   ],
 }
 
 // NIVEL 3 (detalles según el nivel2)
 const nivel3Options = {
-  "FALTA JUSTIFICADA": [
+  FALTA_JUSTIFICADA: [
     { value: "LICENCIA CON GH- CERTIFICADO DE INCAPACIDAD (DM mayor a 21 dias)", label: "LICENCIA CON GH - CERTIFICADO DE INCAPACIDAD (DM mayor a 21 días)" },
     { value: "LICENCIA CON GH- VARIAS", label: "LICENCIA CON GH - VARIAS" },
     { value: "LICENCIAS SIN GH", label: "LICENCIAS SIN GH" },
-    { value: "MATERNIDAD (PRE Y POST)", label: "Maternidad (Pre y Post)" },
-    { value: "DESCANSO MEDICO", label: "Descanso Médico" },
+    { value: "MATERNIDAD (PRE Y POST)", label: "MATERNIDAD (PRE Y POST)" },
+    // { value: "DESCANSO MEDICO", label: "Descanso Médico" },
   ],
-  "FALTA INJUSTIFICADA": [
+  FALTA_INJUSTIFICADA: [
     { value: "Presenta documentos de denuncias por el día que faltó.", label: "Presenta documentos de denuncias por el día que faltó." },
     { value: "Presenta documentación de atención médica (Boleta comprade medicamentos y receta medica) pero no cuenta con DM  (UNA VEZ AL MES)", label: "Documentación médica sin DM (UNA VEZ AL MES)" },
     { value: "Presenta documentación de atención medica de familiar dependiente.", label: "Atención médica de familiar dependiente" },
     { value: "Exámenes, trámites estudiantiles presentando pruebas (cronograma de exámenes, documentos con el sello de la U o Instituto)", label: "Exámenes / trámites estudiantiles con pruebas" },
     { value: "OTRO- colocar el motivo en observación", label: "Otro (colocar en observación)" },
   ],
-  "TARDANZA JUSTIFICADA": [
-    { value: "Inconvenientes con las herramientas de trabajo- Se debe evidenciar que el supervisor lo  a TI", label: "Inconvenientes con herramientas de trabajo (con evidencia TI)" },
+  TARDANZA_JUSTIFICADA: [
+    { value: "Inconvenientes con las herramientas de trabajo- Se debe evidenciar que el supervisor lo  a TI ", label: "Inconvenientes con herramientas de trabajo (con evidencia TI)" },
     { value: "No tiene usuario o presentó problemas con su usuario", label: "No tiene usuario o problemas con su usuario" },
     { value: "Primer día laborando (En observación colocar fecha de ingreso)", label: "Primer día laborando (colocar fecha en observación)" },
-    { value: "Problemas femeninos y/o problemas de salud al iniciar sus labores", label: "Problemas de salud al iniciar labores" },
-    { value: "OTRO- colocar el motivo en observación", label: "Otro (colocar en observación)" },
+    { value: "Problemas de salud al iniciar sus labores", label: "Problemas de salud al iniciar labores" },
+    { value: "Paralización de transporte", label: "Paralización de transporte" },
+    { value: "OTRO- colocar el motivo en observación ", label: "Otro (colocar en observación)" },
     { value: "Problemas familiares presentando pruebas (conversaciones por WhatsApp, llamadas grabadas, confirmación de vulnerabilidad del colaborador)", label: "Problemas familiares con pruebas (WhatsApp, llamadas...)" },
-    { value: "Colaborador tiene cita médica -muestra evidencias", label: "Cita médica con evidencia" },
+    { value: "Colaborador tiene cita médica -muestra evidencias ", label: "Cita médica con evidencia" },
     { value: "Exámenes, trámites estudiantiles presentando pruebas (cronograma de exámenes, documentos con el sello de la U o Instituto)", label: "Exámenes / trámites estudiantiles con pruebas" },
-    { value: "Presenta documentación de atención medica de familiar dependiente.", label: "Atención médica de familiar dependiente" },
+    { value: "Presenta documentación de atención medica de familiar dependiente. ", label: "Atención médica de familiar dependiente" },
     { value: "Tiene tres a + motivos de tardanza justificada sin descuento", label: "Tres o más motivos de tardanza justificada" },
+    { value: "Accidente de transporte", label: "Accidente de transporte" },
   ],
-  "PERMISO JUSTIFICADO": [
+  PERMISO_JUSTIFICADO: [
     { value: "Colaborador tiene cita médica -muestra evidencias ", label: "Cita médica con evidencia" },
     { value: "Problemas femeninos y/o problemas de salud durante sus labores", label: "Problemas de salud durante labores" },
     { value: "OTRO- colocar el motivo en observación ", label: "Otro (colocar en observación)" },
@@ -86,16 +85,17 @@ const nivel3Options = {
     { value: "Tiene tres a + motivos de permiso", label: "Tres o más motivos de permiso" },
     { value: "Colaborador tiene una emergencia medica o familiar ", label: "Emergencia médica o familiar" },
   ],
-  "PERMISO INJUSTIFICADO": [
+  PERMISO_INJUSTIFICADO: [
     { value: "OTRO- colocar el motivo en observación ", label: "Otro (colocar en observación)" },
   ],
 }
 
 
+
 export default function NuevaJustificacion() {
   const { user } = useUser()
-  const { asesores } = useAsesores(user?.grupo)
-  const [asesor, setasesor] = useState<Asesores | null>(null)
+  const { colaboradores } = useColaboradores()
+  const [asesor, setasesor] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nivel1: "",
     nivel2: "",
@@ -127,6 +127,7 @@ export default function NuevaJustificacion() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setShowConfirmation(true)
+    console.log(asesor)
   }
 
   const confirmSubmit = async () => {
@@ -139,9 +140,9 @@ export default function NuevaJustificacion() {
       nivel3: formData.nivel3,
       observacion: formData.observacion,
       minutos_permiso: formData.hora,
-      id_empleado: asesor?.id
+      id_empleado: asesor?.Id,
+      usuario: user?.usuario
     }
-    console.log(cuerpo)
     setShowConfirmation(false)
     setShowLoading(true)
     try {
@@ -204,7 +205,7 @@ export default function NuevaJustificacion() {
                 <div className="space-y-2 relative">
                   <Label htmlFor="asesor">Asesor</Label>
                   <AutoComplete
-                    employees={asesores}
+                    employees={colaboradores}
                     onSelect={setasesor}
                   />
                 </div>
@@ -223,7 +224,6 @@ export default function NuevaJustificacion() {
                         selected={formData.fecha ? parseLocalDate(formData.fecha) : undefined}
                         onSelect={(date) => {
                           if (date) {
-                            console.log(format(date, "yyyy-MM-dd"))
                             setFormData((prev) => ({ ...prev, fecha: format(date, "yyyy-MM-dd") }))
                           }
                         }}

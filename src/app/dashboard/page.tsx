@@ -126,7 +126,6 @@ export default function DashboardHome() {
       window.location.href = "/"
       return
     }
-    console.log("user", user)
     setIsAuthenticated(true)
     // Auto-advance carousel
     const interval = setInterval(() => {

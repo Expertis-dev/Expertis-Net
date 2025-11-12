@@ -74,7 +74,6 @@ export default function SolicitarVacaciones() {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDiasOcupados/${user?.idArea}`);
         const data = await response.json();
-        console.log("DATA", data.data);
 
         // Para pruebas - descomenta estas líneas para probar
         // const dataCompleta = data.data;

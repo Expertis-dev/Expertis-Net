@@ -5,23 +5,19 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar } from "lucide-react"
-import { useUser } from "@/Provider/UserProvider"
-
-import { Asesores } from "../../../../types/Asesores"
 import { AutoComplete } from "@/components/autoComplete"
 import { ArraySolicitudes } from "../../../../types/Vacaciones"
 import { BadgeStatus } from "@/components/BadgeStatus"
-import { useAsesores } from "@/hooks/useAsesores"
 import { toast } from "sonner"
+import { useColaboradores } from "@/hooks/useColaboradores"
+import { Empleado } from "@/types/Empleado"
 
 export default function SolicitudesAsesor() {
-  const { user } = useUser()
-  const { asesores } = useAsesores(user?.grupo)
-  const [asesor, setAsesor] = useState<Asesores | null>(null)
+  const { colaboradores } = useColaboradores()
+  const [asesor, setAsesor] = useState<Empleado | null>(null)
   const [historial, setHistorial] = useState<ArraySolicitudes>([])
   useEffect(() => {
     const ObtenerHistorial = async () => {
-      console.log(asesor)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
         method: "POST",
         cache: "no-store",
@@ -45,7 +41,6 @@ export default function SolicitudesAsesor() {
         setHistorial([])
         return
       }
-      console.log("awdawdwa", json2)
       setHistorial(json2.data)
     }
     if (asesor) {
@@ -66,7 +61,7 @@ export default function SolicitudesAsesor() {
         </div>
         {/* Búsqueda de Asesor */}
         <AutoComplete
-          employees={asesores}
+          employees={colaboradores}
           onSelect={setAsesor}
         />
         {/* Tabla de Historial */}

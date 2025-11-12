@@ -24,7 +24,6 @@ export default function Page() {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesCalendarioJefes`)
                 const data = await response.json()
-                console.log("FECHAS", data.data)
                 setFechas(data.data)
             } catch (error) {
                 console.error("Error fetching data:", error)
