@@ -21,7 +21,7 @@ import { ActualizarJustificaciones } from "@/components/ActualizarJustificacione
 
 export default function ListarJustificaciones() {
   const { user } = useUser()
-  const { justificaciones, fetchJustificaciones } = useJustificaciones();
+  const { justificaciones, fetchJustificaciones, isLoadingJustificaciones } = useJustificaciones();
   const [showLoading, setShowLoading] = useState(false)
   const [filters, setFilters] = useState({
     asesor: "",
@@ -270,6 +270,7 @@ export default function ListarJustificaciones() {
                   ))}
                 </TableBody>
               </Table>
+              <LoadingModal isOpen={isLoadingJustificaciones} message="Trayendo justificaciones..." />
             </div>
           </CardContent>
         </Card>
@@ -297,6 +298,7 @@ export default function ListarJustificaciones() {
         justification={selectedJustification}
       />
       <LoadingModal isOpen={showLoading} message="Procesando justificación..." />
+      
     </DashboardLayout >
   )
 }

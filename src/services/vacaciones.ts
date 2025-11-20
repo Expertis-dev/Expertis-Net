@@ -16,14 +16,16 @@ export const getMisSolicitudes = async ({ id }: { id: number | undefined }) => {
 };
 
 
-export const getSolicitudesProceso = async ({ id }: { id: number | undefined }) => {
+export const getSolicitudesProceso = async ({ lista }: { lista: string | undefined }) => {
     try {
-        if (id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesEnProcesoEquipo/${id}`, {
-                method: "GET",
+        if (lista) {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/listaSolicitudesDeVacacionesDelEquipo`, {
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({lista}),
             })
             const json = await res.json();
+            console.log("Respuesta de getSolicitudesProceso:", json);
             if (!res.ok) throw new Error("Error al obtener las solicitudes en proceso");
             return json;
         }
@@ -33,14 +35,16 @@ export const getSolicitudesProceso = async ({ id }: { id: number | undefined }) 
     }
 };
 
-export const getSolicitudesAprobadas = async ({ id }: { id: number | undefined }) => {
+export const getSolicitudesAprobadas = async ({ lista }: { lista: string | undefined }) => {
     try {
-        if (id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesAprobadasEquipo/${id}`, {
-                method: "GET",
+        if (lista) {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/listaVacacionesDelEquipo`, {
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({lista}),
             })
             const json = await res.json();
+            console.log("Respuesta de getSolicitudesAprobadas:", json);
             if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas");
             return json;
         }

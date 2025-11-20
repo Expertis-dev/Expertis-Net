@@ -15,26 +15,22 @@ import { addDays, isWeekend, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useUser } from "@/Provider/UserProvider"
 import { toast } from "sonner" // Ajusta según tu implementación de toast
-
 // Días no laborables (ejemplo)
 const diasNoLaborables = [
   new Date(2024, 0, 1), // Año nuevo
   new Date(2024, 4, 1), // Día del trabajo
   new Date(2024, 11, 25), // Navidad
 ]
-
 interface DiasDesabilitar {
   fecFinal: string,
   fecInicial: string
 }
-
 // Función para sumar días a una fecha
 const addDaysToDate = (date: Date, days: number): Date => {
   const result = new Date(date)
   result.setDate(result.getDate() + days)
   return result
 }
-
 // Función para normalizar fechas (ignorar la hora) y ajustar por zona horaria
 const normalizeAndAdjustDate = (dateString: string): Date => {
   if (!dateString) return new Date()
@@ -55,7 +51,6 @@ const normalizeAndAdjustDate = (dateString: string): Date => {
   // Ajustar por zona horaria sumando 1 día
   return addDaysToDate(date, 0)
 }
-
 export default function SolicitarVacaciones() {
   const { user } = useUser()
   const [diasDesabilitar, setDiasDesabilitar] = useState<DiasDesabilitar[]>([])
@@ -72,26 +67,21 @@ export default function SolicitarVacaciones() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDiasOcupados/${user?.idArea}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/obtenerDiasOcupadosEquipo`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ idJefe: user?.idJefe }),
+        });
         const data = await response.json();
-
-        // Para pruebas - descomenta estas líneas para probar
-        // const dataCompleta = data.data;
-        // const dataPrueba = {
-        //   fecInicial: "2025-10-23T00:00:00.000Z",
-        //   fecFinal: "2025-10-24T00:00:00.000Z"
-        // }
-        // dataCompleta.push(dataPrueba);
-        // console.log("DATA COMPLETA", dataCompleta);
-        // setDiasDesabilitar(dataCompleta);
-
         setDiasDesabilitar(data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     }
     fetchData();
-  }, [user?.idArea])
+  }, [user?.idJefe])
 
   // Función para verificar si hay fechas deshabilitadas dentro del rango seleccionado
   const hasDisabledDatesInRange = (from: Date, to: Date): boolean => {
@@ -99,7 +89,6 @@ export default function SolicitarVacaciones() {
       // Ajustar las fechas deshabilitadas sumando 1 día
       const disabledStart = normalizeAndAdjustDate(disabledRange.fecInicial)
       const disabledEnd = normalizeAndAdjustDate(disabledRange.fecFinal)
-
       // Verificar si el rango seleccionado se superpone con algún rango deshabilitado
       if (
         (from <= disabledEnd && to >= disabledStart) ||
@@ -110,18 +99,15 @@ export default function SolicitarVacaciones() {
     }
     return false
   }
-
   // Función para verificar si las fechas seleccionadas son válidas
   const isValidDateSelection = (from: Date, to: Date): boolean => {
     // Verificar si el rango seleccionado contiene fechas deshabilitadas
     if (hasDisabledDatesInRange(from, to)) {
       return false
     }
-
     // Aquí puedes agregar más validaciones si es necesario
     return true
   }
-
   const calculateDays = () => {
     if (selectedDates.length === 0) return { total: 0, laborables: 0, noLaborables: 0 }
     const total = selectedDates.length
@@ -142,30 +128,23 @@ export default function SolicitarVacaciones() {
     })
     return { total, laborables, noLaborables }
   }
-
   const dayStats = calculateDays()
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedDates.length === 0) return
-
     // Validar las fechas seleccionadas
     if (dateRange.from && dateRange.to && !isValidDateSelection(dateRange.from, dateRange.to)) {
       toast.error("Las fechas seleccionadas contienen días no disponibles. Por favor, elige otro rango.")
       return
     }
-
     setShowConfirmation(true)
   }
-
   const confirmSubmit = () => {
     setShowConfirmation(false)
     setShowLoading(true)
-
     setTimeout(() => {
       setShowLoading(false)
       setShowSuccess(true)
-
       setTimeout(() => {
         setShowSuccess(false)
         // Reset form
@@ -175,38 +154,30 @@ export default function SolicitarVacaciones() {
       }, 2000)
     }, 3000)
   }
-
   const isDateDisabled = (date: Date) => {
     const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
     const today = new Date()
     const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-
     // Deshabilitar fechas pasadas
     if (normalizedDate < normalizedToday) return true
-
     // Deshabilitar fechas que estén dentro de los rangos deshabilitados (ajustados)
     for (const disabledRange of diasDesabilitar) {
       const disabledStart = normalizeAndAdjustDate(disabledRange.fecInicial)
       const disabledEnd = normalizeAndAdjustDate(disabledRange.fecFinal)
-
       if (normalizedDate >= disabledStart && normalizedDate <= disabledEnd) {
         return true
       }
     }
-
     return false
   }
-
   const handleDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
     if (!range) return
-
     if (range.from && range.to) {
       // Validar el rango seleccionado
       if (!isValidDateSelection(range.from, range.to)) {
         toast.error("El rango de fechas seleccionado contiene días no disponibles. Por favor, elige otro rango.")
         return
       }
-
       setDateRange({ from: range.from, to: range.to })
       const dates = []
       for (let d = new Date(range.from); d <= range.to; d = addDays(d, 1)) {
@@ -219,7 +190,6 @@ export default function SolicitarVacaciones() {
       setSelectedDates([range.from])
     }
   }
-
   return (
     <DashboardLayout>
       <motion.div
@@ -278,7 +248,6 @@ export default function SolicitarVacaciones() {
                     <div className="text-sm text-slate-600 dark:text-slate-400">No Laborables</div>
                   </div>
                 </div>
-
                 {dateRange.from && dateRange.to && (
                   <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                     <div className="text-sm">
@@ -291,7 +260,6 @@ export default function SolicitarVacaciones() {
                 )}
               </CardContent>
             </Card>
-
             {/* Formulario */}
             <Card>
               <CardHeader>

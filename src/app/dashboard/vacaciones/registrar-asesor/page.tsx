@@ -10,14 +10,16 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent } from "@/components/ui/popover"
 import { PopoverTrigger } from "@radix-ui/react-popover"
 import { CalendarIcon, User } from "lucide-react"
-import { format, addDays, differenceInDays, isWeekend, startOfDay } from "date-fns"
+import { format, addDays, differenceInDays, isWeekend, startOfDay, startOfMonth, addMonths } from "date-fns"
 import { es } from "date-fns/locale"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
-import { SuccessModal } from "@/components/success-modal"
 import { AutoComplete } from "@/components/autoComplete"
 import { useColaboradores } from "@/hooks/useColaboradores"
 import { Empleado } from "@/types/Empleado"
+import { toast } from "sonner"
+import { useUser } from "@/Provider/UserProvider"
+import { CargarActividad } from "@/services/CargarActividad"
 
 // -------------------- Helpers de fecha --------------------
 function asStartOfLocalDay(d?: Date | null) {
@@ -34,7 +36,7 @@ function toDateOnly(d?: Date) {
 export default function RegistrarVacacionesAsesor() {
   const { colaboradores } = useColaboradores()
   const [asesor, setAsesor] = useState<Empleado | null>(null)
-
+  const { user } = useUser()
   const [formData, setFormData] = useState<{
     fechaInicio?: Date
     fechaFin?: Date
@@ -45,7 +47,6 @@ export default function RegistrarVacacionesAsesor() {
 
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showLoading, setShowLoading] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
 
   const calculateDays = () => {
     if (!formData.fechaInicio || !formData.fechaFin)
@@ -70,47 +71,70 @@ export default function RegistrarVacacionesAsesor() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!asesor || !formData.fechaInicio || !formData.fechaFin) return
+    if (dayStats.total > 30) {
+      toast.error("El período de vacaciones no puede exceder los 30 días.")
+      return
+    }
+    if (!asesor || !formData.fechaInicio || !formData.fechaFin) {
+      toast.error("Por favor, complete todos los campos requeridos.")
+      return
+    }
     setShowConfirmation(true)
   }
 
   const confirmSubmit = async () => {
     setShowConfirmation(false)
     setShowLoading(true)
-
     try {
       // Prepara payload limpio (DATE 'YYYY-MM-DD')
+      const codMes = formData.fechaInicio
+        ? format(startOfMonth(formData.fechaInicio), "yyyy-MM-dd") // → "2025-11-01"
+        : undefined;
       const payload = {
-        idEmpleado: asesor?.idEmpleado, // ajusta según tu tipo
-        fechaInicio: toDateOnly(formData.fechaInicio),
-        fechaFin: toDateOnly(formData.fechaFin),
-        diasTotales: dayStats.total,
-        diasHabiles: dayStats.laborables,
-        diasNoHabiles: dayStats.noLaborables,
+        id_Empleado: asesor?.idEmpleado, // ajusta según tu tipo
+        codMes,
+        fechaInicial: toDateOnly(formData.fechaInicio),
+        fechaFinal: toDateOnly(formData.fechaFin),
+        cantDias: dayStats.total,
+        estadoVacaciones: "APROBADO",
+        tipoVacaciones: "REGISTRADAS Y GOZADAS",
+        detalle: "CONTABLE",
+        cantDiasHabiles: dayStats.laborables,
+        cantDiasNoHabiles: dayStats.noLaborables,
+        estado: "I",
+        usrInsert: user?.usuario || "desconocido",
       }
       console.log("Payload a enviar:", payload)
-      // await fetch("/api/vacaciones", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(payload),
-      // })
-
+      const respose = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrarVacacionesAsesor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!respose.ok) {
+        throw new Error("Error al crear la justificación")
+      }
       setShowLoading(false)
-      setShowSuccess(true)
-
-      // Reset rápido
-      setTimeout(() => {
-        setShowSuccess(false)
-        setAsesor(null)
-        setFormData({ fechaInicio: undefined, fechaFin: undefined })
-      }, 2000)
+      toast.success("Vacaciones registradas exitosamente")
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Resgistro de Vacaciones Asesor",
+        descripcion: `Se registro vacaciones para el asesor ${asesor?.usuario || "Desconocido"} desde ${toDateOnly(formData.fechaInicio)} hasta ${toDateOnly(formData.fechaFin)}.`,
+        estado: "completed"
+      })
+      setAsesor(null)
+      setFormData({ fechaInicio: undefined, fechaFin: undefined })
     } catch (err) {
       setShowLoading(false)
-      // aquí podrías abrir un toast de error
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Error al registrar vacaciones Asesor",
+        descripcion: `Se intento registrar vacaciones para el asesor ${asesor?.usuario || "Desconocido"} desde ${toDateOnly(formData.fechaInicio)} hasta ${toDateOnly(formData.fechaFin)}.`,
+        estado: "error"
+      })
+      toast.error("Error al registrar vacaciones")
       console.error(err)
     }
   }
-
   return (
     <DashboardLayout>
       <motion.div
@@ -175,6 +199,12 @@ export default function RegistrarVacacionesAsesor() {
                                 : prev.fechaFin,
                           }))
                         }
+                        disabled={(date) => {
+                          const today = startOfMonth(new Date());                 // 1 nov
+                          const firstOfThird = startOfMonth(addMonths(today, 2)); // 1 ene
+                          return startOfDay(date) < today || startOfDay(date) >= firstOfThird;
+                        }
+                        }
                       />
                     </PopoverContent>
                   </Popover>
@@ -185,7 +215,7 @@ export default function RegistrarVacacionesAsesor() {
                   <Label>Fecha de Fin</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <Button disabled={!formData.fechaInicio} variant="outline" className="w-full justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {formData.fechaFin
                           ? format(formData.fechaFin, "PPP", { locale: es })
@@ -202,8 +232,11 @@ export default function RegistrarVacacionesAsesor() {
                             fechaFin: asStartOfLocalDay(date),
                           }))
                         }
-                        disabled={(date) =>
-                          formData.fechaInicio ? startOfDay(date) < startOfDay(formData.fechaInicio) : false
+                        disabled={(date) => {
+                          const today = startOfMonth(new Date());
+                          const firstOfThird = startOfMonth(addMonths(today, 2));
+                          return formData.fechaInicio ? startOfDay(date) < startOfDay(formData.fechaInicio) || startOfDay(date) >= firstOfThird : false
+                        }
                         }
                       />
                     </PopoverContent>
@@ -277,10 +310,7 @@ export default function RegistrarVacacionesAsesor() {
         title="Confirmar Registro"
         message={`¿Estás seguro de que deseas registrar ${dayStats.total} días de vacaciones para ${asesor?.usuario}?`}
       />
-
       <LoadingModal isOpen={showLoading} message="Registrando vacaciones..." />
-
-      <SuccessModal isOpen={showSuccess} message="¡Vacaciones registradas exitosamente!" />
     </DashboardLayout>
   )
 }

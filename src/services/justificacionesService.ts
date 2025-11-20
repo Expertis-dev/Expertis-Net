@@ -1,6 +1,6 @@
 export const getJustificaciones = async ({idUsuario , usuario}: {idUsuario: number | undefined, usuario: string | undefined}) => {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/${usuario==="MAYRA LLIMPE"? "obtenerJustificacionesTodas":"obtenerJustsPorUsuario"}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/${(usuario==="MAYRA LLIMPE" || usuario==="CAROLINA PICHILINGUE")? "obtenerJustificacionesTodas":"obtenerJustsPorUsuario"}`, {
             method: "POST",
             cache: "no-store",
             headers: {

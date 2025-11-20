@@ -24,6 +24,7 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { useColaboradores } from "@/hooks/useColaboradores"
 import { Empleado } from "@/types/Empleado"
+import { CargarActividad } from "@/services/CargarActividad"
 
 // NIVEL 1
 const nivel1Options = [
@@ -128,6 +129,7 @@ export default function NuevaJustificacion() {
     e.preventDefault()
     setShowConfirmation(true)
     console.log(asesor)
+
   }
 
   const confirmSubmit = async () => {
@@ -145,8 +147,9 @@ export default function NuevaJustificacion() {
     }
     setShowConfirmation(false)
     setShowLoading(true)
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacion`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacionA`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,26 +159,34 @@ export default function NuevaJustificacion() {
       if (!response.ok) {
         throw new Error("Error al crear la justificación")
       }
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Nueva Justificación Creada",
+        descripcion: `Se creó una nueva justificación para el asesor ${asesor?.usuario || "Desconocido"} en la fecha ${formData.fecha}.`,
+        estado: "completed",
+      })
+      toast.success("Justificación creada exitosamente")
+      // Resetear el formulario
+      setFormData({
+        nivel1: "",
+        nivel2: "",
+        nivel3: "",
+        hora: 0,
+        fecha: "",
+        observacion: "",
+      })
+      setasesor(null)
     } catch (error) {
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Error al crear una nueva Justificación",
+        descripcion: `Se intentó crear una nueva justificación para el asesor ${asesor?.usuario || "Desconocido"} en la fecha ${formData.fecha}`,
+        estado: "error"
+      })
       console.error("Error al crear la justificación:", error)
       toast.error("Error al crear la justificación. Inténtalo de nuevo.")
     }
-    setTimeout(() => {
-      setShowLoading(false)
-      toast.success("¡Justificación enviada exitosamente!")
-      setTimeout(() => {
-        // Reset form
-        setFormData({
-          nivel1: "",
-          nivel2: "",
-          nivel3: "",
-          fecha: "",
-          observacion: "",
-          hora: 0
-        })
-        setasesor(null)
-      }, 1500)
-    }, 500)
+    setShowLoading(false)
   }
   function parseLocalDate(str: string) {
     const [year, month, day] = str.split("-").map(Number)

@@ -6,7 +6,7 @@ export interface Message {
   content: string
   timestampISO: string
   sql?: string
-  data?: Record<string, any>[]
+  data?: Record<string, unknown>[]
   error?: string
   loading?: boolean
   status?: "sending" | "sent" | "error"
@@ -14,5 +14,5 @@ export interface Message {
 
 export interface QueryResult {
   columns: string[]
-  rows: Record<string, any>[]
+  rows: Record<string, unknown>[]
 }

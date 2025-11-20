@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       localStorage.removeItem("username")
       localStorage.removeItem("userName")
       localStorage.removeItem("userCargo")
-
+      localStorage.clear();
       window.location.href = "/"
     }
   }

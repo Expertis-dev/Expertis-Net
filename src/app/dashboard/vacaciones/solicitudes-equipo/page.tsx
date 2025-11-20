@@ -7,16 +7,18 @@ import { useUser } from '@/Provider/UserProvider'
 import { getSolicitudesAprobadas, getSolicitudesProceso } from '../../../../services/vacaciones'
 import { ArraySolicitudesAprobadas, ArraySolicitudesProceso } from '../../../../types/Vacaciones'
 import { BadgeStatus } from '@/components/BadgeStatus'
+import { ListaColaboradores } from '@/services/ListaColaboradores'
 export default function SolicitudesEquipo() {
     const { user } = useUser()
     const [solicitudesPendientes, setSolicitudesPendientes] = useState<ArraySolicitudesProceso>([])
     const [solicitudesAprobadas, setSolicitudesAprobadas] = useState<ArraySolicitudesAprobadas>([])
     useEffect(() => {
         const ObtenerInfo = async () => {
-            const pendientes = await getSolicitudesProceso({ id: user?.idArea })
-            const aprobadas = await getSolicitudesAprobadas({ id: user?.idArea })
-            setSolicitudesPendientes(pendientes.data)
-            setSolicitudesAprobadas(aprobadas.data)
+            const idColaboradores = await ListaColaboradores(user?.usuario)
+            const pendientes = await getSolicitudesProceso({ lista: idColaboradores })
+            const aprobadas = await getSolicitudesAprobadas({ lista: idColaboradores })
+            setSolicitudesPendientes(pendientes)
+            setSolicitudesAprobadas(aprobadas)
         }
         ObtenerInfo()
     }, [user])
@@ -40,7 +42,7 @@ export default function SolicitudesEquipo() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {solicitudesPendientes.map((solicitud, index) => (
+                                {solicitudesPendientes.length > 0 ? solicitudesPendientes.map((solicitud, index) => (
                                     <TableRow
                                         key={`${solicitud.id}`}
                                         className="animate-in slide-in-from-left-5 duration-300"
@@ -55,7 +57,7 @@ export default function SolicitudesEquipo() {
                                         </TableCell>
                                         <TableCell className="font-medium">{solicitud.cantDias}</TableCell>
                                     </TableRow>
-                                ))}
+                                )) : <TableRow><TableCell colSpan={6} className="text-center">No hay solicitudes pendientes</TableCell></TableRow>}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -77,9 +79,9 @@ export default function SolicitudesEquipo() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {solicitudesAprobadas.map((solicitud, index) => (
+                                {solicitudesAprobadas.length > 0 ? solicitudesAprobadas.map((solicitud, index) => (
                                     <TableRow
-                                        key={`${solicitud.idSolicitudAprobada}`}
+                                        key={`${solicitud.idVacacionesSolicitudes}`}
                                         className="animate-in slide-in-from-left-5 duration-300"
                                         style={{ animationDelay: `${index * 100} ms` }}
                                     >
@@ -92,7 +94,7 @@ export default function SolicitudesEquipo() {
                                         </TableCell>
                                         <TableCell className="font-medium">{solicitud.cantDias}</TableCell>
                                     </TableRow>
-                                ))}
+                                )) : <TableRow><TableCell colSpan={6} className="text-center">No hay solicitudes aprobadas</TableCell></TableRow>}
                             </TableBody>
                         </Table>
                     </CardContent>

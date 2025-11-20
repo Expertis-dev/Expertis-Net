@@ -42,7 +42,6 @@ export default function Page() {
                     <h1 className="text-3xl font-bold text-foreground">Calendario de Vacaciones</h1>
                     <p className="text-muted-foreground">Visualiza los días ocupados por los jefes de Área</p>
                 </div>
-
                 {loading ? (
                     <div className="flex items-center justify-center h-64">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

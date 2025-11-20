@@ -11,13 +11,16 @@ import { BadgeStatus } from "@/components/BadgeStatus"
 import { toast } from "sonner"
 import { useColaboradores } from "@/hooks/useColaboradores"
 import { Empleado } from "@/types/Empleado"
+import { LoadingModal } from "@/components/loading-modal"
 
 export default function SolicitudesAsesor() {
   const { colaboradores } = useColaboradores()
   const [asesor, setAsesor] = useState<Empleado | null>(null)
   const [historial, setHistorial] = useState<ArraySolicitudes>([])
+  const [showLoading, setShowLoading] = useState(false)
   useEffect(() => {
     const ObtenerHistorial = async () => {
+      setShowLoading(true)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
         method: "POST",
         cache: "no-store",
@@ -36,12 +39,14 @@ export default function SolicitudesAsesor() {
         body: JSON.stringify({ idEmpleado: json.data[0].idEmpleado }),
       });
       const json2 = await res2.json();
-      if(json2.message){
+      if (json2.message) {
         toast.error("No tiene historial de vacaciones")
         setHistorial([])
+        setShowLoading(false)
         return
       }
       setHistorial(json2.data)
+      setShowLoading(false)
     }
     if (asesor) {
       ObtenerHistorial()
@@ -124,6 +129,7 @@ export default function SolicitudesAsesor() {
             </CardContent>
           </Card>
         )}
+        <LoadingModal isOpen={showLoading} message="Buscando Vacaciones del asesor..." />
       </motion.div>
     </DashboardLayout>
   )
