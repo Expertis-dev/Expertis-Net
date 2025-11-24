@@ -1,9 +1,5 @@
-"use client"
-import { DashboardLayout } from "@/components/dashboard-layout";
-export default function CrearEmpleado() {
+export default function EliminarEmpleado() {
     return (
-        <DashboardLayout>
-            <div>Eliminar Empleado</div>
-        </DashboardLayout>
+        <div>Eliminar Empleado</div>
     )
 }

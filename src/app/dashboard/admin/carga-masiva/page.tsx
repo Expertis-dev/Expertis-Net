@@ -1,5 +1,4 @@
 "use client"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -56,7 +55,6 @@ export default function CargaMasiva() {
     }
 
     return (
-        <DashboardLayout>
             <div className="flex items-center justify-center">
                 <Card className="w-3xl overflow-y-auto">
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -108,6 +106,5 @@ export default function CargaMasiva() {
                     </CardContent>
                 </Card>
             </div>
-        </DashboardLayout>
     )
 }

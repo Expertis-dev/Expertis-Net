@@ -148,15 +148,12 @@ export default function Chat({ initialQuery }: ChatProps) {
   const [messages, setMessages] = useState<MessageWithStatus[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-
   const logRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
   // Auto-scroll al fondo cuando cambian los mensajes
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [messages])
-
   // Carga de consulta inicial
   useEffect(() => {
     if (initialQuery && initialQuery.trim()) {
@@ -164,7 +161,6 @@ export default function Chat({ initialQuery }: ChatProps) {
       setTimeout(() => textareaRef.current?.focus(), 0)
     }
   }, [initialQuery])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || loading) return
@@ -194,7 +190,7 @@ export default function Chat({ initialQuery }: ChatProps) {
     setMessages((prev) => [...prev, loadingMsg])
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL_MCP || "http://localhost:3000/api"
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL_MCP
       const response = await fetch(`${apiUrl}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -239,44 +235,27 @@ export default function Chat({ initialQuery }: ChatProps) {
       setLoading(false)
     }
   }
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       void handleSubmit(e as unknown as React.FormEvent)
     }
   }
-
   const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
-
-  /** Derivados para UI */
   const hasMessages = messages.length > 0
-
   return (
     <div className={cn(
-      "flex-1 flex min-h-0 w-full max-w-7xl mx-auto flex-col",
+      "flex min-h-[83vh] w-full max-w-7xl mx-auto flex-col",
       "bg-gradient-to-b from-slate-50 to-white",
       "dark:from-black/30 dark:to-slate-950"
     )}>
-      <div className="w-full  flex flex-col min-h-0 border-x border-slate-200 dark:border-neutral-800">
-        {/* Header */}
-        <header className={cn(
-          "sticky top-0 z-10",
-          "backdrop-blur supports-[backdrop-filter]:bg-white/60 bg-white",
-          "dark:supports-[backdrop-filter]:bg-black dark:bg-black/90",
-          "px-6 py-4 border-b border-slate-200 dark:border-neutral-800"
-        )}>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Asistente SQL · Justificaciones</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Conecta preguntas en lenguaje natural con SQL.</p>
-        </header>
-
-        {/* Chat Log */}
+  <div className="flex-1 w-full flex flex-col justify-between border-x border-slate-200 dark:border-neutral-800">
         <main
           ref={logRef}
           role="log"
           aria-live="polite"
           aria-relevant="additions"
-          className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4"
+          className="flex-1w px-4 md:px-6 py-4 space-y-4"
         >
           {!hasMessages && (
             <div className="text-center py-16">
@@ -293,7 +272,7 @@ export default function Chat({ initialQuery }: ChatProps) {
               </div>
               <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-2">¡Hola! Soy Expertito</h3>
               <p className="text-slate-600 dark:text-slate-400">
-                Pregúntame en español y te doy el SQL y los resultados 🙌
+                Pregúntame lo que necesites, estoy aqui para ayudarte 🙌
               </p>
             </div>
           )}
@@ -319,7 +298,7 @@ export default function Chat({ initialQuery }: ChatProps) {
                     "max-w-[92%] sm:max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
                     "border",
                     isUser
-                      ? "dark:bg-slate-950 bg-slate-700 text-white border-blue-700 rounded-tr-none"
+                      ? "dark:bg-slate-950 bg-cyan-800  text-white dark:border-blue-700 border-blue-900 rounded-tr-none"
                       : "bg-slate-50 text-slate-900 dark:bg-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 rounded-tl-none",
                     msg.status === "error" && "ring-1 ring-red-400/60"
                   )}
@@ -459,11 +438,10 @@ export default function Chat({ initialQuery }: ChatProps) {
             )
           })}
         </main>
-
         {/* Input */}
         <footer
           className={cn(
-            "sticky bottom-0 z-10",
+            "shrink-0", // 👈 que no se comprima
             "backdrop-blur supports-[backdrop-filter]:bg-white/60 bg-white",
             "dark:supports-[backdrop-filter]:bg-black/40 dark:bg-black/40",
             "border-y border-slate-200 dark:border-neutral-800 p-3 md:p-4"

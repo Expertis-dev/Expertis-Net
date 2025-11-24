@@ -2,7 +2,6 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -75,6 +74,7 @@ export default function SolicitarVacaciones() {
           body: JSON.stringify({ idJefe: user?.idJefe }),
         });
         const data = await response.json();
+        console.log("Fetched data:", data);
         setDiasDesabilitar(data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -156,10 +156,6 @@ export default function SolicitarVacaciones() {
   }
   const isDateDisabled = (date: Date) => {
     const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    const today = new Date()
-    const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    // Deshabilitar fechas pasadas
-    if (normalizedDate < normalizedToday) return true
     // Deshabilitar fechas que estén dentro de los rangos deshabilitados (ajustados)
     for (const disabledRange of diasDesabilitar) {
       const disabledStart = normalizeAndAdjustDate(disabledRange.fecInicial)
@@ -191,104 +187,102 @@ export default function SolicitarVacaciones() {
     }
   }
   return (
-    <DashboardLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-2"
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Solicitar Vacaciones</h1>
-          <p className="text-slate-600 dark:text-slate-400">Selecciona las fechas para tu período de vacaciones</p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
-          {/* Calendario */}
-          <Card className="col-span-3">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-2"
+    >
+      <div>
+        <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Solicitar Vacaciones</h1>
+        <p className="text-slate-600 dark:text-slate-400">Selecciona las fechas para tu período de vacaciones</p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
+        {/* Calendario */}
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Seleccionar Fechas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="range"
+              numberOfMonths={2}
+              selected={dateRange}
+              onSelect={handleDateSelect}
+              disabled={isDateDisabled}
+              className="rounded-md border"
+              locale={es}
+            />
+          </CardContent>
+        </Card>
+        {/* Formulario y Resumen */}
+        <div className="col-span-2 space-y-2">
+          {/* Resumen de días */}
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                Seleccionar Fechas
+                <Clock className="h-5 w-5" />
+                Resumen de Días
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Calendar
-                mode="range"
-                numberOfMonths={2}
-                selected={dateRange}
-                onSelect={handleDateSelect}
-                disabled={isDateDisabled}
-                className="rounded-md border"
-                locale={es}
-              />
-            </CardContent>
-          </Card>
-          {/* Formulario y Resumen */}
-          <div className="col-span-2 space-y-2">
-            {/* Resumen de días */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Resumen de Días
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-[#001529] dark:text-white">{dayStats.total}</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">Total</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{dayStats.laborables}</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">Laborables</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{dayStats.noLaborables}</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">No Laborables</div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#001529] dark:text-white">{dayStats.total}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Total</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{dayStats.laborables}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Laborables</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{dayStats.noLaborables}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">No Laborables</div>
+                </div>
+              </div>
+              {dateRange.from && dateRange.to && (
+                <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <div className="text-sm">
+                    <strong>Período seleccionado:</strong>
+                    <br />
+                    <p>Fecha de inicio: {format(dateRange.from, "PPP", { locale: es })}</p>
+                    <p>Fecha de fin: {format(dateRange.to, "PPP", { locale: es })}</p>
                   </div>
                 </div>
-                {dateRange.from && dateRange.to && (
-                  <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                    <div className="text-sm">
-                      <strong>Período seleccionado:</strong>
-                      <br />
-                      <p>Fecha de inicio: {format(dateRange.from, "PPP", { locale: es })}</p>
-                      <p>Fecha de fin: {format(dateRange.to, "PPP", { locale: es })}</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            {/* Formulario */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalle de las Vacaciones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div className="space-y-2">
-                    <Textarea
-                      id="detalles"
-                      placeholder="Describe el motivo o detalles de tus vacaciones..."
-                      value={detalles}
-                      onChange={(e) => setDetalles(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-[#001529] hover:bg-[#002040] dark:bg-slate-700 dark:hover:bg-slate-600"
-                    disabled={selectedDates.length === 0}
-                  >
-                    Enviar Solicitud
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
+          {/* Formulario */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalle de las Vacaciones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-2">
+                  <Textarea
+                    id="detalles"
+                    placeholder="Describe el motivo o detalles de tus vacaciones..."
+                    value={detalles}
+                    onChange={(e) => setDetalles(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-[#001529] hover:bg-[#002040] dark:bg-slate-700 dark:hover:bg-slate-600"
+                  disabled={selectedDates.length === 0}
+                >
+                  Enviar Solicitud
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      </motion.div>
+      </div>
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={() => setShowConfirmation(false)}
@@ -298,6 +292,6 @@ export default function SolicitarVacaciones() {
       />
       <LoadingModal isOpen={showLoading} message="Procesando solicitud de vacaciones..." />
       <SuccessModal isOpen={showSuccess} message="¡Solicitud de vacaciones enviada exitosamente!" />
-    </DashboardLayout>
+    </motion.div>
   )
 }

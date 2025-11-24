@@ -8,10 +8,10 @@ export const Loading = ({ size = 90, text = "Cargando..." }) => {
                 style={{
                     width: size,
                     height: size,
-                    borderColor: `${colors[1]} transparent ${colors[3]} transparent`,
+                    borderColor: `${colors[1]} transparent ${colors[3]}`,
                 }}
             ></div>
-            {text && <p className="mt-4 text-gray-800 font-medium">{text}</p>}
+            {text && <p className="mt-4 text-gray-800 dark:text-white font-medium">{text}</p>}
         </div>
     );
 }

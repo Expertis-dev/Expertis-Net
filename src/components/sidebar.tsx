@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -26,7 +24,7 @@ interface SidebarProps {
 
 export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogout }: SidebarProps) {
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
       <ScrollArea className="flex-1 px-4 py-6">
         <nav className="space-y-2">
           {menuItems.map((item) => (

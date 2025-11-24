@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import type { ComponentType, SVGProps } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,7 +41,7 @@ const getStatColor = (color: string) => {
     orange: "from-orange-500 to-orange-600",
     purple: "from-purple-500 to-purple-600",
   }
-  return (colors as Record<string, string> )[color] || colors.blue
+  return (colors as Record<string, string>)[color] || colors.blue
 }
 
 // ⬇️ Reemplaza estos URLs con tus imágenes (pueden ser rutas locales /public o remotas)
@@ -59,7 +58,7 @@ export default function DashboardHome() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [actividadesRecientes, setActividadesRecientes] = useState<Activity[]>([])
-  const [info, setInfo] = useState<StatItem[]>([])
+  const [info, setInfo] = useState<StatItem[] | null>(null)
 
   useEffect(() => {
     const auth = localStorage.getItem("isAuthenticated")
@@ -82,17 +81,13 @@ export default function DashboardHome() {
         const data = await response.json()
 
         setInfo([
-          { title: "Número de Asesores", value: data.numAsesores, icon: User , color: "green" },
-          { title: "Número de Justificaciones", value: data.justificacionesCorteActual, icon: ChartNoAxesCombined , color: "blue" },
-          { title: "Justificaciones en Revisión", value: data.justificacionesPorRevisar, icon: FileText, color: "orange" },
+          { title: `Número de ${user?.idJefe === user?.idEmpleado ? "Colaboradores" : "Asesores"}`, value: data.numAsesores, icon: User, color: "green" },
+          { title: "Número de Justificaciones", value: data.cantidadJustificacionesEquipo, icon: ChartNoAxesCombined, color: "blue" },
+          { title: "Justificaciones en Revisión", value: data.justificacionesEnRevision, icon: FileText, color: "orange" },
         ])
       } catch (e) {
         console.error(e)
-        setInfo([
-          { title: "Número de Justificaciones", value: 0, icon: FileText, color: "blue" },
-          { title: "Justificaciones en Revisión", value: 0, icon: FileText, color: "orange" },
-          { title: "Número de Asesores", value: 0, icon: FileText, color: "green" },
-        ])
+        setInfo(null)
       }
     }
 
@@ -127,16 +122,15 @@ export default function DashboardHome() {
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || info === null) {
     return (
-      <div className="bg-white/80 dark:bg-slate-900 h-screen">
+      <div className="h-[72vh] -translate-x-10">
         <Loading />
       </div>
     )
   }
 
   return (
-    <DashboardLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -182,7 +176,7 @@ export default function DashboardHome() {
                       priority={index === 0}
                       sizes=""
                       className="object-contain"
-                      //className="object-cover w-full h-full"
+                    //className="object-cover w-full h-full"
                     />
                     {/* Overlay sutil para legibilidad de controles */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
@@ -216,9 +210,8 @@ export default function DashboardHome() {
                   <button
                     key={index}
                     aria-label={`Ir al slide ${index + 1}`}
-                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                      index === currentSlide ? "bg-white" : "bg-white/50"
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === currentSlide ? "bg-white" : "bg-white/50"
+                      }`}
                     onClick={() => setCurrentSlide(index)}
                   />
                 ))}
@@ -229,15 +222,15 @@ export default function DashboardHome() {
 
         {/* Estadísticas (cards rediseñadas) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {info.map((stat, index) => (
+          {info?.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: index * 0.08 }}
             >
-              <div className="relative rounded-2xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800">
-                <Card className="rounded-2xl border-0 bg-white/70 dark:bg-slate-900/60 backdrop-blur supports-[backdrop-filter]:bg-white/40">
+              <div className="relative rounded-2xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800">
+                <Card className="rounded-2xl border-0 bg-white/70 dark:bg-neutral-800 backdrop-blur supports-[backdrop-filter]:bg-white/40">
                   <CardContent>
                     <div className="flex items-center gap-4">
                       {/* Icono en badge con gradiente */}
@@ -301,6 +294,5 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       </motion.div>
-    </DashboardLayout>
   )
 }

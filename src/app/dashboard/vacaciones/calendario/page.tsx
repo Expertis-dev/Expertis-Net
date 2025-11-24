@@ -1,10 +1,6 @@
 "use client"
-
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { VacationCalendar } from "@/components/vacation-calendar"
-
 import { useEffect, useState } from "react"
-
 interface Fecha {
     alias: string
     cantDias: number
@@ -14,11 +10,9 @@ interface Fecha {
     fecInicial: string
     fecSolicitud: string
 }
-
 export default function Page() {
     const [fechas, setFechas] = useState<Fecha[]>([])
     const [loading, setLoading] = useState(true)
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -31,12 +25,9 @@ export default function Page() {
                 setLoading(false)
             }
         }
-
         fetchData()
     }, [])
-
     return (
-        <DashboardLayout>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">Calendario de Vacaciones</h1>
@@ -50,6 +41,5 @@ export default function Page() {
                     <VacationCalendar fechas={fechas} />
                 )}
             </div>
-        </DashboardLayout>
     )
 }

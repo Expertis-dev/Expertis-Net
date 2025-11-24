@@ -244,7 +244,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
         <div className="flex">
-          <div className="hidden lg:block w-72 border-r border-border bg-background backdrop-blur-sm">
+          <div className="h-[calc(100vh-4rem)] overflow-y-auto hidden lg:block w-72 border-r border-border bg-background backdrop-blur-sm sidebar-scroll">
             <Sidebar
               menuItems={getMenuItems()}
               expandedMenus={expandedMenus}
@@ -255,7 +255,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <main className="flex-1 overflow-hidden">
-            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto sidebar-scroll" >
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: 20 }}
@@ -268,6 +268,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </main>
         </div>
+
       </div>
     </ThemeProvider>
   )

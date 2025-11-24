@@ -1,7 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar } from "lucide-react"
@@ -53,7 +52,6 @@ export default function SolicitudesAsesor() {
     }
   }, [asesor])
   return (
-    <DashboardLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -129,8 +127,7 @@ export default function SolicitudesAsesor() {
             </CardContent>
           </Card>
         )}
-        <LoadingModal isOpen={showLoading} message="Buscando Vacaciones del asesor..." />
+        <LoadingModal isOpen={showLoading} message="Buscando historial de vacaciones..." />
       </motion.div>
-    </DashboardLayout>
   )
 }

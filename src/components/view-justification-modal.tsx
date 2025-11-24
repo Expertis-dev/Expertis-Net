@@ -13,7 +13,7 @@ interface ViewJustificationModalProps {
 }
 
 export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJustificationModalProps) {
-  const { urls } = useURL(justification?.id ?? "");
+  const { urls, isLoadingURL } = useURL(justification?.id ?? "");
 
   return (
     <AnimatePresence>
@@ -211,7 +211,17 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                         Pruebas Adjuntas
                       </h3>
 
-                      {urls && urls.length > 0 ? (
+                      {isLoadingURL ? (
+                        <div className="h-screen">
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            className="p-6 rounded-lg bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-center animate-pulse"
+                          >
+                            <Eye className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Cargando pruebas...</p>
+                          </motion.div>
+                        </div>
+                      ) : urls && urls.length > 0 ? (
                         <Image.PreviewGroup>
                           <div className="grid grid-cols-2 gap-3">
                             {urls.map((url, index) => (
@@ -246,7 +256,7 @@ export function ViewJustificationModal({ isOpen, onClose, justification }: ViewJ
                           className="p-6 rounded-lg bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-center"
                         >
                           <Eye className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500 dark:text-slate-400">No hay pruebas disponibles</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">No hay pruebas</p>
                         </motion.div>
                       )}
                     </div>

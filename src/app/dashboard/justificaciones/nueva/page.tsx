@@ -1,10 +1,7 @@
 "use client"
-
 import type React from "react"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -193,7 +190,6 @@ export default function NuevaJustificacion() {
     return new Date(year, month - 1, day) // <- evita problema de zona horaria
   }
   return (
-    <DashboardLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -366,9 +362,7 @@ export default function NuevaJustificacion() {
             </form>
           </CardContent>
         </Card>
-      </motion.div>
-
-      <ConfirmationModal
+        <ConfirmationModal
         isOpen={showConfirmation}
         onClose={() => setShowConfirmation(false)}
         onConfirm={confirmSubmit}
@@ -376,6 +370,6 @@ export default function NuevaJustificacion() {
         message="¿Estás seguro de que deseas enviar esta justificación?"
       />
       <LoadingModal isOpen={showLoading} message="Procesando justificación..." />
-    </DashboardLayout>
+      </motion.div>
   )
 }
