@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -87,21 +87,21 @@ const MENU_CONFIG: MenuItem[] = [
   {
     id: "bases",
     title: "Bases",
-    icon: Home,
+    icon: BookCheck,
     href: "#",
     subItems: [
       {
         title: "Seguimiento Asesor",
-        href: "/dashboard/bases/seguimiento-asesor",
+        href: "/dashboard/bases",
         modulo: "Bases",
         permiso: "SeguimientoAsesor-ver",
       },
-      {
+      /*{
         title: "Seguimiento Grupo",
         href: "/dashboard/bases/seguimiento-grupo",
         modulo: "Bases",
         permiso: "SeguimientoGrupo-ver",
-      },
+      },*/
     ],
   },
   {
