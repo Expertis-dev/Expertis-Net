@@ -168,7 +168,6 @@ export default function Bases() {
 
   return (
       <div className="px-4 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Gestor de Bases</h1>
           <div className="flex gap-2">
@@ -192,8 +191,6 @@ export default function Bases() {
             </Button>
           </div>
         </div>
-
-        {/* File Selection Status */}
         <div className="bg-muted/50 p-4 rounded-lg">
           {archivoSeleccionado ? (
             <div className="flex items-center justify-between">
@@ -216,20 +213,15 @@ export default function Bases() {
             <p className="text-sm text-muted-foreground">Ningún archivo seleccionado</p>
           )}
         </div>
-
-        {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
-
-        {/* Filter Section */}
         <div className="space-y-1">
           <h3 className="text-sm font-medium">Rango de fecha:
             <span className="text-muted-foreground"> Tener en cuenta que es necesario que el archivo tenga las columnas Documento, Cartera y Asesor </span>
           </h3>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-2">
               <label className="text-sm">Fecha inicio:</label>
@@ -240,7 +232,6 @@ export default function Bases() {
                 className="px-2 py-2 border rounded-md text-sm w-full"
               />
             </div>
-
             <div className="space-y-2">
               <label className="text-sm">Fecha fin:</label>
               <input
@@ -250,29 +241,27 @@ export default function Bases() {
                 className="px-2 py-2 border rounded-md text-sm w-full"
               />
             </div>
-
-            {/* Navigation Buttons */}
             <div className="flex items-center gap-4 mt-4">
               <Button
                 variant={vistaActiva === "nvl1" ? "default" : "secondary"}
                 size="sm"
                 onClick={() => setVistaActiva("nvl1")}
               >
-                nvl1
+                Nvl1
               </Button>
               <Button
                 variant={vistaActiva === "nvl2" ? "default" : "secondary"}
                 size="sm"
                 onClick={() => setVistaActiva("nvl2")}
               >
-                nvl2
+                Nvl2
               </Button>
               <Button
                 variant={vistaActiva === "horas" ? "default" : "secondary"}
                 size="sm"
                 onClick={() => setVistaActiva("horas")}
               >
-                horas
+                Horas
               </Button>
               <Button
                 onClick={ProcesarInformacion}
@@ -281,7 +270,6 @@ export default function Bases() {
               >
                 {cargando ? "Procesando..." : "Procesar"}
               </Button>
-
               {datosBackend && (
                 <DownloadExcel
                   hojas={[
