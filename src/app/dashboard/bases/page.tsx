@@ -12,6 +12,9 @@ import type {
   FilaHoras,
   VistaActiva
 } from "@/types/Bases";
+import { getAsesores } from "@/services/asesoresService";
+import { useUser } from "@/Provider/UserProvider";
+import { Asesores } from "@/types/Asesores";
 
 const columnasNvl1 = [
   "Asesor",
@@ -41,7 +44,7 @@ export default function Bases() {
   const [error, setError] = useState<string | null>(null);
   const [datosBackend, setDatosBackend] = useState<ResponseData | null>(null);
   const [cargando, setCargando] = useState<boolean>(false);
-
+  const {user} = useUser()
   // Fechas por defecto
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -82,7 +85,6 @@ export default function Bases() {
     }
   }, []);
 
-
   const handleChangeStartDate = (value: string) => {
     setDateY(value);
     const nuevaFin = new Date(value);
@@ -121,24 +123,25 @@ export default function Bases() {
       setError("Debe seleccionar un archivo antes de procesar");
       return;
     }
-
-    setCargando(true);
     setError(null);
-
+    setCargando(true);
+    const data1 = await getAsesores(user?.grupo);
+      const ArrayAsesores = data1.data.map((asesor: Asesores ) =>{
+        return asesor.usuario
+      })
+    console.log(ArrayAsesores)
     const fd = new FormData();
     fd.append("end_date", date);
     fd.append("file", archivoSeleccionado);
     fd.append("start_date", dateY);
-
-    try {
+    fd.append("ArrayAsesores", JSON.stringify(ArrayAsesores))
+    try {   
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_ANDERSON}/api/procesar-datos`, {
         method: "POST",
         body: fd,
       });
-
       const data: ResponseData = await response.json();
       if (!response.ok) throw new Error(data.error || "Error al procesar el archivo");
-
       setDatosBackend(data);
       localStorage.setItem("datos_backend", JSON.stringify(data));
 
@@ -155,7 +158,6 @@ export default function Bases() {
       setCargando(false);
     }
   };
-
 
   // Mapear datos para NVL1
   const datosNvl1: FilaNvl1[] = datosBackend?.asesores.map(asesor => ({
