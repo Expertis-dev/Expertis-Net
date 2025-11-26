@@ -18,20 +18,20 @@ export default function SolicitudesAprobadas() {
     const [filtroJefes, setFiltroJefes] = useState(false)
     const filteredData = useMemo(() => {
         let solicitudesApro = solicitudesTotales;
-        if (searchTerm.trim() !== "") {
+        if (solicitudesApro.length > 0 && searchTerm.trim() !== "") {
             const term = searchTerm.toLowerCase();
             solicitudesApro = solicitudesApro.filter(
                 (item) => (item.alias ?? "").toLowerCase().includes(term)
             );
         }
-        if (filtroJefes) {
+        if (solicitudesApro.length > 0 && filtroJefes) {
             solicitudesApro = solicitudesApro.filter(
                 (item) => item.idEmpleado === item.idJefe
             );
         }
         return solicitudesApro;
     }, [solicitudesTotales, searchTerm, filtroJefes]);
-    if (isloadingSolicitudesTotales) {
+    if (isloadingSolicitudesTotales || solicitudesTotales === undefined) {
         return (
             <div className="h-[72vh] -translate-x-10">
                 <Loading />
@@ -108,7 +108,7 @@ export default function SolicitudesAprobadas() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredData.map((solicitud, index) => (
+                    {solicitudesTotales && filteredData.map((solicitud, index) => (
                         <TableRow
                             key={solicitud.idVacacionesSolicitudes}
                             className="animate-in slide-in-from-left-5 duration-300"

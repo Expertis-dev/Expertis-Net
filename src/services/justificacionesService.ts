@@ -1,6 +1,9 @@
-export const getJustificaciones = async ({idUsuario , usuario}: {idUsuario: number | undefined, usuario: string | undefined}) => {
+import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout";
+
+export const getJustificaciones = async ({idUsuario}: {idUsuario: number | undefined}) => {
+    const permisos = getPermisosFromStorage()
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/${(usuario==="MAYRA LLIMPE" || usuario==="CAROLINA PICHILINGUE")? "obtenerJustificacionesTodas":"obtenerJustsPorUsuario"}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/${(tienePermiso(permisos, "Justificaciones", "JustificacionesTotal-ver"))? "obtenerJustificacionesTodas":"obtenerJustsPorUsuario"}`, {
             method: "POST",
             cache: "no-store",
             headers: {

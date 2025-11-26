@@ -22,7 +22,7 @@ export const getSolicitudesProceso = async ({ lista }: { lista: string | undefin
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/listaSolicitudesDeVacacionesDelEquipo`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({lista}),
+                body: JSON.stringify({ lista }),
             })
             const json = await res.json();
             console.log("Respuesta de getSolicitudesProceso:", json);
@@ -41,7 +41,7 @@ export const getSolicitudesAprobadas = async ({ lista }: { lista: string | undef
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/listaVacacionesDelEquipo`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({lista}),
+                body: JSON.stringify({ lista }),
             })
             const json = await res.json();
             console.log("Respuesta de getSolicitudesAprobadas:", json);
@@ -57,14 +57,13 @@ export const getSolicitudesAprobadas = async ({ lista }: { lista: string | undef
 
 export const getSolicitudesAprobadasTodas = async () => {
     try {
-        
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesAprobadasTodas`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-            })
-            const json = await res.json();
-            if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas todas");
-            return json;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesAprobadasTodas`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        })
+        const json = await res.json();
+        if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas todas");
+        return json;
     } catch (error) {
         console.error("Error en getSolicitudesAprobadasTodas", error);
         return [];
@@ -72,14 +71,14 @@ export const getSolicitudesAprobadasTodas = async () => {
 };
 export const getDetalleSolicitud = async () => {
     try {
-        
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudAprobada`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-            })
-            const json = await res.json();
-            if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas");
-            return json;
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudAprobada`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        })
+        const json = await res.json();
+        if (!res.ok) throw new Error("Error al obtener las solicitudes aprobadas");
+        return json;
     } catch (error) {
         console.error("Error en getDetalleSolicitud", error);
         return [];

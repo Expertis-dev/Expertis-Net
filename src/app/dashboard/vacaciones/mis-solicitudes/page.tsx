@@ -29,7 +29,7 @@ export default function MisSolicitudes() {
     }
   }
   const canDelete = (estado: string) => estado === "Pendiente"
-  if (isloadingSolicitudes) {
+  if (isloadingSolicitudes || solicitudes=== undefined) {
     return (
       <div className="h-[72vh] -translate-x-10">
         <Loading />

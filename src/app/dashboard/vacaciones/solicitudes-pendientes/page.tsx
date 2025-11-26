@@ -7,7 +7,9 @@ import { BadgeStatus } from "@/components/BadgeStatus";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { ViewPendientesRevisar } from "@/components/ViewPendientesRevisar";
+import { Loading } from "@/components/Loading";
 export default function SolicitudesPendientes() {
+    const [isLoadingSolicitudes, setIsLoadingSolicitudes] = useState(true)
     const [isVer, setIsVer] = useState(false);
     const [SolicitudesPendientes, setSolicitudesPendientes] = useState<SolicitudesAprobadas[]>([]);
     const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudesAprobadas>({} as SolicitudesAprobadas);
@@ -17,12 +19,20 @@ export default function SolicitudesPendientes() {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudesAdmitidasTodas`);
                 const data = await response.json();
                 setSolicitudesPendientes(data.data);
+                setIsLoadingSolicitudes(false)
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
         }
         fetchData();
     }, [])
+    if (isLoadingSolicitudes) {
+        return (
+            <div className="h-[72vh] -translate-x-10">
+                <Loading />
+            </div>
+        )
+    }
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -44,7 +54,7 @@ export default function SolicitudesPendientes() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {SolicitudesPendientes.map((solicitud, index) => (
+                    {SolicitudesPendientes && SolicitudesPendientes.map((solicitud, index) => (
                         <TableRow
                             key={`${solicitud.idSolicitudAprobada}`}
                             className="animate-in slide-in-from-left-5 duration-300"

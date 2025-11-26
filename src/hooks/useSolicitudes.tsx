@@ -9,13 +9,14 @@ export const useSolicitudes = () => {
     const [solicitudes, setSolicitudes] = useState<ArraySolicitudes>([])
     const [isloadingSolicitudes, setIsloadingSolicitudes] = useState(false)
     useEffect(() => {
-        const fetchURLS = async () => {
+        if(!user?.idEmpleado) return
+        const fetchSolicitudes = async () => {
             setIsloadingSolicitudes(true);
             const data = await getMisSolicitudes({ id: user?.idEmpleado });
             setSolicitudes(data.data);
             setIsloadingSolicitudes(false);
         };
-        fetchURLS()
+        fetchSolicitudes()
     }, [user]);
     return { solicitudes, isloadingSolicitudes };
 };

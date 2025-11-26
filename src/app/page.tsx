@@ -50,6 +50,8 @@ export default function LoginPage() {
         safeSetLocalStorage("isAuthenticated", "true")
         safeSetLocalStorage("token", data.token)
         safeSetLocalStorage("user", JSON.stringify(data.user))
+        safeSetLocalStorage("rol", JSON.stringify(data.rol))
+        safeSetLocalStorage("permisos", JSON.stringify(data.permisos))
         setUser(data.user)
         window.location.href = "/dashboard"
       }, 500)

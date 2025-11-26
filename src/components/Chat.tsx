@@ -1,34 +1,25 @@
 "use client"
-
 import React, { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Send, Copy, Download, Loader2, AlertCircle, CheckCheck, Bot, UserIcon } from "lucide-react"
 import * as XLSX from "xlsx"
 import { saveAs } from "file-saver"
-
-// Si ya tienes Message en "@/lib/types", déjalo.
-// Si no, descomenta este tipo local y quita la import.
-// import type { Message } from "@/lib/types"
+import type { Message as ExternalMessage } from "@/lib/types"
 type LocalMessage = {
   id: string
   type: "user" | "assistant"
   content: string
   timestampISO: string
-  // Campos opcionales que solemos adjuntar en la respuesta:
   sql?: string
   data?: Record<string, unknown>[]
   _meta?: { columns: string[]; rows: unknown[][] }
   error?: string
   loading?: boolean
 }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Message as ExternalMessage } from "@/lib/types"
-type Message = ExternalMessage | LocalMessage
 
-/** ==== Tipos fuertes para la API y normalización ==== */
+type Message = ExternalMessage | LocalMessage
 type ApiRows = unknown[][]
 type ApiColumns = string[]
-
 interface ApiAskResponse {
   sql?: string
   message?: string
@@ -58,8 +49,6 @@ type MessageWithStatus = Message & {
 }
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ")
-
-/** ==== Normaliza la respuesta del backend a un formato consistente ==== */
 function normalizeResult(result: ApiAskResponse): NormalizedResult {
   const out: NormalizedResult = {
     sql: result?.sql,
@@ -69,16 +58,12 @@ function normalizeResult(result: ApiAskResponse): NormalizedResult {
     columns: [],
     rows: [],
   }
-
-  // Caso 1: { columns, rows } en la raíz
   if (Array.isArray(result?.columns) && Array.isArray(result?.rows)) {
     out.columns = result.columns as string[]
     out.rows = result.rows as unknown[][]
     out.objects = out.rows.map((r) => Object.fromEntries(out.columns.map((c, i) => [c, r[i]])))
     return out
   }
-
-  // Caso 2: data: array<object>
   if (Array.isArray(result?.data) && result.data.length > 0 && typeof result.data[0] === "object") {
     const objs = result.data as Record<string, unknown>[]
     out.objects = objs
@@ -86,8 +71,6 @@ function normalizeResult(result: ApiAskResponse): NormalizedResult {
     out.rows = objs.map((obj) => out.columns.map((c) => obj?.[c]))
     return out
   }
-
-  // Caso 3: data: { columns, rows }
   if (result?.data && typeof result.data === "object" && !Array.isArray(result.data)) {
     const d = result.data as { columns?: ApiColumns; rows?: ApiRows }
     if (Array.isArray(d.columns) && Array.isArray(d.rows)) {
@@ -97,11 +80,8 @@ function normalizeResult(result: ApiAskResponse): NormalizedResult {
       return out
     }
   }
-
   return out
 }
-
-/** ==== Exportar a Excel (array de objetos) ==== */
 function exportExcel(objects: Record<string, unknown>[], nombreDocumento = "resultados") {
   if (!Array.isArray(objects) || objects.length === 0) return
   const worksheet = XLSX.utils.json_to_sheet(objects)
@@ -111,8 +91,6 @@ function exportExcel(objects: Record<string, unknown>[], nombreDocumento = "resu
   const blob = new Blob([excelBuffer], { type: "application/octet-stream" })
   saveAs(blob, `${nombreDocumento}.xlsx`)
 }
-
-/** ==== Componentes auxiliares UI ==== */
 const TypingIndicator: React.FC = () => (
   <div className="flex items-center gap-2">
     <Bot className="h-4 w-4 animate-pulse" />
@@ -123,15 +101,12 @@ const TypingIndicator: React.FC = () => (
     </div>
   </div>
 )
-
 const StatusIcon: React.FC<{ status?: MessageStatus }> = ({ status }) => {
   if (status === "sending") return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
   if (status === "sent") return <CheckCheck className="w-4 h-4 text-green-500" />
   if (status === "error") return <AlertCircle className="w-4 h-4 text-red-500" />
   return null
 }
-
-/** ==== Formateo de celdas ==== */
 function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined) return "—"
   const k = key.toLowerCase()
@@ -150,11 +125,9 @@ export default function Chat({ initialQuery }: ChatProps) {
   const [loading, setLoading] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  // Auto-scroll al fondo cuando cambian los mensajes
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [messages])
-  // Carga de consulta inicial
   useEffect(() => {
     if (initialQuery && initialQuery.trim()) {
       setInput(initialQuery)
@@ -249,7 +222,7 @@ export default function Chat({ initialQuery }: ChatProps) {
       "bg-gradient-to-b from-slate-50 to-white",
       "dark:from-black/30 dark:to-slate-950"
     )}>
-  <div className="flex-1 w-full flex flex-col justify-between border-x border-slate-200 dark:border-neutral-800">
+      <div className="flex-1 w-full flex flex-col justify-between border-x border-slate-200 dark:border-neutral-800">
         <main
           ref={logRef}
           role="log"

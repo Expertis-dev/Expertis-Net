@@ -1,12 +1,20 @@
 "use client"
+
 import type React from "react"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, Bot } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -15,7 +23,20 @@ import { useUser } from "@/Provider/UserProvider"
 interface DashboardLayoutProps {
   readonly children: React.ReactNode
 }
-interface SubItem { title: string; href: string }
+
+// ================== TIPOS Y HELPERS DE PERMISOS ==================
+
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin"
+
+type Permisos = Partial<Record<Modulo, string[]>>
+
+interface SubItem {
+  title: string
+  href: string
+  modulo?: Modulo       // módulo al que pertenece
+  permiso?: string      // nombre del permiso. Si es undefined → acceso libre
+}
+
 interface MenuItem {
   id: string
   title: string
@@ -24,190 +45,300 @@ interface MenuItem {
   subItems: SubItem[]
 }
 
+// Leer permisos desde localStorage (JSON)
+export const getPermisosFromStorage = (): Permisos | null => {
+  if (typeof window === "undefined") return null
+
+  const raw = window.localStorage.getItem("permisos")
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw) as Permisos
+  } catch (error) {
+    console.error("Error parseando permisos desde localStorage:", error)
+    return null
+  }
+}
+
+// Si no hay permiso definido → ruta libre
+export const tienePermiso = (
+  permisos: Permisos | null,
+  modulo?: Modulo,
+  permiso?: string
+): boolean => {
+  if (!modulo || !permiso) return true
+
+  const lista = permisos?.[modulo]
+  if (!Array.isArray(lista)) return false
+
+  return lista.includes(permiso)
+}
+
+// ================== CONFIGURACIÓN DEL MENÚ ==================
+
+const MENU_CONFIG: MenuItem[] = [
+  {
+    id: "home",
+    title: "Home",
+    icon: Home,
+    href: "/dashboard",
+    subItems: [],
+  },
+  {
+    id: "bases",
+    title: "Bases",
+    icon: Home,
+    href: "#",
+    subItems: [
+      {
+        title: "Seguimiento Asesor",
+        href: "/dashboard/bases/seguimiento-asesor",
+        modulo: "Bases",
+        permiso: "SeguimientoAsesor-ver",
+      },
+      {
+        title: "Seguimiento Grupo",
+        href: "/dashboard/bases/seguimiento-grupo",
+        modulo: "Bases",
+        permiso: "SeguimientoGrupo-ver",
+      },
+    ],
+  },
+  {
+    id: "justificaciones",
+    title: "Justificaciones",
+    icon: FileText,
+    href: "#",
+    subItems: [
+      {
+        title: "Nueva Justificación",
+        href: "/dashboard/justificaciones/nueva",
+        modulo: "Justificaciones",
+        permiso: "Justificacion-registrar",
+      },
+      {
+        title: "Listar Justificaciones",
+        href: "/dashboard/justificaciones/listar",
+        modulo: "Justificaciones",
+        permiso: "Justificacion-registrar",
+      }
+    ],
+  },
+  {
+    id: "vacaciones",
+    title: "Vacaciones",
+    icon: Calendar,
+    href: "#",
+    subItems: [
+      {
+        title: "Solicitar Vacaciones",
+        href: "/dashboard/vacaciones/solicitar",
+        modulo: "Vacaciones",
+        permiso: "SolicitarVacaciones-registrar",
+      },
+      {
+        title: "Mis Solicitudes",
+        href: "/dashboard/vacaciones/mis-solicitudes",
+        modulo: "Vacaciones",
+        permiso: "Vacaciones-ver",
+      },
+      {
+        title: "Registrar Vacaciones Asesor",
+        href: "/dashboard/vacaciones/registrar-asesor",
+        modulo: "Vacaciones",
+        permiso: "VacacionesAsesor-registrar",
+      },
+      {
+        title: "Solicitudes Asesores",
+        href: "/dashboard/vacaciones/solicitudes-asesor",
+        modulo: "Vacaciones",
+        permiso: "SolicitudesAsesores-ver",
+      },
+      {
+        title: "Solicitudes Equipo",
+        href: "/dashboard/vacaciones/solicitudes-equipo",
+        modulo: "Vacaciones",
+        permiso: "SolicitudesEquipo-ver",
+      },
+      {
+        title: "Solicitudes Pendientes",
+        href: "/dashboard/vacaciones/solicitudes-pendientes",
+        modulo: "Vacaciones",
+        permiso: "SolicitudesPendientes-ver",
+      },
+      {
+        title: "Solicitudes Aprobadas",
+        href: "/dashboard/vacaciones/solicitudes-aprobadas",
+        modulo: "Vacaciones",
+        permiso: "SolicitudesAprobadas-ver",
+      },
+      {
+        title: "Calendario Jefes Área",
+        href: "/dashboard/vacaciones/calendario",
+        modulo: "Vacaciones",
+        permiso: "CalendarioJefes-ver",
+      },
+    ],
+  },
+  /*{
+    id: "mcp",
+    title: "Consultas Expertito",
+    icon: Bot,
+    href: "/dashboard/consultas",
+    subItems: [], // sin permiso → acceso libre
+  },*/
+  {
+    id: "admin",
+    title: "Admin",
+    icon: UserPlus,
+    href: "#",
+    subItems: [
+      {
+        title: "Crear nuevo empleado",
+        href: "/dashboard/admin/crear-empleado",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+      {
+        title: "Eliminar Empleado",
+        href: "/dashboard/admin/eliminar-empleado",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+      {
+        title: "Carga Masiva Empleados",
+        href: "/dashboard/admin/carga-masiva",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+    ],
+  },
+]
+
+// ================== COMPONENTE PRINCIPAL ==================
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useUser()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false);
-  // Auto-expand menus
+  const [mounted, setMounted] = useState(false)
+
+  // Auto-expand de menús según la ruta
   useEffect(() => {
     if (pathname.includes("/justificaciones")) {
-      setExpandedMenus((prev) => (prev.includes("justificaciones") ? prev : [...prev, "justificaciones"]))
+      setExpandedMenus((prev) =>
+        prev.includes("justificaciones") ? prev : [...prev, "justificaciones"],
+      )
     }
     if (pathname.includes("/vacaciones")) {
-      setExpandedMenus((prev) => (prev.includes("vacaciones") ? prev : [...prev, "vacaciones"]))
+      setExpandedMenus((prev) =>
+        prev.includes("vacaciones") ? prev : [...prev, "vacaciones"],
+      )
     }
-    setMounted(true);
+    setMounted(true)
   }, [pathname])
+
   const toggleMenu = (menuId: string) => {
-    setExpandedMenus((prev) => (prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]))
+    setExpandedMenus((prev) =>
+      prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId],
+    )
   }
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      // Limpiar cookies
-      document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie = "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie = "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie = "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie =
+        "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie =
+        "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie =
+        "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      document.cookie =
+        "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
 
-      // Limpiar localStorage
-      localStorage.removeItem("isAuthenticated")
-      localStorage.removeItem("username")
-      localStorage.removeItem("userName")
-      localStorage.removeItem("userCargo")
-      localStorage.clear();
+      window.localStorage.clear()
       window.location.href = "/"
     }
   }
 
-  const getMenuItems = () => {
-    const baseItems: MenuItem[] = [
-      {
-        id: "home",
-        title: "Home",
-        icon: Home,
-        href: "/dashboard",
-        subItems: [],
-      },
-    ]
-    if (!user) return baseItems // si no hay user aún
-
-
-    // 🔹 JUSTIFICACIONES
-    if (
-      user.id_cargo !== 9 &&
-      [5, 7, 8, 1, 3, 21, 4].includes(user.id_cargo)
-    ) {
-      const subItems: SubItem[] = []
-
-      if ([5, 7, 8].includes(user.id_cargo)) {
-        subItems.push({
-          title: "Nueva Justificación",
-          href: "/dashboard/justificaciones/nueva",
-        })
-      }
-
-      subItems.push({
-        title: "Listar Justificaciones",
-        href: "/dashboard/justificaciones/listar",
-      })
-
-      baseItems.push({
-        id: "justificaciones",
-        title: "Justificaciones",
-        icon: FileText,
-        href: "#",
-        subItems,
-      })
+  const getMenuItems = (): MenuItem[] => {
+    // Mientras no haya user, solo mostramos Home para evitar flickers raros
+    if (!user) {
+      return MENU_CONFIG.filter((item) => item.id === "home")
     }
-    // 🔹 VACACIONES
-    if (user.id_cargo !== 6) {
-      const vacacionesSubItems: SubItem[] = []
-      if (user.id_cargo !== 9) {
-        vacacionesSubItems.push(
-          { title: "Enviar Solicitud", href: "/dashboard/vacaciones/solicitar" },
-          { title: "Mis Solicitudes", href: "/dashboard/vacaciones/mis-solicitudes" },
-        )
-      }
-      if (user.id_cargo === 5) {
-        vacacionesSubItems.push(
-          { title: "Registrar Vacaciones Asesor", href: "/dashboard/vacaciones/registrar-asesor" },
-          { title: "Solicitudes Asesores", href: "/dashboard/vacaciones/solicitudes-asesor" },
-        )
-      }
 
-      if ((user.idEmpleado === user.idJefe && user.id_cargo !== 9) || user.idEmpleado === 214) {
-        vacacionesSubItems.push({
-          title: "Solicitudes Equipo",
-          href: "/dashboard/vacaciones/solicitudes-equipo",
-        })
-      }
+    const permisos = getPermisosFromStorage()
 
-      if (user.id_cargo === 9 || user.idEmpleado === 179) {
-        vacacionesSubItems.push({
-          title: "Solicitudes Aprobadas",
-          href: "/dashboard/vacaciones/solicitudes-aprobadas",
+    return (
+      MENU_CONFIG
+        // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
+        .map((menu) => {
+          if (!menu.subItems || menu.subItems.length === 0) {
+            return menu
+          }
+
+          const filteredSubItems = menu.subItems.filter((sub) =>
+            tienePermiso(permisos, sub.modulo, sub.permiso),
+          )
+
+          if (filteredSubItems.length === 0) return null
+
+          return { ...menu, subItems: filteredSubItems }
         })
-      }
-      if (user.id_cargo === 9) {
-        vacacionesSubItems.push(
-          { title: "Solicitudes Pendientes", href: "/dashboard/vacaciones/solicitudes-pendientes" },
-          { title: "Calendario Jefes Área", href: "/dashboard/vacaciones/calendario" },
-        )
-      }
-      baseItems.push({
-        id: "mcp",
-        title: "Consultas Expertito",
-        icon: Bot,
-        href: "/dashboard/consultas",
-        subItems: [],
-      })
-      baseItems.push(
-        {
-          id: "vacaciones",
-          title: "Vacaciones",
-          icon: Calendar,
-          href: "#",
-          subItems: vacacionesSubItems,
-        },
-        {
-          id: "admin",
-          title: "Admin",
-          icon: UserPlus,
-          href: "#",
-          subItems: [
-            {
-              title: "Crear nuevo empleado",
-              href: "/dashboard/admin/crear-empleado",
-            },
-            {
-              title: "Eliminar Empleado",
-              href: "/dashboard/admin/eliminar-empleado",
-            },
-            {
-              title: "Carga Masiva Empleados",
-              href: "/dashboard/admin/carga-masiva",
-            }
-          ],
-        }
-      )
-    }
-    return baseItems
+        .filter(Boolean) as MenuItem[]
+    )
   }
-  if (!mounted) return null;
+
+  if (!mounted) return null
+
+  const menuItems = getMenuItems()
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <div className="min-h-screen bg-background transition-colors duration-300">
         {/* Header */}
         <header className="bg-background backdrop-blur-sm border-b border-border px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4">
+            {/* Sidebar móvil */}
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden">
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 max-h-screen overflow-y-auto">
+              <SheetContent
+                side="left"
+                className="w-72 max-h-screen overflow-y-auto"
+              >
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <div className="relative w-10 h-10">
-                      <Image src="/icono-logo.png" alt="Logo Central" fill sizes="4xl" className="object-contain" />
+                      <Image
+                        src="/icono-logo.png"
+                        alt="Logo Central"
+                        fill
+                        sizes="4xl"
+                        className="object-contain"
+                      />
                     </div>
                     <div>
                       <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 dark:from-cyan-400 dark:to-teal-200 bg-clip-text text-transparent">
                         ExpertisNet
                       </span>
-                      <div className="text-xs text-muted-foreground -mt-1">Intranet</div>
+                      <div className="text-xs text-muted-foreground -mt-1">
+                        Intranet
+                      </div>
                     </div>
                   </SheetTitle>
                   <SheetDescription className="py-1">
-                    <div className="font-medium text-foreground">{user?.usuario}, {user?.cargo}</div>
+                    <div className="font-medium text-foreground">
+                      {user?.usuario}, {user?.cargo}
+                    </div>
                   </SheetDescription>
                 </SheetHeader>
+
                 <Sidebar
-                  menuItems={getMenuItems()}
+                  menuItems={menuItems}
                   expandedMenus={expandedMenus}
                   toggleMenu={toggleMenu}
                   pathname={pathname}
@@ -216,37 +347,53 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </SheetContent>
             </Sheet>
 
+            {/* Logo + título */}
             <div className="flex items-center gap-2">
               <div className="relative w-10 h-10">
-                <Image src="/icono-logo.png" alt="Logo Central" fill sizes="4xl" className="object-contain" />
+                <Image
+                  src="/icono-logo.png"
+                  alt="Logo Central"
+                  fill
+                  sizes="4xl"
+                  className="object-contain"
+                />
               </div>
               <div>
-                <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 
-                  dark:from-cyan-400 dark:to-teal-200 bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-cyan-700 to-teal-500 dark:from-cyan-400 dark:to-teal-200 bg-clip-text text-transparent">
                   ExpertisNet
                 </span>
-                <div className="text-xs text-muted-foreground -mt-1">Intranet</div>
+                <div className="text-xs text-muted-foreground -mt-1">
+                  Intranet
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Usuario + theme toggler */}
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
               {user && (
                 <div className="text-sm">
-                  <div className="font-medium text-foreground">{user.usuario}</div>
-                  <div className="text-xs text-muted-foreground">{user.cargo}</div>
+                  <div className="font-medium text-foreground">
+                    {user.usuario}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.cargo}
+                  </div>
                 </div>
               )}
             </div>
-            {/* <NotificationButton /> */}
             <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>
+
+        {/* Layout principal */}
         <div className="flex">
+          {/* Sidebar desktop */}
           <div className="h-[calc(100vh-4rem)] overflow-y-auto hidden lg:block w-72 border-r border-border bg-background backdrop-blur-sm sidebar-scroll">
             <Sidebar
-              menuItems={getMenuItems()}
+              menuItems={menuItems}
               expandedMenus={expandedMenus}
               toggleMenu={toggleMenu}
               pathname={pathname}
@@ -254,8 +401,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             />
           </div>
 
+          {/* Contenido */}
           <main className="flex-1 overflow-hidden">
-            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto sidebar-scroll" >
+            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto sidebar-scroll">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: 20 }}
@@ -268,7 +416,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </main>
         </div>
-
       </div>
     </ThemeProvider>
   )

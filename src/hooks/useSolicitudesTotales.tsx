@@ -6,16 +6,17 @@ import { ArraySolicitudesAprobadas } from "../types/Vacaciones";
 
 export const useSolicitudesTotales = () => {
     const { user } = useUser()
-    const [solicitudesTotales, setSolicitudesTotales] = useState < ArraySolicitudesAprobadas > ([])
+    const [solicitudesTotales, setSolicitudesTotales] = useState<ArraySolicitudesAprobadas>([])
     const [isloadingSolicitudesTotales, setIsloadingSolicitudesTotales] = useState(false)
     useEffect(() => {
-        const fetchURLS = async () => {
+        const fetchSolicitudesTotales = async () => {
             setIsloadingSolicitudesTotales(true);
             const data = await getSolicitudesAprobadasTodas();
+            console.log("*****************",data.data)
             setSolicitudesTotales(data.data);
             setIsloadingSolicitudesTotales(false);
         };
-        fetchURLS()
+        fetchSolicitudesTotales()
     }, [user]);
     return { solicitudesTotales, isloadingSolicitudesTotales };
 };

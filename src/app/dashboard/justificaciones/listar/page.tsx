@@ -19,6 +19,7 @@ import { useUser } from "@/Provider/UserProvider"
 import { ActualizarJustificaciones } from "@/components/ActualizarJustificaciones"
 import { Loading } from "@/components/Loading"
 import { CargarActividad } from "@/services/CargarActividad"
+import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout"
 
 export default function ListarJustificaciones() {
   const { user } = useUser()
@@ -77,6 +78,7 @@ export default function ListarJustificaciones() {
     setSelectedJustification(justification)
     setSetShowUppdateModal(true)
   }
+  const permisos = getPermisosFromStorage()
 
   const confirmDelete = async () => {
     if (itemToDelete) {
@@ -256,33 +258,37 @@ export default function ListarJustificaciones() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUploadProof(item)}
-                          className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
-                        >
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(item.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        {
-                          user?.usuario === "MAYRA LLIMPE" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditar(item)}
-                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
-                            >
-                              <Pen className="h-4 w-4" />
-                            </Button>
-                          )
+                        {tienePermiso(permisos, "Justificaciones", "JustificacionEvidencia-registrar") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUploadProof(item)}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                          >
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {tienePermiso(permisos, "Justificaciones", "Justificacion-eliminar") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(item.id)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        {tienePermiso(permisos, "Justificaciones", "Justificacion-editar") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditar(item)}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                          >
+                            <Pen className="h-4 w-4" />
+                          </Button>
+                        )
                         }
                       </div>
                     </TableCell>
