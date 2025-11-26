@@ -12,6 +12,8 @@ import type { UploadProps } from "antd"
 import type { RcFile } from "antd/es/upload"
 import { toast } from "sonner"
 import { LoadingModal } from "./loading-modal"
+import { CargarActividad } from "@/services/CargarActividad"
+import { useUser } from "@/Provider/UserProvider"
 
 interface UploadProofModalProps {
   readonly isOpen: boolean
@@ -32,11 +34,9 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState("")
-
+  const { user } = useUser()
   const beforeUpload = (file: RcFile) => {
-    console.log(file)
     const isImage = file.type.startsWith("image/")
-    console.log(file)
     if (fileList.length === 4) {
       toast.error("Solo se permiten 4 imágenes")
       return Upload.LIST_IGNORE
@@ -67,7 +67,6 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
 
   const handleUpload = async () => {
     if (fileList.length === 0) return
-    console.log("Subiendo archivos:", fileList)
     setUploading(true)
     try {
       const uploadPromises = fileList.map(async (file) => {
@@ -90,10 +89,9 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
         return data.secure_url;
       });
       const urls = await Promise.all(uploadPromises);
-      console.log("URLs de las imágenes subidas:", urls);
       try {
         for (const url of urls) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearPruebaaaa`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearPrueba`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -101,24 +99,35 @@ export function UploadProofModal({ isOpen, onClose, justification }: UploadProof
             body: JSON.stringify({ id_justificacion: justification?.id, urlPrueba: url }),
           });
           if (response.status === 200) {
-            console.log("Prueba guardada con éxito:", url);
             setUploading(false)
             toast.success("Imágenes subidas con éxito")
+            CargarActividad({
+              usuario: user?.usuario || "Desconocido",
+              titulo: "Subir Prueba de Justificación",
+              descripcion: `Se registro una nueva prueba para la justificación de ${justification?.asesor}`,
+              estado: "completed",
+            })
             setFileList([])
             onClose()
           } else {
             toast.error("Error al guardar las imágenes. Inténtalo de nuevo.")
+            CargarActividad({
+              usuario: user?.usuario || "Desconocido",
+              titulo: "Error al subir una Prueba de Justificación",
+              descripcion: `Se intento registrar una nueva prueba para la justificación de ${justification?.asesor}`,
+              estado: "error",
+            })
             setUploading(false)
           }
         }
       } catch (error) {
-        console.log("Error al guardar archivos:", error)
+        console.log(error)
         toast.error("Error al guardar las imágenes. Inténtalo de nuevo.")
         setUploading(false)
       }
       setUploading(false)
     } catch (error) {
-      console.log("Error al subir archivos:", error)
+      console.log(error)
       toast.error("Error al subir las imágenes. Inténtalo de nuevo.")
       setUploading(false)
     }

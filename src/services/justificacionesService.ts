@@ -1,14 +1,19 @@
-export const getJustificaciones = async ({grupo, cargo}: {grupo: number | undefined, cargo: number | undefined}) => {
+import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout";
+
+export const getJustificaciones = async ({idUsuario}: {idUsuario: number | undefined}) => {
+    const permisos = getPermisosFromStorage()
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerJustsPorSuper`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/${(tienePermiso(permisos, "Justificaciones", "JustificacionesTotal-ver"))? "obtenerJustificacionesTodas":"obtenerJustsPorUsuario"}`, {
             method: "POST",
             cache: "no-store",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({grupo, cargo}),
+            body: JSON.stringify({idUsuario}),
         });
+        console.log(res)
         const json = await res.json();
+        
         if (!res.ok) throw new Error("Error al obtener justificaciones");
         return json;
     } catch (error) {

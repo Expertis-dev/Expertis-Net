@@ -1,27 +1,25 @@
 "use client"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar } from "lucide-react"
-import { useUser } from "@/Provider/UserProvider"
-
-import { Asesores } from "../../../../types/Asesores"
 import { AutoComplete } from "@/components/autoComplete"
 import { ArraySolicitudes } from "../../../../types/Vacaciones"
 import { BadgeStatus } from "@/components/BadgeStatus"
-import { useAsesores } from "@/hooks/useAsesores"
 import { toast } from "sonner"
+import { useColaboradores } from "@/hooks/useColaboradores"
+import { Empleado } from "@/types/Empleado"
+import { LoadingModal } from "@/components/loading-modal"
 
 export default function SolicitudesAsesor() {
-  const { user } = useUser()
-  const { asesores } = useAsesores(user?.grupo)
-  const [asesor, setAsesor] = useState<Asesores | null>(null)
+  const { colaboradores } = useColaboradores()
+  const [asesor, setAsesor] = useState<Empleado | null>(null)
   const [historial, setHistorial] = useState<ArraySolicitudes>([])
+  const [showLoading, setShowLoading] = useState(false)
   useEffect(() => {
     const ObtenerHistorial = async () => {
-      console.log(asesor)
+      setShowLoading(true)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
         method: "POST",
         cache: "no-store",
@@ -40,20 +38,20 @@ export default function SolicitudesAsesor() {
         body: JSON.stringify({ idEmpleado: json.data[0].idEmpleado }),
       });
       const json2 = await res2.json();
-      if(json2.message){
+      if (json2.message) {
         toast.error("No tiene historial de vacaciones")
         setHistorial([])
+        setShowLoading(false)
         return
       }
-      console.log("awdawdwa", json2)
       setHistorial(json2.data)
+      setShowLoading(false)
     }
     if (asesor) {
       ObtenerHistorial()
     }
   }, [asesor])
   return (
-    <DashboardLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -66,7 +64,7 @@ export default function SolicitudesAsesor() {
         </div>
         {/* Búsqueda de Asesor */}
         <AutoComplete
-          employees={asesores}
+          employees={colaboradores}
           onSelect={setAsesor}
         />
         {/* Tabla de Historial */}
@@ -129,7 +127,7 @@ export default function SolicitudesAsesor() {
             </CardContent>
           </Card>
         )}
+        <LoadingModal isOpen={showLoading} message="Buscando historial de vacaciones..." />
       </motion.div>
-    </DashboardLayout>
   )
 }

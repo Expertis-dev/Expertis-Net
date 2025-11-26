@@ -33,7 +33,6 @@ export const ViewPendientesRevisar = ({ isOpen, onClose, solicitud }: ViewJustif
                     })
                 });
                 const data = await response.json();
-                console.log("DATA", data.data[0]);
                 setInfoSolicitud(data.data[0]);
             } catch (error) {
                 console.error("Error fetching data:", error);

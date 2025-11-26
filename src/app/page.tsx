@@ -12,9 +12,10 @@ import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 import { useUser } from "@/Provider/UserProvider"
+import { Activity } from "./dashboard/page"
 
 export default function LoginPage() {
-  const {setUser} = useUser()
+  const { setUser } = useUser()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [credentials, setCredentials] = useState({ usuario: "", password: "" })
@@ -37,10 +38,20 @@ export default function LoginPage() {
     if (response.status === 200) {
       toast.success("Credenciales Correctas")
       const data = await response.json()
+      const seed: Activity = {
+        usuario: credentials.usuario,
+        titulo: "Inicio de sesión",
+        descripcion: "El usuario ha iniciado sesión en el sistema.",
+        tiempo: new Date().toLocaleString(),
+        estado: "completed",
+      };
       setTimeout(() => {
+        safeSetLocalStorage("actividadesRecientes", JSON.stringify([seed]))
         safeSetLocalStorage("isAuthenticated", "true")
         safeSetLocalStorage("token", data.token)
         safeSetLocalStorage("user", JSON.stringify(data.user))
+        safeSetLocalStorage("rol", JSON.stringify(data.rol))
+        safeSetLocalStorage("permisos", JSON.stringify(data.permisos))
         setUser(data.user)
         window.location.href = "/dashboard"
       }, 500)
@@ -72,7 +83,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mx-auto w-16 h-16 flex items-center justify-center"
               >
-                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} priority  className="text-white w-full h-auto" />
+                <Image src="/icono-logo.png" alt="Logo" width={80} height={80} priority className="text-white w-full h-auto" />
               </motion.div>
               <CardTitle className="text-4xl font-bold text-[#001529] dark:text-white">ExpertisNet</CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-400">

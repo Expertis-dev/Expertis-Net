@@ -5,18 +5,18 @@ import { ArrayURL } from "../types/Url";
 
 export const useURL = (id: number | undefined) => {
     const [urls, setUrls] = useState<ArrayURL>([])
-    const [isloadingURL, setIsloadingURL] = useState(false)
+    const [isLoadingURL, setIsLoadingURL] = useState(false)
     useEffect(() => {
         const fetchURLS = async () => {
-            setIsloadingURL(true);
+            setIsLoadingURL(true);
             const data = await getURLs({ id });
             setUrls(data.data);
-            setIsloadingURL(false);
+            setIsLoadingURL(false);
         };
         if(id){
             fetchURLS();
         }
         
     }, [id]);
-    return { urls, isloadingURL };
+    return { urls, isLoadingURL };
 };

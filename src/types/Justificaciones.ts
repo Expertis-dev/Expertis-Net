@@ -16,5 +16,8 @@ export type Justificaciones = {
     user_create: string | null;
     user_update: string | null;
     fec_update: string | null;
+    idJefe: string;
+    idEmpleado: string;
+    codigoEmpleado: string;
 }
 export type ArrayJustificaciones = Array<Justificaciones>;

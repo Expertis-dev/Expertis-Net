@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import TablaDinamica from "@/components/base-Table";
 import DownloadExcel from "@/components/DownloadExcel";
@@ -12,9 +11,10 @@ import type {
   FilaHoras,
   VistaActiva
 } from "@/types/Bases";
-import { getAsesores } from "@/services/asesoresService";
 import { useUser } from "@/Provider/UserProvider";
-import { Asesores } from "@/types/Asesores";
+import { Empleado } from "@/types/Empleado";
+import { getColaboradores } from "@/services/asesoresService";
+import { CargarActividad } from "@/services/CargarActividad";
 
 const columnasNvl1 = [
   "Asesor",
@@ -44,7 +44,7 @@ export default function Bases() {
   const [error, setError] = useState<string | null>(null);
   const [datosBackend, setDatosBackend] = useState<ResponseData | null>(null);
   const [cargando, setCargando] = useState<boolean>(false);
-  const {user} = useUser()
+  const { user } = useUser()
   // Fechas por defecto
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -125,17 +125,17 @@ export default function Bases() {
     }
     setError(null);
     setCargando(true);
-    const data1 = await getAsesores(user?.grupo);
-      const ArrayAsesores = data1.data.map((asesor: Asesores ) =>{
-        return asesor.usuario
-      })
+    const data1 = await getColaboradores(user?.grupo);
+    const ArrayAsesores = data1.data.map((asesor: Empleado) => {
+      return asesor.usuario
+    })
     console.log(ArrayAsesores)
     const fd = new FormData();
     fd.append("end_date", date);
     fd.append("file", archivoSeleccionado);
     fd.append("start_date", dateY);
     fd.append("ArrayAsesores", JSON.stringify(ArrayAsesores))
-    try {   
+    try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_ANDERSON}/api/procesar-datos`, {
         method: "POST",
         body: fd,
@@ -143,16 +143,25 @@ export default function Bases() {
       const data: ResponseData = await response.json();
       if (!response.ok) throw new Error(data.error || "Error al procesar el archivo");
       setDatosBackend(data);
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Proceso de datos en Base Manuales",
+        descripcion: `Se proceso los datos de las bases manuales`,
+        estado: "completed",
+      })
       localStorage.setItem("datos_backend", JSON.stringify(data));
-
-
       const nuevoContador = contadorProcesos + 1;
       setContadorProcesos(nuevoContador);
       localStorage.setItem("procesos_realizados", nuevoContador.toString());
       localStorage.setItem("fecha_procesos", new Date().toISOString().split("T")[0]);
-
       if (nuevoContador >= LIMITE_PROCESOS) setBloqueado(true);
     } catch (err) {
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Se intento procesar de datos en Base Manuales",
+        descripcion: `No se logro procesar los datos de las bases manuales`,
+        estado: "error",
+      })
       setError(err instanceof Error ? err.message : "Error al procesar el archivo");
     } finally {
       setCargando(false);
@@ -211,139 +220,137 @@ export default function Bases() {
   })) || [];
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Gestor de Bases</h1>
-          <div className="flex gap-2">
-            <input
-              type="file"
-              id="fileInput"
-              accept=".xlsx,.xls"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Gestor de Bases</h1>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="fileInput"
+            accept=".xlsx,.xls"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              const input = document.getElementById("fileInput");
+              if (input) input.click();
+            }}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Cargar Archivo
+          </Button>
+        </div>
+      </div>
+
+      {/* File Selection Status */}
+      <div className="bg-muted/50 p-4 rounded-lg">
+        {archivoSeleccionado ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-medium">{archivoSeleccionado.name}</span>
+              <span className="text-xs text-muted-foreground">
+                ({(archivoSeleccionado.size / 1024).toFixed(2)} KB)
+              </span>
+            </div>
             <Button
-              variant="default"
+              variant="ghost"
               size="sm"
-              onClick={() => {
-                const input = document.getElementById("fileInput");
-                if (input) input.click();
-              }}
+              onClick={handleClearFile}
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Cargar Archivo
+              <X className="w-4 h-4" />
             </Button>
           </div>
-        </div>
-
-        {/* File Selection Status */}
-        <div className="bg-muted/50 p-4 rounded-lg">
-          {archivoSeleccionado ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium">{archivoSeleccionado.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({(archivoSeleccionado.size / 1024).toFixed(2)} KB)
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearFile}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Ningún archivo seleccionado</p>
-          )}
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Ningún archivo seleccionado</p>
         )}
+      </div>
 
-        {/* Filter Section */}
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium">Rango de fecha:
-            <span className="text-muted-foreground"> Tener en cuenta que es necesario que el archivo tenga las columnas Documento, Cartera y Asesor </span>
-          </h3>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm">Fecha inicio:</label>
-              <input
-                type="date"
-                value={dateY}
-                onChange={(e) => handleChangeStartDate(e.target.value)}
-                className="px-2 py-2 border rounded-md text-sm w-full"
+      {/* Filter Section */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium">Rango de fecha:
+          <span className="text-muted-foreground"> Tener en cuenta que es necesario que el archivo tenga las columnas Documento, Cartera y Asesor </span>
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm">Fecha inicio:</label>
+            <input
+              type="date"
+              value={dateY}
+              onChange={(e) => handleChangeStartDate(e.target.value)}
+              className="px-2 py-2 border rounded-md text-sm w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm">Fecha fin:</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => handleChangeEndDate(e.target.value)}
+              className="px-2 py-2 border rounded-md text-sm w-full"
+            />
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center gap-4 mt-4">
+            <Button
+              variant={vistaActiva === "nvl1" ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setVistaActiva("nvl1")}
+            >
+              nvl1
+            </Button>
+            <Button
+              variant={vistaActiva === "nvl2" ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setVistaActiva("nvl2")}
+            >
+              nvl2
+            </Button>
+            <Button
+              variant={vistaActiva === "horas" ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setVistaActiva("horas")}
+            >
+              horas
+            </Button>
+            <Button
+              onClick={ProcesarInformacion}
+              disabled={cargando || bloqueado}
+              className="bg-teal-500 hover:bg-teal-600 text-white disabled:bg-gray-400"
+            >
+              {cargando ? "Procesando..." : "Procesar"}
+            </Button>
+
+            {datosBackend && (
+              <DownloadExcel
+                hojas={[
+                  { nombre: "Gestiones Detalladas", datos: datosBackend.gestiones_detalladas_por_asesor },
+                  { nombre: "No Gestionados", datos: datosBackend.no_gestionados_por_asesor },
+                ]}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm">Fecha fin:</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => handleChangeEndDate(e.target.value)}
-                className="px-2 py-2 border rounded-md text-sm w-full"
-              />
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex items-center gap-4 mt-4">
-              <Button
-                variant={vistaActiva === "nvl1" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setVistaActiva("nvl1")}
-              >
-                nvl1
-              </Button>
-              <Button
-                variant={vistaActiva === "nvl2" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setVistaActiva("nvl2")}
-              >
-                nvl2
-              </Button>
-              <Button
-                variant={vistaActiva === "horas" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setVistaActiva("horas")}
-              >
-                horas
-              </Button>
-              <Button
-                onClick={ProcesarInformacion}
-                disabled={cargando || bloqueado}
-                className="bg-teal-500 hover:bg-teal-600 text-white disabled:bg-gray-400"
-              >
-                {cargando ? "Procesando..." : "Procesar"}
-              </Button>
-
-              {datosBackend && (
-                <DownloadExcel
-                  hojas={[
-                    { nombre: "Gestiones Detalladas", datos: datosBackend.gestiones_detalladas_por_asesor },
-                    { nombre: "No Gestionados", datos: datosBackend.no_gestionados_por_asesor },
-                  ]}
-                />
-              )}
-            </div>
+            )}
           </div>
         </div>
-
-        {/* Tablas */}
-        {vistaActiva === "nvl1" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl1} datos={datosNvl1} />}
-        {vistaActiva === "nvl2" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl2} datos={datosNvl2} />}
-        {vistaActiva === "horas" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasHoras} datos={datosHoras} />}
       </div>
-    </DashboardLayout>
+
+      {/* Tablas */}
+      {vistaActiva === "nvl1" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl1} datos={datosNvl1} />}
+      {vistaActiva === "nvl2" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl2} datos={datosNvl2} />}
+      {vistaActiva === "horas" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasHoras} datos={datosHoras} />}
+    </div>
   )
 }

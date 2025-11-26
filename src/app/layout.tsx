@@ -6,10 +6,9 @@ import { Toaster } from "sonner"
 import { UserProvider } from "@/Provider/UserProvider"
 const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
-  title: "ExpertisNet - Panel de Control",
+  title: "ExpertisNet",
   description: "Sistema de gestión empresarial",
 }
-
 export default function RootLayout({
   children,
 }: {

@@ -1,148 +1,112 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { ComponentType, SVGProps } from "react"
+import Image from "next/image"
 import { motion } from "framer-motion"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  Calendar,
   Clock,
-  Users,
-  TrendingUp,
-  TrendingDown,
   CheckCircle,
   AlertCircle,
+  X,
+  User,
+  ChartNoAxesCombined,
 } from "lucide-react"
 import { Loading } from "@/components/Loading"
 import { useUser } from "@/Provider/UserProvider"
-
-// Datos simulados para el dashboard
-const dashboardData = {
-  stats: [
-    {
-      title: "Justificaciones Pendientes",
-      value: 12,
-      change: "+2.5%",
-      trend: "up",
-      icon: FileText,
-      color: "blue",
-    },
-    {
-      title: "Vacaciones Aprobadas",
-      value: 8,
-      change: "+12.3%",
-      trend: "up",
-      icon: Calendar,
-      color: "green",
-    },
-    {
-      title: "Solicitudes del Mes",
-      value: 24,
-      change: "-5.2%",
-      trend: "down",
-      icon: Clock,
-      color: "orange",
-    },
-    {
-      title: "Asesores Activos",
-      value: 156,
-      change: "+8.1%",
-      trend: "up",
-      icon: Users,
-      color: "purple",
-    },
-  ],
-  recentActivity: [
-    {
-      id: 1,
-      type: "justification",
-      title: "Justificación aprobada",
-      description: "Juan Pérez - Cita médica",
-      time: "Hace 2 horas",
-      status: "approved",
-    },
-    {
-      id: 2,
-      type: "vacation",
-      title: "Nueva solicitud de vacaciones",
-      description: "María García - Del 15 al 20 de febrero",
-      time: "Hace 4 horas",
-      status: "pending",
-    },
-    {
-      id: 3,
-      type: "justification",
-      title: "Justificación pendiente",
-      description: "Carlos López - Permiso personal",
-      time: "Hace 6 horas",
-      status: "pending",
-    },
-    {
-      id: 4,
-      type: "vacation",
-      title: "Vacaciones registradas",
-      description: "Ana Martínez - Período completado",
-      time: "Hace 1 día",
-      status: "completed",
-    },
-  ],
-  carouselSlides: [
-    {
-      id: 1,
-      title: "Control de Vacaciones",
-      subtitle: "Planificación simplificada",
-      description: "Administra el tiempo libre de tu equipo sin complicaciones",
-      gradient: "from-orange-800 to-orange-600",
-    },
-    {
-      id: 2,
-      title: "Gestión de Justificaciones",
-      subtitle: "Proceso automatizado",
-      description: "Aprueba y gestiona justificaciones de manera eficiente",
-      gradient: "from-cyan-800 to-cyan-600",
-    },
-    {
-      id: 3,
-      title: "Reportes en Tiempo Real",
-      subtitle: "Información actualizada",
-      description: "Toma decisiones basadas en datos actualizados",
-      gradient: "from-purple-500 to-indigo-600",
-    },
-  ],
+import { ListaColaboradores } from "@/services/ListaColaboradores"
+export type Activity = {
+  usuario: string
+  titulo: string
+  descripcion: string
+  tiempo: string
+  estado: "approved" | "completed" | "pending" | "error"
+}
+type StatItem = {
+  title: string
+  value: number | string
+  icon: ComponentType<SVGProps<SVGSVGElement>>
+  color: "blue" | "green" | "orange" | "purple"
 }
 
+const getStatColor = (color: string) => {
+  const colors = {
+    blue: "from-blue-500 to-blue-600",
+    green: "from-green-500 to-green-600",
+    orange: "from-orange-500 to-orange-600",
+    purple: "from-purple-500 to-purple-600",
+  }
+  return (colors as Record<string, string>)[color] || colors.blue
+}
+
+// ⬇️ Reemplaza estos URLs con tus imágenes (pueden ser rutas locales /public o remotas)
+const carouselImages: { id: number; src: string; alt?: string }[] = [
+  { id: 1, src: "/imagen5.png", alt: "Slide 1" },
+  { id: 2, src: "/imagen1.png", alt: "Slide 2" },
+  { id: 3, src: "/imagen3.jpg", alt: "Slide 3" },
+  { id: 4, src: "/imagen4.jpg", alt: "Slide 4" },
+  { id: 5, src: "/imagen2.jpg", alt: "Slide 5" },
+]
+
 export default function DashboardHome() {
-  const {user} = useUser()
+  const { user } = useUser()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [actividadesRecientes, setActividadesRecientes] = useState<Activity[]>([])
+  const [info, setInfo] = useState<StatItem[] | null>(null)
 
   useEffect(() => {
     const auth = localStorage.getItem("isAuthenticated")
     if (!auth) {
-      window.location.href = "/"
+      globalThis.location.href = "/"
       return
     }
-    console.log("user", user)
+
+    const ObtenerInfo = async () => {
+      try {
+        const idColaboradores = await ListaColaboradores(user?.usuario)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/indicadoresHome`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lista: idColaboradores,
+            grupo: user?.usuario?.split(" ")[0],
+          }),
+        })
+        const data = await response.json()
+
+        setInfo([
+          { title: `Número de ${user?.idJefe === user?.idEmpleado ? "Colaboradores" : "Asesores"}`, value: data.numAsesores, icon: User, color: "green" },
+          { title: "Número de Justificaciones", value: data.cantidadJustificacionesEquipo, icon: ChartNoAxesCombined, color: "blue" },
+          { title: "Justificaciones en Revisión", value: data.justificacionesEnRevision, icon: FileText, color: "orange" },
+        ])
+      } catch (e) {
+        console.error(e)
+        setInfo(null)
+      }
+    }
+
     setIsAuthenticated(true)
-    // Auto-advance carousel
+
+    // Auto-advance carousel (cada 5s)
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % dashboardData.carouselSlides.length)
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length)
     }, 5000)
 
+    const raw = localStorage.getItem("actividadesRecientes")
+    setActividadesRecientes(raw ? JSON.parse(raw) : [])
+
+    ObtenerInfo()
     return () => clearInterval(interval)
   }, [user])
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % dashboardData.carouselSlides.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + dashboardData.carouselSlides.length) % dashboardData.carouselSlides.length)
-  }
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % carouselImages.length)
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + carouselImages.length) % carouselImages.length)
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -151,30 +115,22 @@ export default function DashboardHome() {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "pending":
         return <AlertCircle className="h-4 w-4 text-yellow-500" />
+      case "error":
+        return <X className="h-4 w-4 text-red-500" />
       default:
         return <Clock className="h-4 w-4 text-gray-500" />
     }
   }
 
-  const getStatColor = (color: string) => {
-    const colors = {
-      blue: "from-blue-500 to-blue-600",
-      green: "from-green-500 to-green-600",
-      orange: "from-orange-500 to-orange-600",
-      purple: "from-purple-500 to-purple-600",
-    }
-    return colors[color as keyof typeof colors] || colors.blue
-  }
-
-  if (!isAuthenticated) {
+  if (!isAuthenticated || info === null) {
     return (
-      <div className="bg-white/80 dark:bg-slate-900 h-screen">
-        <Loading/>
+      <div className="h-[72vh] -translate-x-10">
+        <Loading />
       </div>
     )
   }
+
   return (
-    <DashboardLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -198,78 +154,64 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Carousel Hero */}
+        {/* Carrusel de Imágenes */}
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="relative h-[300px] md:h-[400px]">
-              {dashboardData.carouselSlides.map((slide, index) => (
+              {carouselImages.map((slide, index) => (
                 <motion.div
                   key={slide.id}
                   initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: index === currentSlide ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.5 }}
-                  className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`}
+                  animate={{ opacity: index === currentSlide ? 1 : 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute inset-0"
                   style={{ display: index === currentSlide ? "block" : "none" }}
                 >
-                  <div className="flex items-center justify-center h-full text-white p-8">
-                    <div className="text-center max-w-2xl">
-                      <motion.h2
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-3xl md:text-5xl font-bold mb-4"
-                      >
-                        {slide.title}
-                      </motion.h2>
-                      <motion.p
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="text-xl md:text-2xl font-medium mb-2 opacity-90"
-                      >
-                        {slide.subtitle}
-                      </motion.p>
-                      <motion.p
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="text-lg opacity-80"
-                      >
-                        {slide.description}
-                      </motion.p>
-                    </div>
+                  {/* Imagen full-bleed */}
+                  <div className="absolute inset-0">
+                    <Image
+                      src={slide.src}
+                      alt={slide.alt || `Slide ${slide.id}`}
+                      fill
+                      priority={index === 0}
+                      sizes=""
+                      className="object-contain"
+                    //className="object-cover w-full h-full"
+                    />
+                    {/* Overlay sutil para legibilidad de controles */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
                   </div>
                 </motion.div>
               ))}
 
-              {/* Controles del carrusel */}
+              {/* Controles */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm"
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/40 text-white backdrop-blur-sm"
                 onClick={prevSlide}
+                aria-label="Anterior"
               >
                 <ChevronLeft className="h-6 w-6" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/40 text-white backdrop-blur-sm"
                 onClick={nextSlide}
+                aria-label="Siguiente"
               >
                 <ChevronRight className="h-6 w-6" />
               </Button>
 
               {/* Indicadores */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                {dashboardData.carouselSlides.map((_, index) => (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                {carouselImages.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentSlide ? "bg-white" : "bg-white/50"
-                    }`}
+                    aria-label={`Ir al slide ${index + 1}`}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === currentSlide ? "bg-white" : "bg-white/50"
+                      }`}
                     onClick={() => setCurrentSlide(index)}
                   />
                 ))}
@@ -278,44 +220,46 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {dashboardData.stats.map((stat, index) => (
+        {/* Estadísticas (cards rediseñadas) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {info?.map((stat, index) => (
             <motion.div
               key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.45, delay: index * 0.08 }}
             >
-              <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">{stat.title}</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-3xl font-bold text-foreground">{stat.value}</p>
-                        <div
-                          className={`flex items-center gap-1 text-sm ${
-                            stat.trend === "up" ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {stat.trend === "up" ? (
-                            <TrendingUp className="h-4 w-4" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4" />
-                          )}
-                          {stat.change}
+              <div className="relative rounded-2xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800">
+                <Card className="rounded-2xl border-0 bg-white/70 dark:bg-neutral-800 backdrop-blur supports-[backdrop-filter]:bg-white/40">
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      {/* Icono en badge con gradiente */}
+                      <div
+                        className={`shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${getStatColor(
+                          stat.color
+                        )} flex items-center justify-center shadow-sm`}
+                      >
+                        <stat.icon className="h-6 w-6 text-white" />
+                      </div>
+
+                      {/* Texto y valor */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground">{stat.title}</p>
+                        <div className="mt-1 flex items-baseline gap-2">
+                          <span className="text-3xl font-bold tracking-tight text-foreground">
+                            {stat.value}
+                          </span>
                         </div>
                       </div>
+
+                      {/* Acento decorativo */}
+                      <div className="hidden md:block">
+                        <div className="h-10 w-px bg-gradient-to-b from-transparent via-slate-300 dark:via-slate-600 to-transparent" />
+                      </div>
                     </div>
-                    <div
-                      className={`w-12 h-12 rounded-lg bg-gradient-to-br ${getStatColor(stat.color)} flex items-center justify-center`}
-                    >
-                      <stat.icon className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -330,26 +274,25 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {dashboardData.recentActivity.map((activity, index) => (
+              {actividadesRecientes.map((activity, index) => (
                 <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
+                  key={`${activity.estado}-${activity.titulo}-${activity.tiempo}-${index}`}
+                  initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                 >
-                  <div className="flex-shrink-0">{getStatusIcon(activity.status)}</div>
+                  <div className="flex-shrink-0">{getStatusIcon(activity.estado)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
+                    <p className="font-medium text-foreground">{activity.titulo}</p>
+                    <p className="text-sm text-muted-foreground truncate">{activity.descripcion}</p>
                   </div>
-                  <div className="flex-shrink-0 text-sm text-muted-foreground">{activity.time}</div>
+                  <div className="flex-shrink-0 text-sm text-muted-foreground">{activity.tiempo}</div>
                 </motion.div>
               ))}
             </div>
           </CardContent>
         </Card>
       </motion.div>
-    </DashboardLayout>
   )
 }
