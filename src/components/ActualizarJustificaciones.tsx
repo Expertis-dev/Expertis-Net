@@ -9,11 +9,12 @@ import { Button } from "./ui/button"
 import { LoadingModal } from "./loading-modal"
 import { toast } from "sonner"
 import { useUser } from "@/Provider/UserProvider"
+import { CargarActividad } from "@/services/CargarActividad"
 
 interface ViewJustificationModalProps {
     readonly isOpen: boolean
     readonly onClose: () => void
-    readonly onCloseModal : () => void
+    readonly onCloseModal: () => void
     readonly justification: Justificaciones
 }
 
@@ -58,6 +59,12 @@ export function ActualizarJustificaciones({
             });
             const data = await response.json();
             console.log(data)
+            CargarActividad({
+                usuario: user?.usuario || "Desconocido",
+                titulo: "Actualizo una Justificacion",
+                descripcion: `Se actualizo la justificacion del asesor ${justification.asesor}`,
+                estado: "completed",
+            })
             onClose()
             setShowLoading(false)
             toast.success("Justificacion editada exitosamente")
