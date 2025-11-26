@@ -45,6 +45,7 @@ export default function DownloadExcel({ hojas }: DownloadExcelProps) {
       // Convertir los datos por asesor en filas planas
       const filas: Registro[] = [];
       Object.entries(datos).forEach(([asesor,registros]) => {
+        console.log(asesor)
         registros.forEach((r: Registro) => {
           filas.push({  
             ...r,
