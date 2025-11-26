@@ -13,6 +13,7 @@ import { useUser } from "@/Provider/UserProvider"
 interface ViewJustificationModalProps {
     readonly isOpen: boolean
     readonly onClose: () => void
+    readonly onCloseModal : () => void
     readonly justification: Justificaciones
 }
 
@@ -20,6 +21,7 @@ export function ActualizarJustificaciones({
     isOpen,
     onClose,
     justification,
+    onCloseModal
 }: ViewJustificationModalProps) {
     const [descuento, setDescuento] = useState<string | null>(null)
     const [penalidad, setPenalidad] = useState<string | null>(null)
@@ -72,7 +74,7 @@ export function ActualizarJustificaciones({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-                    onClick={onClose}
+                    onClick={onCloseModal}
                 >
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}

@@ -126,6 +126,9 @@ export default function ListarJustificaciones() {
     await fetchJustificaciones()
     setSetShowUppdateModal(false)
   }
+  const onCloseModalActualizarJustificaciones = async () => {
+    setSetShowUppdateModal(false)
+  }
   if (isLoadingJustificaciones) {
     return (
       <div className="h-[72vh] -translate-x-10">
@@ -317,6 +320,7 @@ export default function ListarJustificaciones() {
         justification={selectedJustification}
       />
       <ActualizarJustificaciones
+        onCloseModal={onCloseModalActualizarJustificaciones}
         isOpen={setShowUppdateModal}
         onClose={onCloseActualizarJustificaciones}
         justification={selectedJustification}

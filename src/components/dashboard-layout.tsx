@@ -120,7 +120,7 @@ const MENU_CONFIG: MenuItem[] = [
         title: "Listar Justificaciones",
         href: "/dashboard/justificaciones/listar",
         modulo: "Justificaciones",
-        permiso: "Justificacion-registrar",
+        permiso: "Justificacion-ver",
       }
     ],
   },
