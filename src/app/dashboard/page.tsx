@@ -20,6 +20,7 @@ import {
 import { Loading } from "@/components/Loading"
 import { useUser } from "@/Provider/UserProvider"
 import { ListaColaboradores } from "@/services/ListaColaboradores"
+import { getRolFromStorage } from "@/components/dashboard-layout"
 export type Activity = {
   usuario: string
   titulo: string
@@ -141,7 +142,7 @@ export default function DashboardHome() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground mt-1">
-              Bienvenido, {user?.usuario} • {user?.cargo}
+              Bienvenido, {user?.usuario} • {getRolFromStorage()}
             </p>
           </div>
           <div className="text-sm text-muted-foreground">

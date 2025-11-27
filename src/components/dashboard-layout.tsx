@@ -59,7 +59,21 @@ export const getPermisosFromStorage = (): Permisos | null => {
     return null
   }
 }
+export const getRolFromStorage = () => {
+  if (typeof window === "undefined") return null
 
+  const raw = window.localStorage.getItem("rol")
+  if (!raw) return null
+
+  try {
+    return raw.replace(/"/g, "")
+    // Resultado: LIDER AREA
+
+  } catch (error) {
+    console.error("Error parseando permisos desde localStorage:", error)
+    return null
+  }
+}
 // Si no hay permiso definido → ruta libre
 export const tienePermiso = (
   permisos: Permisos | null,
@@ -255,12 +269,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
       document.cookie =
         "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-
       window.localStorage.clear()
       window.location.href = "/"
     }
   }
-
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {
@@ -332,7 +344,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </SheetTitle>
                   <SheetDescription className="py-1">
                     <div className="font-medium text-foreground">
-                      {user?.usuario}, {user?.cargo}
+                      {user?.usuario}, {getRolFromStorage()}
                     </div>
                   </SheetDescription>
                 </SheetHeader>
@@ -379,7 +391,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.usuario}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {user.cargo}
+                    {getRolFromStorage()}
                   </div>
                 </div>
               )}
