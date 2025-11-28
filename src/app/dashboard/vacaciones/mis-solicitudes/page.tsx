@@ -10,26 +10,65 @@ import { DeleteConfirmationModal } from "@/components/delete-confirmation-modal"
 import { BadgeStatus } from "@/components/BadgeStatus"
 import { useSolicitudes } from "@/hooks/useSolicitudes"
 import { Loading } from "@/components/Loading"
+import { Solicitudes } from "@/types/Vacaciones"
+import { CargarActividad } from "@/services/CargarActividad"
+import { useUser } from "@/Provider/UserProvider"
+import { toast } from "sonner"
 
 
 export default function MisSolicitudes() {
-  const { solicitudes, isloadingSolicitudes } = useSolicitudes()
+  const { solicitudes, isloadingSolicitudes, fetchSolicitudes } = useSolicitudes()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [itemToDelete, setItemToDelete] = useState<number | null>(null)
-
-  const handleDelete = (id: number) => {
-    setItemToDelete(id)
+  const [itemToDelete, setItemToDelete] = useState<Solicitudes | null>(null)
+  const { user } = useUser()
+  const handleDelete = (solicitud: Solicitudes) => {
+    setItemToDelete(solicitud)
     setShowDeleteModal(true)
   }
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      setShowDeleteModal(false)
-      setItemToDelete(null)
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/eliminarSolicitudVacacionesPendiente`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: itemToDelete.id,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Error al cambiar el estado de la vacación");
+      }
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Eliminar solicitud vacaciones",
+        descripcion: `Se eliminó la solicitud de la vacación de ${itemToDelete.fecInicial.split("T")[0]} al ${itemToDelete.fecFinal.split("T")[0]}`,
+        estado: "completed",
+      });
+      toast.success("Se eliminó correctamente la solicitud");
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      await fetchSolicitudes();
+    } catch (error) {
+      console.error("Error al eliminar la solicitud:", error);
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Error al eliminar solicitud vacaciones",
+        descripcion: `No se pudo eliminar la solicitud de la vacación de ${itemToDelete.fecInicial.split("T")[0]} al ${itemToDelete.fecFinal.split("T")[0]}.`,
+        estado: "error",
+      });
+      toast.error("Ocurrió un error al eliminar la solicitud. Intente nuevamente.");
     }
-  }
-  const canDelete = (estado: string) => estado === "Pendiente"
-  if (isloadingSolicitudes || solicitudes=== undefined) {
+  };
+
+  const canDelete = (estado: string) => estado === "PENDIENTE"
+  if (isloadingSolicitudes || solicitudes === undefined) {
     return (
       <div className="h-[72vh] -translate-x-10">
         <Loading />
@@ -72,7 +111,7 @@ export default function MisSolicitudes() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {solicitudes.filter((s) => s.estadoVacaciones === "Pendiente").length}
+                  {solicitudes.filter((s) => s.estadoVacaciones === "PENDIENTE").length}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-400">Pendientes</div>
               </div>
@@ -87,7 +126,7 @@ export default function MisSolicitudes() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {solicitudes.filter((s) => s.estadoVacaciones === "Rechazado").length}
+                  {solicitudes.filter((s) => s.estadoVacaciones === "RECHAZADO").length}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-400">Rechazadas</div>
               </div>
@@ -135,9 +174,9 @@ export default function MisSolicitudes() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(item.idVacacionesSolicitudes)}
-                        disabled={!canDelete(item.estado)}
-                        className={`${canDelete(item.estado)
+                        onClick={() => handleDelete(item)}
+                        disabled={!canDelete(item.estadoVacaciones)}
+                        className={`${canDelete(item.estadoVacaciones)
                           ? "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
                           : "text-slate-400 cursor-not-allowed"
                           }`}

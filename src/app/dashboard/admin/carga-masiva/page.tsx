@@ -9,6 +9,7 @@ import { Upload, UploadFile, message } from "antd"
 import type { UploadProps } from "antd"
 import { motion } from 'framer-motion'
 import { useState } from "react"
+import { toast } from "sonner"
 
 export default function CargaMasiva() {
     const [fileList, setFileList] = useState<UploadFile[]>([])
@@ -52,7 +53,7 @@ export default function CargaMasiva() {
                 descripcion: `Se actualizo la carga de los asesores y supervisores con la nueva plantilla`,
                 estado: "completed",
             })
-            message.success("Archivo subido correctamente 🎉")
+            toast.success("Archivo subido correctamente 🎉")
             setFileList([])
         } catch (error) {
             CargarActividad({

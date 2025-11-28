@@ -18,6 +18,7 @@ export type Solicitudes = {
     usrDelete: string | null;
     usrInsert: string;
     usrUpdate: string | null;
+    id: number
 };
 export type ArraySolicitudes = Array<Solicitudes>;
 export type SolicitudesProceso = {
@@ -67,5 +68,6 @@ export type SolicitudesAprobadas = {
     usrUpdate: string | null;
     nombreArea: string | null;
     idVacacionesSolicitudes: number  | null;
+    id: number
 };
 export type ArraySolicitudesAprobadas = Array<SolicitudesAprobadas>;

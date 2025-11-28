@@ -1,19 +1,39 @@
-export const getMisSolicitudes = async ({ id }: { id: number | undefined }) => {
+export const getMisSolicitudes = async (
+    { id }: { id?: number }
+) => {
+    if (!id) {
+        return { data: [], error: "ID no proporcionado" };
+    }
     try {
-        if (id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudes/${id}`, {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+        const [res1, res2] = await Promise.all([
+            fetch(`${baseUrl}/api/obtenerSolicitudes/${id}`, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
-            })
-            const json = await res.json();
-            if (!res.ok) throw new Error("Error al obtener las solicitudes");
-            return json;
+            }),
+            fetch(`${baseUrl}/api/obtenerSolicitudesEnProceso/${id}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+            }),
+        ]);
+        if (!res1.ok || !res2.ok) {
+            throw new Error(
+                `Error al obtener las solicitudes (codigos: ${res1.status}, ${res2.status})`
+            );
         }
+        const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
+        // Unión en un solo array
+        const data= [
+            ...(json2?.data ?? []),
+            ...(json1?.data ?? []),
+        ];
+        return { data, error: null };
     } catch (error) {
         console.error("Error en getMisSolicitudes:", error);
-        return [];
+        return { data: [], error: "Error al obtener las solicitudes" };
     }
 };
+
 
 
 export const getSolicitudesProceso = async ({ lista }: { lista: string | undefined }) => {

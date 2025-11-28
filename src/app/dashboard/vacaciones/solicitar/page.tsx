@@ -14,6 +14,7 @@ import { addDays, isWeekend, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useUser } from "@/Provider/UserProvider"
 import { toast } from "sonner" // Ajusta según tu implementación de toast
+import { CargarActividad } from "@/services/CargarActividad"
 // Días no laborables (ejemplo)
 const diasNoLaborables = [
   new Date(2024, 0, 1), // Año nuevo
@@ -139,21 +140,71 @@ export default function SolicitarVacaciones() {
     }
     setShowConfirmation(true)
   }
-  const confirmSubmit = () => {
-    setShowConfirmation(false)
-    setShowLoading(true)
-    setTimeout(() => {
-      setShowLoading(false)
-      setShowSuccess(true)
+  const confirmSubmit = async () => {
+    setShowConfirmation(false);
+    if (!dateRange?.from || !dateRange?.to) {
+      toast.error("Debes seleccionar un rango de fechas para la vacación.");
+      return;
+    }
+    const diasElejidos = [
+      format(dateRange.from, "yyyy-MM-dd", { locale: es }),
+      format(dateRange.to, "yyyy-MM-dd", { locale: es }),
+    ];
+    if (!user?.idArea || !user?.idEmpleado) {
+      toast.error("Falta información del usuario (área o empleado).");
+      return;
+    }
+    setShowLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/registrarSolicitudVacaciones`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            diasElejidos,
+            detalle: detalles,
+            idArea: user.idArea,
+            idEmpleado: user.idEmpleado,
+            usrInsert: user.usuario,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Error al registrar la solicitud de vacaciones");
+      }
+      const data = await response.json();
+      console.log("Respuesta backend:", data);
+      CargarActividad({
+        usuario: user.usuario || "Desconocido",
+        titulo: "Registrar solicitud de vacaciones",
+        descripcion: `Se registró una solicitud de vacaciones del ${diasElejidos[0]} al ${diasElejidos[1]}`,
+        estado: "completed",
+      });
+      toast.success("Solicitud de vacaciones registrada correctamente.");
+      setShowLoading(false);
+      setShowSuccess(true);
       setTimeout(() => {
-        setShowSuccess(false)
-        // Reset form
-        setSelectedDates([])
-        setDateRange({ from: undefined, to: undefined })
-        setDetalles("")
-      }, 2000)
-    }, 3000)
-  }
+        setShowSuccess(false);
+        setSelectedDates([]);
+        setDateRange({ from: undefined, to: undefined });
+        setDetalles("");
+      }, 2000);
+    } catch (error) {
+      console.error("Error al registrar la solicitud:", error);
+      setShowLoading(false);
+      // ⚠️ Registrar actividad de error
+      CargarActividad({
+        usuario: user?.usuario || "Desconocido",
+        titulo: "Error al registrar solicitud de vacaciones",
+        descripcion: `No se pudo registrar la solicitud de vacaciones del ${diasElejidos[0]} al ${diasElejidos[1]}.`,
+        estado: "error",
+      });
+      toast.error("Ocurrió un error al registrar la solicitud. Intenta nuevamente.");
+    }
+  };
   const isDateDisabled = (date: Date) => {
     const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
     // Deshabilitar fechas que estén dentro de los rangos deshabilitados (ajustados)
