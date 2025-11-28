@@ -125,7 +125,7 @@ export default function Bases() {
     }
     setError(null);
     setCargando(true);
-    const data1 = await getColaboradores(user?.grupo);
+    const data1 = await getColaboradores(user?.usuario);
     const ArrayAsesores = data1.data.map((asesor: Empleado) => {
       return asesor.usuario
     })
