@@ -269,7 +269,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
       document.cookie =
         "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      const numProcesos = window.localStorage.getItem("procesos_realizados") || "0"
       window.localStorage.clear()
+      window.localStorage.setItem("procesos_realizados", numProcesos)
       window.location.href = "/"
     }
   }
