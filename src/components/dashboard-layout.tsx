@@ -270,8 +270,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       document.cookie =
         "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
       const numProcesos = window.localStorage.getItem("procesos_realizados") || "0"
+      const fechas = window.localStorage.getItem("fecha_procesos") || "1990-01-01"
       window.localStorage.clear()
       window.localStorage.setItem("procesos_realizados", numProcesos)
+      window.localStorage.setItem("fecha_procesos", fechas)
       window.location.href = "/"
     }
   }
