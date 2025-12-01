@@ -126,10 +126,9 @@ export default function Bases() {
     setError(null);
     setCargando(true);
     const data1 = await getColaboradores(user?.usuario);
-    const ArrayAsesores = data1.data.map((asesor: Empleado) => {
+    const ArrayAsesores = data1.map((asesor: Empleado) => {
       return asesor.usuario
     })
-    console.log(ArrayAsesores)
     const fd = new FormData();
     fd.append("end_date", date);
     fd.append("file", archivoSeleccionado);
