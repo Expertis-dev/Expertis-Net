@@ -1,4 +1,6 @@
 "use client"
+import { motion } from "framer-motion"
+import { Controller } from "react-hook-form";
 import { AutoComplete } from "@/components/autoComplete";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,9 @@ import { ChevronDownIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { LoadingModal } from "@/components/loading-modal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CargarActividad } from "@/services/CargarActividad";
+import { useUser } from "@/Provider/UserProvider";
 
 interface EmpleadoForm {
     nombre: string;
@@ -26,9 +31,11 @@ interface EmpleadoForm {
     contrasenia: string;
     jefe: Jefe | null;
     area: string;
+    rol: string
 }
 
 export default function CrearEmpleado() {
+    const { user } = useUser()
     const { jefes } = useJefes();
     const [newEmpleado, setNewEmpleado] = useState<EmpleadoForm>()
     const [showConfirmation, setShowConfirmation] = useState(false)
@@ -43,6 +50,7 @@ export default function CrearEmpleado() {
         setValue,
         reset,
         trigger,
+        control,
     } = useForm<EmpleadoForm>({
         defaultValues: {
             nombre: "",
@@ -58,7 +66,6 @@ export default function CrearEmpleado() {
         },
         mode: "onSubmit",
     });
-
     // Registrar validación para jefe (como campo virtual controlado)
     useEffect(() => {
         // Importante: solo registra una vez
@@ -66,14 +73,12 @@ export default function CrearEmpleado() {
             validate: (value) => (value ? true : "Debe seleccionar un jefe a cargo"),
         });
     }, [register]);
-
     // --- Validaciones ---
     const validateDNI = (dni: string) => {
         if (!dni) return "El DNI es requerido";
         if (!/^\d{8}$/.test(dni)) return "El DNI debe tener 8 dígitos";
         return true;
     };
-
     const validateTelefono = (telefono: string) => {
         if (!telefono) return "El teléfono es requerido";
         if (!/^\d{9}$/.test(telefono)) return "El teléfono debe tener 9 dígitos";
@@ -93,13 +98,35 @@ export default function CrearEmpleado() {
             // Aquí iría tu llamada real a la API
             console.log("Datos del empleado:", newEmpleado);
             // Simulación de request
-            await new Promise((resolve) => setTimeout(resolve, 1200));
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearUser`, {
+                method: "POST",
+                cache: "no-store",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(newEmpleado)
+            })
+            const json = await res.json();
+            console.log(json)
+            if (!res.ok) throw new Error("Error al obtener justificaciones");
+            CargarActividad({
+                usuario: user?.usuario || "Desconocido",
+                titulo: "Se creo nuevo empleado",
+                descripcion: `Se creo un nuevo empleado ${newEmpleado?.usuario}`,
+                estado: "completed",
+            })
             toast.success("Empleado registrado exitosamente");
             reset();
             setJefe(null);
             setSelectedDate(undefined);
             setShowConfirmation(false)
         } catch (error) {
+            CargarActividad({
+                usuario: user?.usuario || "Desconocido",
+                titulo: "Error al crear empleado",
+                descripcion: `No se logro crear el nuevo empleado ${newEmpleado?.usuario}`,
+                estado: "error",
+            })
             console.error("Error al registrar empleado:", error);
             toast.error("Error al registrar empleado. Intente nuevamente.");
         } finally {
@@ -120,12 +147,32 @@ export default function CrearEmpleado() {
         }
     };
     const OpenConfirmacion = (data: EmpleadoForm) => {
-        setNewEmpleado(data)
-        setShowConfirmation(true)
-    }
+        const toUpper = (value?: string): string =>
+            typeof value === "string" ? value.toUpperCase() : "";
+        const dataUpper: EmpleadoForm = {
+            ...data,
+            nombre: toUpper(data.nombre),
+            apellidoPaterno: toUpper(data.apellidoPaterno),
+            apellidoMaterno: toUpper(data.apellidoMaterno),
+            dni: toUpper(data.dni),
+            telefono: toUpper(data.telefono),
+            usuario: toUpper(data.usuario),
+            area: toUpper(data.area),
+            rol: toUpper(data.rol),
+            // OJO: contrasenia se deja tal cual
+            contrasenia: data.contrasenia,
+        };
+
+        setNewEmpleado(dataUpper);
+        setShowConfirmation(true);
+    };
     return (
-        <div className="max-w-7xl space-y-4 mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header */}
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-4"
+        >
             <div>
                 <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">
                     Registro de Empleado
@@ -134,7 +181,6 @@ export default function CrearEmpleado() {
                     Complete la información del nuevo empleado
                 </p>
             </div>
-
             {/* Formulario */}
             <Card>
                 <CardHeader>
@@ -178,7 +224,7 @@ export default function CrearEmpleado() {
                                             minLength: { value: 2, message: "Mínimo 2 caracteres" },
                                         })}
                                         placeholder="Ingrese el nombre"
-                                        className={`w-full ${errors.nombre
+                                        className={`w-full uppercase  ${errors.nombre
                                             ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400"
                                             : ""
                                             }`}
@@ -199,7 +245,7 @@ export default function CrearEmpleado() {
                                             minLength: { value: 2, message: "Mínimo 2 caracteres" },
                                         })}
                                         placeholder="Ingrese el apellido paterno"
-                                        className={`w-full ${errors.apellidoPaterno
+                                        className={`w-full uppercase  ${errors.apellidoPaterno
                                             ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400"
                                             : ""
                                             }`}
@@ -220,7 +266,7 @@ export default function CrearEmpleado() {
                                             minLength: { value: 2, message: "Mínimo 2 caracteres" },
                                         })}
                                         placeholder="Ingrese el apellido materno"
-                                        className={`w-full ${errors.apellidoMaterno
+                                        className={`w-full uppercase  ${errors.apellidoMaterno
                                             ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400"
                                             : ""
                                             }`}
@@ -327,7 +373,7 @@ export default function CrearEmpleado() {
                                             required: "El usuario es requerido",
                                         })}
                                         placeholder="usuario123"
-                                        className={`w-full ${errors.usuario
+                                        className={`w-full uppercase  ${errors.usuario
                                             ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400"
                                             : ""
                                             }`}
@@ -360,7 +406,7 @@ export default function CrearEmpleado() {
                             </div>
                         </div>
                         {/* Información Laboral */}
-                        <div>
+                        <div className="mb-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Jefe a Cargo */}
                                 <div>
@@ -390,6 +436,48 @@ export default function CrearEmpleado() {
                                             jefe
                                         </p>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Jefe a Cargo */}
+                                <div>
+                                    <Label className={errors.rol ? "text-red-500" : ""}>
+                                        Rol del Empleado *
+                                    </Label>
+                                    <Controller
+                                        name="rol"
+                                        control={control}
+                                        rules={{ required: "El rol es necesario" }}
+                                        render={({ field }) => (
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                value={field.value}
+                                                defaultValue={field.value}
+
+                                            >
+                                                <SelectTrigger className={`w-full ${errors.rol
+                                                    ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400"
+                                                    : ""
+                                                    }`}>
+                                                    <SelectValue placeholder="(Seleccionar)" />
+                                                </SelectTrigger>
+                                                <SelectContent >
+                                                    <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
+                                                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                                    <SelectItem value="COLABORADOR">COLABORADOR</SelectItem>
+                                                    <SelectItem value="LIDER AREA">LÍDER ÁREA</SelectItem>
+                                                    <SelectItem value="JEFE DE OPERACIONES">
+                                                        JEFE DE OPERACIONES
+                                                    </SelectItem>
+                                                    <SelectItem value="JEFE DE RR.HH">
+                                                        JEFE DE RR.HH
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -425,7 +513,7 @@ export default function CrearEmpleado() {
                 message="¿Estás seguro de que deseas crear al empleado?" />
             <LoadingModal isOpen={isSubmitting} message="Procesando registro..." />
 
-        </div>
+        </motion.div>
 
     );
 }
