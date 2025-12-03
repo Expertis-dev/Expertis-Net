@@ -28,34 +28,37 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signIn`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    })
-    if (response.status === 200) {
-      toast.success("Credenciales Correctas")
-      const data = await response.json()
-      const seed: Activity = {
-        usuario: credentials.usuario,
-        titulo: "Inicio de sesión",
-        descripcion: "El usuario ha iniciado sesión en el sistema.",
-        tiempo: new Date().toLocaleString(),
-        estado: "completed",
-      };
-      setTimeout(() => {
-        safeSetLocalStorage("actividadesRecientes", JSON.stringify([seed]))
-        safeSetLocalStorage("isAuthenticated", "true")
-        safeSetLocalStorage("token", data.token)
-        safeSetLocalStorage("user", JSON.stringify(data.user))
-        safeSetLocalStorage("rol", JSON.stringify(data.rol))
-        safeSetLocalStorage("permisos", JSON.stringify(data.permisos))
-        setUser(data.user)
-        window.location.href = "/dashboard"
-      }, 500)
-    } else {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signIn`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      })
+      if (response.status === 200) {
+        toast.success("Credenciales Correctas")
+        const data = await response.json()
+        const seed: Activity = {
+          usuario: credentials.usuario,
+          titulo: "Inicio de sesión",
+          descripcion: "El usuario ha iniciado sesión en el sistema.",
+          tiempo: new Date().toLocaleString(),
+          estado: "completed",
+        };
+        setTimeout(() => {
+          safeSetLocalStorage("actividadesRecientes", JSON.stringify([seed]))
+          safeSetLocalStorage("isAuthenticated", "true")
+          safeSetLocalStorage("token", data.token)
+          safeSetLocalStorage("user", JSON.stringify(data.user))
+          safeSetLocalStorage("rol", JSON.stringify(data.rol))
+          safeSetLocalStorage("permisos", JSON.stringify(data.permisos))
+          setUser(data.user)
+          window.location.href = "/dashboard"
+        }, 500)
+      }
+    } catch (error) {
+      console.error(error)
       toast.error("Credenciales incorrectas")
       setIsLoading(false)
     }
