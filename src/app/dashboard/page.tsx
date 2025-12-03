@@ -34,7 +34,6 @@ type StatItem = {
   icon: ComponentType<SVGProps<SVGSVGElement>>
   color: "blue" | "green" | "orange" | "purple"
 }
-
 const getStatColor = (color: string) => {
   const colors = {
     blue: "from-blue-500 to-blue-600",
@@ -44,8 +43,6 @@ const getStatColor = (color: string) => {
   }
   return (colors as Record<string, string>)[color] || colors.blue
 }
-
-// ⬇️ Reemplaza estos URLs con tus imágenes (pueden ser rutas locales /public o remotas)
 const carouselImages: { id: number; src: string; alt?: string }[] = [
   { id: 1, src: "/imagen5.png", alt: "Slide 1" },
   { id: 2, src: "/imagen1.png", alt: "Slide 2" },
@@ -53,7 +50,6 @@ const carouselImages: { id: number; src: string; alt?: string }[] = [
   { id: 4, src: "/imagen4.jpg", alt: "Slide 4" },
   { id: 5, src: "/imagen2.jpg", alt: "Slide 5" },
 ]
-
 export default function DashboardHome() {
   const { user } = useUser()
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -154,7 +150,6 @@ export default function DashboardHome() {
             })}
           </div>
         </div>
-
         {/* Carrusel de Imágenes */}
         <Card className="overflow-hidden">
           <CardContent className="p-0">

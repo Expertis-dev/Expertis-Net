@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TablaDinamica from "@/components/base-Table";
 import DownloadExcel from "@/components/DownloadExcel";
-import { Upload, FileSpreadsheet, X } from "lucide-react";
+import { Upload, FileSpreadsheet, X, AlertCircle, Calendar, Loader2 } from "lucide-react";
 import type {
   ResponseData,
   FilaNvl1,
@@ -217,13 +217,18 @@ export default function Bases() {
     "18:00": datosBackend.horas["18:00"]?.[asesor] || 0,
     "19:00": datosBackend.horas["19:00"]?.[asesor] || 0,
   })) || [];
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Gestor de Bases</h1>
-        <div className="flex gap-2">
+    <div className="container mx-auto space-y-4">
+      {/* Header Principal */}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Gestor de Bases</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Carga y procesa archivos de Excel para análisis de datos
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
           <input
             type="file"
             id="fileInput"
@@ -233,123 +238,201 @@ export default function Bases() {
           />
           <Button
             variant="default"
-            size="sm"
-            onClick={() => {
-              const input = document.getElementById("fileInput");
-              if (input) input.click();
-            }}
+            size="default"
+            onClick={() => document.getElementById("fileInput")?.click()}
+            className="gap-2 shadow-sm"
           >
-            <Upload className="w-4 h-4 mr-2" />
+            <Upload className="w-4 h-4" />
             Cargar Archivo
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* File Selection Status */}
-      <div className="bg-muted/50 p-4 rounded-lg">
-        {archivoSeleccionado ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium">{archivoSeleccionado.name}</span>
-              <span className="text-xs text-muted-foreground">
-                ({(archivoSeleccionado.size / 1024).toFixed(2)} KB)
-              </span>
+      {/* Estado del Archivo */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Archivo Cargado</h2>
+        <div className="bg-card border rounded-lg">
+          {archivoSeleccionado ? (
+            <div className="flex items-center justify-between p-2">
+              <div className="flex items-center gap-3">
+                <div className=" bg-green-50 rounded-lg">
+                  <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">
+                    {archivoSeleccionado.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {(archivoSeleccionado.size / 1024).toFixed(2)} KB
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearFile}
+                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <X className="w-4 h-4" />
+                <span className="sr-only">Eliminar archivo</span>
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFile}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Ningún archivo seleccionado</p>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center gap-3 text-muted-foreground p-4">
+              <div className="bg-muted rounded-lg">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <p className="text-sm">Ningún archivo seleccionado</p>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* Error Message */}
+      {/* Mensaje de Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-          {error}
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="w-5 h-5" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
         </div>
       )}
 
-      {/* Filter Section */}
-      <div className="space-y-1">
-        <h3 className="text-sm font-medium">Rango de fecha:
-          <span className="text-muted-foreground"> Tener en cuenta que es necesario que el archivo tenga las columnas Documento, Cartera y Asesor </span>
-        </h3>
+      {/* Filtros y Controles */}
+      <section className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">Configuración de Filtros</h2>
+          <p className="text-sm text-muted-foreground">
+            Tener en cuenta que es necesario que el archivo tenga las columnas Documento, Cartera y Asesor
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm">Fecha inicio:</label>
-            <input
-              type="date"
-              value={dateY}
-              onChange={(e) => handleChangeStartDate(e.target.value)}
-              className="px-2 py-2 border rounded-md text-sm w-full"
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Rango de Fechas */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Fecha inicio
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="date"
+                    value={dateY}
+                    onChange={(e) => handleChangeStartDate(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Fecha fin
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => handleChangeEndDate(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm">Fecha fin:</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => handleChangeEndDate(e.target.value)}
-              className="px-2 py-2 border rounded-md text-sm w-full"
-            />
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center gap-4 mt-4">
-            <Button
-              variant={vistaActiva === "nvl1" ? "default" : "secondary"}
-              size="sm"
-              onClick={() => setVistaActiva("nvl1")}
-            >
-              nvl1
-            </Button>
-            <Button
-              variant={vistaActiva === "nvl2" ? "default" : "secondary"}
-              size="sm"
-              onClick={() => setVistaActiva("nvl2")}
-            >
-              nvl2
-            </Button>
-            <Button
-              variant={vistaActiva === "horas" ? "default" : "secondary"}
-              size="sm"
-              onClick={() => setVistaActiva("horas")}
-            >
-              horas
-            </Button>
+          {/* Botón de Procesar */}
+          <div className="flex items-end">
             <Button
               onClick={ProcesarInformacion}
               disabled={cargando || bloqueado}
-              className="bg-teal-500 hover:bg-teal-600 text-white disabled:bg-gray-400"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {cargando ? "Procesando..." : "Procesar"}
+              {cargando ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Procesando...
+                </div>
+              ) : (
+                "Procesar Información"
+              )}
             </Button>
-
-            {datosBackend && (
-              <DownloadExcel
-                hojas={[
-                  { nombre: "Gestiones Detalladas", datos: datosBackend.gestiones_detalladas_por_asesor },
-                  { nombre: "No Gestionados", datos: datosBackend.no_gestionados_por_asesor },
-                ]}
-              />
-            )}
           </div>
         </div>
-      </div>
+      </section>
+      {/* Navegación entre Vistas */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={vistaActiva === "nvl1" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setVistaActiva("nvl1")}
+              className="px-4"
+            >
+              Vista Nivel 1
+            </Button>
+            <Button
+              variant={vistaActiva === "nvl2" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setVistaActiva("nvl2")}
+              className="px-4"
+            >
+              Vista Nivel 2
+            </Button>
+            <Button
+              variant={vistaActiva === "horas" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setVistaActiva("horas")}
+              className="px-4"
+            >
+              Vista Horas
+            </Button>
+          </div>
 
-      {/* Tablas */}
-      {vistaActiva === "nvl1" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl1} datos={datosNvl1} />}
-      {vistaActiva === "nvl2" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasNvl2} datos={datosNvl2} />}
-      {vistaActiva === "horas" && <TablaDinamica datosGlobales={datosBackend} columnas={columnasHoras} datos={datosHoras} />}
+          {datosBackend && (
+            <DownloadExcel
+              hojas={[
+                {
+                  nombre: "Gestiones Detalladas",
+                  datos: datosBackend.gestiones_detalladas_por_asesor
+                },
+                {
+                  nombre: "No Gestionados",
+                  datos: datosBackend.no_gestionados_por_asesor
+                },
+              ]}
+            />
+          )}
+        </div>
+
+        {/* Contenido de la Vista Activa */}
+        <div className="border rounded-lg overflow-hidden">
+          {vistaActiva === "nvl1" && (
+            <TablaDinamica
+              datosGlobales={datosBackend}
+              columnas={columnasNvl1}
+              datos={datosNvl1}
+            />
+          )}
+          {vistaActiva === "nvl2" && (
+            <TablaDinamica
+              datosGlobales={datosBackend}
+              columnas={columnasNvl2}
+              datos={datosNvl2}
+            />
+          )}
+          {vistaActiva === "horas" && (
+            <TablaDinamica
+              datosGlobales={datosBackend}
+              columnas={columnasHoras}
+              datos={datosHoras}
+            />
+          )}
+        </div>
+      </section>
     </div>
-  )
+  );
 }

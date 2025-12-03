@@ -45,7 +45,7 @@ export function DeleteConfirmationModal({ isOpen, onClose, onConfirm, title, mes
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                    className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
                     onClick={onConfirm}
                   >
                     Eliminar
