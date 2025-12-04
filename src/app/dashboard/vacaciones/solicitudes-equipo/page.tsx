@@ -38,45 +38,34 @@ export default function SolicitudesEquipo() {
         }
         ObtenerInfo()
     }, [user])
-
-    // 🔄 APLICAR FILTROS (nombre + rango de fechas)
     useEffect(() => {
         if (!solicitudesAprobadas) return
-
         let data = [...solicitudesAprobadas]
-
-        // Filtro por nombre / alias
         if (empleadoBuscar.trim() !== "") {
             const value = empleadoBuscar.toLowerCase()
             data = data.filter((solicitud) =>
                 solicitud.alias.toLowerCase().includes(value)
             )
         }
-
-        // Filtro por rango de fechas (fecSolicitud)
         if (dateRange?.from) {
             const fromYMD = dateRange.from.toISOString().split("T")[0]
             data = data.filter(
                 (solicitud) => solicitud.fecSolicitud.split("T")[0] >= fromYMD
             )
         }
-
         if (dateRange?.to) {
             const toYMD = dateRange.to.toISOString().split("T")[0]
             data = data.filter(
                 (solicitud) => solicitud.fecSolicitud.split("T")[0] <= toYMD
             )
         }
-
         setFilterSolicitudesAprobadas(data)
     }, [empleadoBuscar, dateRange, solicitudesAprobadas])
-
     const limpiarFiltros = () => {
         setEmpleadoBuscar("")
         setDateRange(undefined)
         setFilterSolicitudesAprobadas(solicitudesAprobadas)
     }
-
     if (solicitudesPendientes === null && solicitudesAprobadas === null) {
         return (
             <div className="h-[72vh] -translate-x-10">
@@ -84,7 +73,6 @@ export default function SolicitudesEquipo() {
             </div>
         )
     }
-
     const getLabelRangoFechas = () => {
         if (dateRange?.from && dateRange?.to) {
             return `${dateRange.from.toLocaleDateString("es-PE")} - ${dateRange.to.toLocaleDateString("es-PE")}`
