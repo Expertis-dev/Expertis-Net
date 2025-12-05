@@ -90,7 +90,7 @@ export const tienePermiso = (
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
-const MENU_CONFIG: MenuItem[] = [
+let MENU_CONFIG: MenuItem[] = [
   {
     id: "home",
     title: "Home",
@@ -284,7 +284,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     const permisos = getPermisosFromStorage()
-
+    MENU_CONFIG = MENU_CONFIG.filter(item => {
+      if (item.id === "bases") {
+        return user?.id_grupo !== 14
+      }
+      return true
+    }
+    );
     return (
       MENU_CONFIG
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
