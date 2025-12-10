@@ -26,43 +26,63 @@ export default function LoginPage() {
   }
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signIn`, {
+  e.preventDefault();
+  setIsLoading(true);
+
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/signIn`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
-      })
-      if (response.status === 200) {
-        toast.success("Credenciales Correctas")
-        const data = await response.json()
-        const seed: Activity = {
-          usuario: credentials.usuario,
-          titulo: "Inicio de sesión",
-          descripcion: "El usuario ha iniciado sesión en el sistema.",
-          tiempo: new Date().toLocaleString(),
-          estado: "completed",
-        };
-        setTimeout(() => {
-          safeSetLocalStorage("actividadesRecientes", JSON.stringify([seed]))
-          safeSetLocalStorage("isAuthenticated", "true")
-          safeSetLocalStorage("token", data.token)
-          safeSetLocalStorage("user", JSON.stringify(data.user))
-          safeSetLocalStorage("rol", JSON.stringify(data.rol))
-          safeSetLocalStorage("permisos", JSON.stringify(data.permisos))
-          setUser(data.user)
-          window.location.href = "/dashboard"
-        }, 500)
       }
-    } catch (error) {
-      console.error(error)
-      toast.error("Credenciales incorrectas")
-      setIsLoading(false)
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      // Aquí manejar credenciales incorrectas u otros errores
+      const msg =
+        data?.message ||
+        data?.error ||
+        (response.status === 401
+          ? "Credenciales incorrectas"
+          : "Error al iniciar sesión");
+      toast.error(msg);
+      return;
     }
+    // Si llegó aquí es porque el login fue exitoso (2xx)
+    toast.success("Credenciales correctas");
+    const seed: Activity = {
+      usuario: credentials.usuario,
+      titulo: "Inicio de sesión",
+      descripcion: "El usuario ha iniciado sesión en el sistema.",
+      tiempo: new Date().toLocaleString(),
+      estado: "completed",
+    };
+    setTimeout(() => {
+      safeSetLocalStorage("actividadesRecientes", JSON.stringify([seed]));
+      safeSetLocalStorage("isAuthenticated", "true");
+      safeSetLocalStorage("token", data.token);
+      safeSetLocalStorage("user", JSON.stringify(data.user));
+      safeSetLocalStorage("rol", JSON.stringify(data.rol));
+      safeSetLocalStorage("permisos", JSON.stringify(data.permisos));
+      setUser(data.user);
+
+      // En Next.js App Router es más limpio usar useRouter().push("/dashboard"),
+      // pero esto funciona igual.
+      window.location.href = "/dashboard";
+    }, 500);
+  } catch (error) {
+    console.error(error);
+    toast.error("Error de conexión. Inténtalo nuevamente.");
+  } finally {
+    // Siempre apagamos el loading, salvo que cambies de página inmediatamente
+    setIsLoading(false);
   }
+};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center ">
       <motion.div
