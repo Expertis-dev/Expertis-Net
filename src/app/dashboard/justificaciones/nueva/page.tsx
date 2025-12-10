@@ -146,7 +146,7 @@ export default function NuevaJustificacion() {
     setShowLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacionA`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacion`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
