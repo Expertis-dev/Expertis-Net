@@ -133,7 +133,7 @@ export default function NuevaJustificacion() {
     const cuerpo = {
       fecha: formData.fecha,
       asesor: asesor?.usuario,
-      grupo: user?.grupo,
+      grupo: user?.id_grupo,
       nivel1: formData.nivel1,
       nivel2: (formData.nivel2).toUpperCase().replace(/\s+/g, "_"),
       nivel3: formData.nivel3,
