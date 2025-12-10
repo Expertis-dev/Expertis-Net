@@ -34,7 +34,7 @@ export const ViewDetalleSolicitud = ({ isOpen, onClose, solicitud }: ViewJustifi
                             <CardHeader className="flex flex-row items-center  justify-between border-b border-slate-200 dark:border-neutral-700">
                                 <CardTitle className="flex items-center gap-2 pb-3 text-slate-800 dark:text-slate-100">
                                     <FileText className="h-5 w-5" />
-                                    Detalles de Justificación
+                                    Detalle de la Solicitud
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="py-2 space-y-2">
