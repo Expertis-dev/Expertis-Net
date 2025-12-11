@@ -68,6 +68,10 @@ export default function LoginPage() {
       safeSetLocalStorage("user", JSON.stringify(data.user));
       safeSetLocalStorage("rol", JSON.stringify(data.rol));
       safeSetLocalStorage("permisos", JSON.stringify(data.permisos));
+      const alias = data.user?.alias || data.user?.usuario || "";
+      if (alias) {
+        safeSetLocalStorage("alias", alias);
+      }
       setUser(data.user);
 
       // En Next.js App Router es más limpio usar useRouter().push("/dashboard"),

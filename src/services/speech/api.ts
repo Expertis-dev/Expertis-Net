@@ -1,7 +1,8 @@
 "use client"
 
-import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
+import type { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios"
 import axios from "axios"
+import { getSpeechAlias, getSpeechPermisos } from "@/lib/speechPermissions"
 
 const baseUrl = process.env.NEXT_PUBLIC_SPEECH_API_URL ?? process.env.NEXT_PUBLIC_API_URL
 const analyticsBaseUrl =
@@ -19,10 +20,35 @@ const getAuthToken = (): string | null => {
   return window.localStorage.getItem("token")
 }
 
+const getSpeechSecurityHeaders = () => {
+  if (typeof window === "undefined") {
+    return {}
+  }
+  const headers: Record<string, string> = {}
+  const alias = getSpeechAlias()
+
+  if (alias) {
+    headers["x-user-alias"] = alias
+  }
+
+  const speechPermisos = getSpeechPermisos()
+  if (speechPermisos.length) {
+    headers["x-user-permisos"] = speechPermisos.join(",")
+  }
+
+  return headers
+}
+
 const authInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
   const token = getAuthToken()
+  config.headers = config.headers ?? {}
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const securityHeaders = getSpeechSecurityHeaders()
+  config.headers = {
+    ...config.headers,
+    ...securityHeaders,
   }
   return config
 }
@@ -37,7 +63,7 @@ const errorInterceptor = (error: AxiosError) => {
   return Promise.reject(error)
 }
 
-const attachInterceptors = <T extends typeof axios>(instance: T) => {
+const attachInterceptors = <T extends AxiosInstance>(instance: T): T => {
   instance.interceptors.request.use(authInterceptor)
   instance.interceptors.response.use((response: AxiosResponse) => response, errorInterceptor)
   return instance

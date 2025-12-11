@@ -1,14 +1,9 @@
-import { SpeechPermissionGate } from "@/components/speech/guards"
-import Pagos from "@/modules/speech/components/Pagos/Pagos"
+import Pagos from "@/components/speech/Pagos/Pagos"
 
 export const metadata = {
   title: "Speech Analytics | Pagos",
 }
 
 export default function SpeechPagosPage() {
-  return (
-    <SpeechPermissionGate requiredModule="Pagos">
-      <Pagos />
-    </SpeechPermissionGate>
-  )
+  return <Pagos />
 }

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -201,6 +201,30 @@ let MENU_CONFIG: MenuItem[] = [
     href: "/dashboard/consultas",
     subItems: [], // sin permiso → acceso libre
   },*/
+  {
+    id: "speech",
+    title: "Speech Analytics",
+    icon: AudioLines,
+    href: "/dashboard/speech/tablero",
+    subItems: [
+      {
+        title: "Reporte",
+        href: "/dashboard/speech/tablero",
+      },
+      {
+        title: "Pagos",
+        href: "/dashboard/speech/pagos",
+      },
+      {
+        title: "Calidad",
+        href: "/dashboard/speech/calidad",
+      },
+      {
+        title: "Reclamos",
+        href: "/dashboard/speech/reclamos",
+      },
+    ],
+  },
   {
     id: "admin",
     title: "Admin",
