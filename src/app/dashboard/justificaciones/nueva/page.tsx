@@ -126,9 +126,7 @@ export default function NuevaJustificacion() {
     e.preventDefault()
     setShowConfirmation(true)
     console.log(asesor)
-
   }
-
   const confirmSubmit = async () => {
     const cuerpo = {
       fecha: formData.fecha,
@@ -144,7 +142,6 @@ export default function NuevaJustificacion() {
     }
     setShowConfirmation(false)
     setShowLoading(true)
-
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacion`, {
         method: "POST",

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useUser } from "@/Provider/UserProvider"
 import { getSolicitudesAprobadas, getSolicitudesProceso } from "../../../../services/vacaciones"
-import { ArraySolicitudesAprobadas, ArraySolicitudesProceso } from "../../../../types/Vacaciones"
+import { ArraySolicitudesAprobadas, SolicitudesAprobadas } from "../../../../types/Vacaciones"
 import { BadgeStatus } from "@/components/BadgeStatus"
 import { ListaColaboradores } from "@/services/ListaColaboradores"
 import { Loading } from "@/components/Loading"
@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import type { DateRange } from "react-day-picker"
-import { ChevronDownIcon } from "lucide-react"
+import { ChevronDownIcon, Eye } from "lucide-react"
+import { ViewPendientesRevisar } from "@/components/ViewPendientesRevisar"
 
 export default function SolicitudesEquipo() {
     const { user } = useUser()
@@ -22,8 +23,9 @@ export default function SolicitudesEquipo() {
     const [empleadoBuscar, setEmpleadoBuscar] = useState("")
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
     const [openCalendar, setOpenCalendar] = useState(false)
-
-    const [solicitudesPendientes, setSolicitudesPendientes] = useState<ArraySolicitudesProceso | null>(null)
+    const [isVer, setIsVer] = useState(false);
+    const [solicitudesPendientes, setSolicitudesPendientes] = useState<SolicitudesAprobadas[]>([]);
+    const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudesAprobadas>({} as SolicitudesAprobadas);
     const [solicitudesAprobadas, setSolicitudesAprobadas] = useState<ArraySolicitudesAprobadas | null>(null)
     const [filterSolicitudesAprobadas, setFilterSolicitudesAprobadas] = useState<ArraySolicitudesAprobadas | null>(null)
 
@@ -102,6 +104,7 @@ export default function SolicitudesEquipo() {
                                 <TableHead className="font-medium">Empleado</TableHead>
                                 <TableHead className="font-medium">Estado</TableHead>
                                 <TableHead className="font-medium">Cantidad de Días</TableHead>
+                                <TableHead className="font-medium">Accion</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -126,6 +129,19 @@ export default function SolicitudesEquipo() {
                                         <TableCell className="font-medium">
                                             {solicitud.cantDias}
                                         </TableCell>
+                                        <TableCell className="font-medium">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSolicitudSeleccionada(solicitud);
+                                        setIsVer(true);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                            </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
@@ -239,6 +255,7 @@ export default function SolicitudesEquipo() {
                     </Table>
                 </CardContent>
             </Card>
+            <ViewPendientesRevisar isOpen={isVer} onClose={() => setIsVer(false)} solicitud={solicitudSeleccionada} />
         </div>
     )
 }

@@ -68,7 +68,7 @@ export default function SolicitudesPendientes() {
                                 <BadgeStatus estado={solicitud.estado} />
                             </TableCell>
                             <TableCell className="font-medium">{solicitud.cantDias}</TableCell>
-                            <TableCell className="font-medium">{solicitud.nombreArea}</TableCell>
+                            <TableCell className="font-medium">{solicitud.nombreArea || "-----"}</TableCell>
                             <TableCell className="font-medium">
                                 <Button
                                     variant="ghost"
