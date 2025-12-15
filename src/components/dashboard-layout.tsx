@@ -294,6 +294,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         deviceId: getDeviceId(),
         userAgent: `${browser.name || "Unknown"} ${browser.version || ""} ${os.name || "Unknown"} ${os.version || ""}`.trim(),
         geo: await getGeo(), // puede ser null si no hay permiso
+        agencia: user.id_grupo === 14 ? "BPO" : "EXPERTIS",
       };
       socket.emit("user", payload);
     };

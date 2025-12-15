@@ -21,6 +21,7 @@ interface DeviceFromServer {
     ultimaConexion: string | Date;
     tabCount?: number;
     tabs?: { socketId: string; ultConex: string | Date }[];
+    agencia?: string;
 }
 
 // ---- tipos: VIEJO (por pestaña) ----
@@ -43,6 +44,7 @@ interface DispositivoUI {
     geo?: Geo;
     conexiones: Conexion[]; // pestañas
     ultimaConexion: string;
+    agencia?: string;
 }
 
 // helpers
@@ -71,6 +73,7 @@ const normalizePayloadToDevices = (data: DeviceFromServer[]): DispositivoUI[] =>
                 geo: d.geo ?? null,
                 conexiones,
                 ultimaConexion: toISO(d.ultimaConexion),
+                agencia: d.agencia
             };
         }).sort((a, b) => new Date(b.ultimaConexion).getTime() - new Date(a.ultimaConexion).getTime());
     }
@@ -107,9 +110,21 @@ const normalizePayloadToDevices = (data: DeviceFromServer[]): DispositivoUI[] =>
 };
 const formatPE = (iso: string) =>
     new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima" });
+const calculatePorcentajes = (devices: DispositivoUI[]) => {
+    const total = devices.length;
+    console.log("calculatePorcentajes - total devices:", devices);
+    if (total === 0) return { expertis: 0, bpo: 0 };
+    const expertisCount = devices.filter(d => d.agencia?.startsWith("EXPERTIS")).length;
+    const bpoCount = devices.filter(d => d.agencia?.startsWith("BPO")).length;
+    return {
+        expertis: Math.round((expertisCount / total) * 100),
+        bpo: Math.round((bpoCount / total) * 100),
+    };
+}
 export default function MonitoreoUsuarios() {
     const { socket } = useContext(SocketContext);
     const [devices, setDevices] = useState<DispositivoUI[]>([]);
+    const [porcentajes, setPorcentajes] = useState({ expertis: 0, bpo: 0 })
     const [q, setQ] = useState("");
     useEffect(() => {
         if (!socket) return;
@@ -117,6 +132,8 @@ export default function MonitoreoUsuarios() {
             console.log("lista-usuarios payload:", payload);
             const normalized = normalizePayloadToDevices(payload);
             console.log("normalized:", normalized);
+            const pct = calculatePorcentajes(payload as DispositivoUI[]);
+            setPorcentajes(pct);
             setDevices(normalized);
         };
         socket.on("lista-usuarios", handler);
@@ -131,14 +148,9 @@ export default function MonitoreoUsuarios() {
         return devices.filter((d) =>
             d.usuario.toLowerCase().includes(term) ||
             (d.ip ?? "").toLowerCase().includes(term) ||
-            d.deviceId.toLowerCase().includes(term)
+            d.agencia?.toLowerCase().includes(term)
         );
     }, [devices, q]);
-
-    const totalTabs = useMemo(
-        () => devices.reduce((acc, d) => acc + (d.conexiones?.length ?? 0), 0),
-        [devices]
-    );
     const cerrarDispositivo = (d: DispositivoUI) => {
         if (!socket) return;
         socket.emit("admin:disconnectDevice", { usuario: d.usuario, deviceId: d.deviceId });
@@ -148,17 +160,14 @@ export default function MonitoreoUsuarios() {
             <Card>
                 <CardHeader>
                     <CardTitle>
-                        <div>
-                            <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Monitoreo</h1>
-                            <p className="text-slate-600 dark:text-slate-400">
-                                Dispositivos: {devices.length} • Pestañas: {totalTabs}
-                            </p>
-                        </div>
+
+                        <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Monitoreo</h1>
+
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar (usuario / IP )..." className="col-span-2 pr-10 w-full" />
+                        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar (usuario / IP / agencia)..." className="col-span-2 pr-10 w-full" />
                         <Button
                             onClick={() => setQ("")}
                             className="bg-slate-300 text-black/80 hover:bg-slate-400 dark:bg-neutral-700 dark:hover:bg-neutral-800 dark:text-white"
@@ -170,12 +179,23 @@ export default function MonitoreoUsuarios() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Dispositivos ({filtered.length})</CardTitle>
+                    <CardTitle className="flex justify-between items-center">
+                        Dispositivos ({filtered.length})
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1 text-[15px] font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
+                                Expertis <span className="ml-2 font-semibold">{porcentajes.expertis}%</span>
+                            </span>
+                            <span className="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-1 text-[15px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                BPO <span className="ml-2 font-semibold">{porcentajes.bpo}%</span>
+                            </span>
+                        </div>
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>Agencia</TableHead>
                                 <TableHead>Usuario</TableHead>
                                 <TableHead>Ubicacion</TableHead>
                                 <TableHead>IP</TableHead>
@@ -189,6 +209,7 @@ export default function MonitoreoUsuarios() {
                         <TableBody>
                             {filtered.map((d) => (
                                 <TableRow key={`${d.usuario}-${d.deviceId}-${d.ip ?? ""}`}>
+                                    <TableCell>{d.agencia}</TableCell>
                                     <TableCell>{d.usuario}</TableCell>
                                     <TableCell>
                                         {d.geo ? (
