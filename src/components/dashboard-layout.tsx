@@ -228,7 +228,7 @@ let MENU_CONFIG: MenuItem[] = [
         permiso: "AdminUsuarios-ver",
       },
       {
-        title: "Monitorireo",
+        title: "Monitoreo",
         href: "/dashboard/admin/monitoreo",
         modulo: "Admin",
         permiso: "AdminUsuarios-ver",
