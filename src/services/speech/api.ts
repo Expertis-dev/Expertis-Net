@@ -1,7 +1,7 @@
 "use client"
 
 import type { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios"
-import axios from "axios"
+import axios, { AxiosHeaders } from "axios"
 import { getSpeechAlias, getSpeechPermisos } from "@/lib/speechPermissions"
 
 const baseUrl = process.env.NEXT_PUBLIC_SPEECH_API_URL ?? process.env.NEXT_PUBLIC_API_URL
@@ -39,17 +39,24 @@ const getSpeechSecurityHeaders = () => {
   return headers
 }
 
+const buildHeaders = (headers?: InternalAxiosRequestConfig["headers"]): AxiosHeaders => {
+  if (headers instanceof AxiosHeaders) {
+    return headers
+  }
+  return AxiosHeaders.from(headers ?? {})
+}
+
 const authInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
   const token = getAuthToken()
-  config.headers = config.headers ?? {}
+  const headers = buildHeaders(config.headers)
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    headers.set("Authorization", `Bearer ${token}`)
   }
   const securityHeaders = getSpeechSecurityHeaders()
-  config.headers = {
-    ...config.headers,
-    ...securityHeaders,
-  }
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    headers.set(key, value)
+  })
+  config.headers = headers
   return config
 }
 

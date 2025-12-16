@@ -86,6 +86,14 @@ const EstadoCard = ({
   </Card>
 )
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0
+
+const toOptionalString = (value: string | number | null | undefined): string | undefined => {
+  if (value == null) return undefined
+  return String(value)
+}
+
 const Reclamos = () => {
   const { hasPermiso } = useSpeechPermissions()
 
@@ -112,11 +120,11 @@ const Reclamos = () => {
   const datosCompletos = useMemo(() => {
     if (!Array.isArray(dataReclamos)) return []
     return dataReclamos
-      .map<SpeechReclamo & { documento: string | number | undefined; motivo?: string; duracion?: string }>((item) => ({
+      .map<SpeechReclamo & { documento?: string; motivo?: string; duracion?: string }>((item) => ({
         ...item,
-        documento: item.documento ?? item.idGestion,
-        motivo: item.tipificacion,
-        duracion: item.tiempoHablado,
+        documento: toOptionalString(item.documento ?? item.idGestion),
+        motivo: toOptionalString(item.tipificacion),
+        duracion: toOptionalString(item.tiempoHablado),
       }))
       .filter((item) => {
         const cartera = item.cartera?.trim().toLowerCase() ?? ""
@@ -134,17 +142,22 @@ const Reclamos = () => {
     }
   }, [dataReclamos])
 
-  const agenciasUnicas = useMemo(
-    () => [...new Set(datosCompletos.map((item) => item.agencia).filter(Boolean))].sort(),
-    [datosCompletos],
-  )
+  const agenciasUnicas = useMemo(() => {
+    const agencias = datosCompletos
+      .map((item) => item.agencia)
+      .filter((agencia): agencia is string => isNonEmptyString(agencia))
+    return [...new Set(agencias)].sort()
+  }, [datosCompletos])
 
   const supervisoresUnicos = useMemo(() => {
     let datos = datosCompletos
     if (agenciaSeleccionada) {
       datos = datos.filter((item) => item.agencia === agenciaSeleccionada)
     }
-    return [...new Set(datos.map((item) => item.supervisor).filter(Boolean))].sort()
+    const supervisores = datos
+      .map((item) => item.supervisor)
+      .filter((supervisor): supervisor is string => isNonEmptyString(supervisor))
+    return [...new Set(supervisores)].sort()
   }, [datosCompletos, agenciaSeleccionada])
 
   useEffect(() => {
@@ -177,8 +190,8 @@ const Reclamos = () => {
   const datosOrdenados = useMemo(() => {
     if (!ordenColumna.columna) return datosFiltrados
     return [...datosFiltrados].sort((a, b) => {
-      const valorA = (a as Record<string, unknown>)[ordenColumna.columna]
-      const valorB = (b as Record<string, unknown>)[ordenColumna.columna]
+      const valorA = (a as unknown as Record<string, unknown>)[ordenColumna.columna]
+      const valorB = (b as unknown as Record<string, unknown>)[ordenColumna.columna]
       if (valorA == null) return 1
       if (valorB == null) return -1
       const comparacion = valorA < valorB ? -1 : valorA > valorB ? 1 : 0

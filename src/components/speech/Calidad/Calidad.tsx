@@ -1,5 +1,5 @@
-"use client";
 // @ts-nocheck
+"use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback, type ElementType } from 'react';
 import { useCalidadDetalle, useSubirFeedbackPdf } from '@/hooks/speech/useSpeechAnalytics';

@@ -73,6 +73,9 @@ const columnas: ColumnDefinition[] = [
   { id: "acciones", label: "Acciones" },
 ]
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0
+
 const calificacionBadgeStyles = (calificacion: SpeechPago["calificacion"]) => {
   const cal = Number(calificacion) || 0
   if (cal >= 3.5) return "border-emerald-200 bg-emerald-100 text-emerald-800"
@@ -172,16 +175,18 @@ const Pagos = () => {
 
   const datosActivos = botonActivo === "prometedoras" ? datosPrometedoras : datosMejorables
 
-  const agenciasUnicas = useMemo(
-    () => [...new Set(datosActivos.map((item) => item.agencia).filter(Boolean))].sort(),
-    [datosActivos],
-  )
+  const agenciasUnicas = useMemo(() => {
+    const agencias = datosActivos
+      .map((item) => item.agencia)
+      .filter((agencia): agencia is string => isNonEmptyString(agencia))
+    return [...new Set(agencias)].sort()
+  }, [datosActivos])
 
   const supervisoresUnicos = useMemo(() => {
     const supervisores = datosActivos
       .filter((item) => (agenciaSeleccionada ? item.agencia === agenciaSeleccionada : true))
       .map((item) => item.supervisor)
-      .filter(Boolean)
+      .filter((supervisor): supervisor is string => isNonEmptyString(supervisor))
     return [...new Set(supervisores)].sort()
   }, [datosActivos, agenciaSeleccionada])
 
