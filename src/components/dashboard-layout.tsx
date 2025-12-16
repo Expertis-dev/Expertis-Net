@@ -1,7 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client"
-
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +19,8 @@ import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
 import { useUser } from "@/Provider/UserProvider"
+import { SocketContext } from "@/Context/SocketContex"
+import * as UAParser from "ua-parser-js";
 
 interface DashboardLayoutProps {
   readonly children: React.ReactNode
@@ -249,20 +251,95 @@ let MENU_CONFIG: MenuItem[] = [
         modulo: "Admin",
         permiso: "AdminUsuarios-ver",
       },
+      {
+        title: "Monitorireo",
+        href: "/dashboard/admin/monitoreo",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
     ],
   },
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================
+export const handleLogout = () => {
+  if (typeof window !== "undefined") {
+    document.cookie =
+      "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    document.cookie =
+      "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    document.cookie =
+      "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    document.cookie =
+      "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    const numProcesos = window.localStorage.getItem("procesos_realizados") || "0"
+    const fechas = window.localStorage.getItem("fecha_procesos") || "1990-01-01"
+    window.localStorage.clear()
+    window.localStorage.setItem("procesos_realizados", numProcesos)
+    window.localStorage.setItem("fecha_procesos", fechas)
+    window.location.href = "/"
+  }
+}
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const parser = new UAParser.UAParser(navigator.userAgent);
+  const browser = parser.getBrowser(); // {name, version}
+  const os = parser.getOS();           // {name, version}
   const { user } = useUser()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
+  const { socket } = useContext(SocketContext)
+  const getDeviceId = () => {
+    if (typeof window === "undefined") return "server";
+    let id = localStorage.getItem("deviceId");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("deviceId", id);
+    }
+    return id;
+  };
+  const getGeo = () =>
+    new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: false, timeout: 3000 }
+      );
+    });
+  useEffect(() => {
+    if (!socket) return;
+    const sendUser = async () => {
+      if (!user?.usuario) return;
+      const payload = {
+        usuario: user.usuario,
+        deviceId: getDeviceId(),
+        userAgent: `${browser.name || "Unknown"} ${browser.version || ""} ${os.name || "Unknown"} ${os.version || ""}`.trim(),
+        geo: await getGeo(), // puede ser null si no hay permiso
+        agencia: user.id_grupo === 14 ? "BPO" : "EXPERTIS",
+      };
+      socket.emit("user", payload);
+    };
+    const onForceLogout = () => {
+      console.warn("Force logout recibido");
+      handleLogout()
+      window.location.href = "/";
+    };
 
-  // Auto-expand de menús según la ruta
+    const onConnect = () => {
+      console.log("Conectado al servidor de sockets");
+      sendUser();
+      socket.on("force-logout", onForceLogout);
+    };
+    socket.on("connect", onConnect);
+    if (socket.connected) sendUser();
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("force-logout", onForceLogout);
+    };
+  }, [socket, user?.usuario]);
   useEffect(() => {
     if (pathname.includes("/justificaciones")) {
       setExpandedMenus((prev) =>
@@ -283,24 +360,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     )
   }
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      document.cookie =
-        "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie =
-        "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie =
-        "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      document.cookie =
-        "userCargo=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-      const numProcesos = window.localStorage.getItem("procesos_realizados") || "0"
-      const fechas = window.localStorage.getItem("fecha_procesos") || "1990-01-01"
-      window.localStorage.clear()
-      window.localStorage.setItem("procesos_realizados", numProcesos)
-      window.localStorage.setItem("fecha_procesos", fechas)
-      window.location.href = "/"
-    }
-  }
+
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {

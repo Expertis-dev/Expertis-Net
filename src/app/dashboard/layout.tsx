@@ -1,16 +1,18 @@
-import { Inter } from "next/font/google"
 import { DashboardLayout } from "@/components/dashboard-layout"
-const inter = Inter({ subsets: ["latin"] })
+import { SocketProvider } from "@/Provider/SocketProvider"
 export default function RootLayout({
     children,
 }: {
     readonly children: React.ReactNode
 }) {
+
     return (
-        <DashboardLayout>
-            <div className={inter.className}>
-                {children}
-            </div>
-        </DashboardLayout>
+        <SocketProvider>
+            <DashboardLayout>
+                <div>
+                    {children}
+                </div>
+            </DashboardLayout>
+        </SocketProvider>
     )
 }

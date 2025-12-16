@@ -1,11 +1,12 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useUser } from "@/Provider/UserProvider"
 import { CargarActividad } from "@/services/CargarActividad"
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons'
-import { Upload, UploadFile, message } from "antd"
+import { Upload, UploadFile } from "antd"
 import type { UploadProps } from "antd"
 import { motion } from 'framer-motion'
 import { useState } from "react"
@@ -14,6 +15,7 @@ import { toast } from "sonner"
 export default function CargaMasiva() {
     const [fileList, setFileList] = useState<UploadFile[]>([])
     const [uploading, setUploading] = useState(false)
+    const [descuento, setDescuento] = useState<string | null>("Expertis")
     const { user } = useUser()
     // ✅ Maneja los cambios en el dragger
     const handleChange: UploadProps["onChange"] = (info) => {
@@ -30,26 +32,34 @@ export default function CargaMasiva() {
         )
         setFileList(files)
     }
-
+    const handleDescuentoChange = (value: "Expertis" | "BPO") => {
+        setDescuento(prev => (prev === value ? null : value))
+    }
     // ✅ Simula la subida al backend
     const handleUpload = async () => {
         if (fileList.length === 0) {
-            message.warning("Selecciona un archivo antes de subirlo")
+            toast.error("Selecciona un archivo antes de subirlo")
             return
         }
-
+        if (descuento === null) {
+            toast.error("Selecciona la agencia")
+            return
+        }
         setUploading(true)
         const formData = new FormData()
         formData.append("file", fileList[0].originFileObj as Blob)
+        const url = descuento === "Expertis"
+            ? `${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/actualizarDatos`
+            : `${process.env.NEXT_PUBLIC_API_URL}/api/cargarPlantillaBPO`
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/actualizarDatos`, {
+            const response = await fetch(url, {
                 method: "POST",
                 body: formData,
             })
             if (!response.ok) throw new Error("Error al subir archivo")
             CargarActividad({
                 usuario: user?.usuario || "Desconocido",
-                titulo: "Actualizo en carga masiva",
+                titulo: `Actualizo en carga masiva - ${descuento}`,
                 descripcion: `Se actualizo la carga de los asesores y supervisores con la nueva plantilla`,
                 estado: "completed",
             })
@@ -63,7 +73,7 @@ export default function CargaMasiva() {
                 estado: "error",
             })
             console.error(error)
-            message.error("Ocurrió un error al subir el archivo")
+            toast.error("Ocurrió un error al subir el archivo")
         } finally {
             setUploading(false)
         }
@@ -77,19 +87,36 @@ export default function CargaMasiva() {
                         <UploadOutlined className="h-5 w-5" />
                         Cargar Plantilla
                     </CardTitle>
+                    <div className="space-y-2">
+                        <Label>Agencia</Label>
+                        <div className="flex gap-4 w-full justify-evenly">
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={descuento === "Expertis"}
+                                    onCheckedChange={() => handleDescuentoChange("Expertis")}
+                                />
+                                <Label>Expertis</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={descuento === "BPO"}
+                                    onCheckedChange={() => handleDescuentoChange("BPO")}
+                                />
+                                <Label>BPO</Label>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
-
                 <CardContent className="space-y-2">
                     <div className="space-y-2">
                         <Label>Seleccionar documento</Label>
-
                         <Upload.Dragger
                             accept=".xlsx,.xls"
                             listType="text"
                             fileList={fileList}
                             multiple={false}
                             maxCount={1}
-                            beforeUpload={() => false} // evita que suba automáticamente
+                            beforeUpload={() => false}
                             onChange={handleChange}
                         >
                             <p className="ant-upload-drag-icon">

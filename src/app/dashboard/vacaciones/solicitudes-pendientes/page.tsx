@@ -54,7 +54,7 @@ export default function SolicitudesPendientes() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {SolicitudesPendientes && SolicitudesPendientes.map((solicitud, index) => (
+                    {SolicitudesPendientes.length > 0 ? SolicitudesPendientes.map((solicitud, index) => (
                         <TableRow
                             key={`${solicitud.idSolicitudAprobada}`}
                             className="animate-in slide-in-from-left-5 duration-300"
@@ -68,7 +68,7 @@ export default function SolicitudesPendientes() {
                                 <BadgeStatus estado={solicitud.estado} />
                             </TableCell>
                             <TableCell className="font-medium">{solicitud.cantDias}</TableCell>
-                            <TableCell className="font-medium">{solicitud.nombreArea}</TableCell>
+                            <TableCell className="font-medium">{solicitud.nombreArea || "-----"}</TableCell>
                             <TableCell className="font-medium">
                                 <Button
                                     variant="ghost"
@@ -83,7 +83,13 @@ export default function SolicitudesPendientes() {
                                 </Button>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                                No hay solicitudes pendientes
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
             <ViewPendientesRevisar isOpen={isVer} onClose={() => setIsVer(false)} solicitud={solicitudSeleccionada} />

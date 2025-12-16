@@ -126,14 +126,12 @@ export default function NuevaJustificacion() {
     e.preventDefault()
     setShowConfirmation(true)
     console.log(asesor)
-
   }
-
   const confirmSubmit = async () => {
     const cuerpo = {
       fecha: formData.fecha,
       asesor: asesor?.usuario,
-      grupo: user?.grupo,
+      grupo: user?.usuario.split(' ')[0],
       nivel1: formData.nivel1,
       nivel2: (formData.nivel2).toUpperCase().replace(/\s+/g, "_"),
       nivel3: formData.nivel3,
@@ -144,9 +142,8 @@ export default function NuevaJustificacion() {
     }
     setShowConfirmation(false)
     setShowLoading(true)
-
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacionA`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crearJustificacion`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

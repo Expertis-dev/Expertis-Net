@@ -30,10 +30,12 @@ export const ViewPendientesRevisar = ({ isOpen, onClose, solicitud }: ViewJustif
     const [infoSolicitud, setInfoSolicitud] = useState<InfoSolicitud>({} as InfoSolicitud);
     const [estado, setEstado] = useState<string | null>(null);
     const { user } = useUser()
+    const [pendiente, setPendiente] = useState(false)
     const [openConfirm, setOpenConfirm] = useState(false);
     const [isModificar, setIsModificar] = useState(false)
     useEffect(() => {
         const fetchData = async () => {
+            console.log(solicitud)
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerInfoVacaciones`, {
                     method: "POST",
@@ -62,10 +64,14 @@ export const ViewPendientesRevisar = ({ isOpen, onClose, solicitud }: ViewJustif
         setOpenConfirm(true);
     };
     const handleModificar = async () => {
+        if(pendiente) return;
+        setPendiente(true);
         console.log("Cambiar estado a:", estado);
+        console.log(solicitud)
         setOpenConfirm(false);
         setIsModificar(true)
         try {
+            console.log(solicitud)
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cambiarEstadoSolicitudVacaciones`, {
                 method: "PUT",
                 headers: {
@@ -97,6 +103,8 @@ export const ViewPendientesRevisar = ({ isOpen, onClose, solicitud }: ViewJustif
             })
             toast.error("Error al actualizar las vacaciones")
             setIsModificar(false)
+        } finally {
+            setPendiente(false);
         }
     };
     return (
@@ -296,7 +304,9 @@ export const ViewPendientesRevisar = ({ isOpen, onClose, solicitud }: ViewJustif
                                     >
                                         <Dialog>
                                             <DialogTrigger asChild>
-                                                <Button className="bg-blue-600">
+                                                <Button 
+                                                    disabled={pendiente}
+                                                    className="w-1/2 bg-[#001529] hover:bg-[#002040] dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white">
                                                     Modificar
                                                 </Button>
                                             </DialogTrigger>
