@@ -201,7 +201,7 @@ export default function MonitoreoUsuarios() {
                             expertis={chartStats.expertisCount}
                             bpo={chartStats.bpoCount}
                         />
-                        <ChartTopTabsBar devices={devices} top={10} />
+                        <ChartTopTabsBar devices={devices.map(d => ({ ...d, agencia: d.agencia ?? null }))} top={10} />
                     </div>
                 </CardContent>
             </Card>

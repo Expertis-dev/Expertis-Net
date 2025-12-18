@@ -1,15 +1,33 @@
 "use client";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    XAxis,
+    Cell, // ✅
+} from "recharts";
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@/components/ui/chart";
 import { ChartCard } from "./ChartCard";
-
-type Item = { usuario: string; tabs: number };
-
+type Item = { usuario: string; tabs: number; agencia: string | null };
 const chartConfig = {
-    tabs: { label: "Pestañas", color: "var(--chart-1)" },
+    expertis: { label: "Expertis", color: "var(--chart-2)" },
+    bpo: { label: "BPO", color: "var(--chart-1)" },
 } satisfies ChartConfig;
+// ✅ decide el color según agencia
+function colorPorAgencia(agencia: string | null) {
+    const a = (agencia ?? "").toLowerCase();
+
+    if (a.includes("expertis")) return "var(--color-expertis)";
+    if (a.includes("bpo")) return "var(--color-bpo)";
+    return "var(--color-total)"; // fallback
+}
 
 export function ChartTopTabsBar({
     devices,
@@ -17,14 +35,22 @@ export function ChartTopTabsBar({
     title = "Top usuarios por pestañas",
     description = "Usuarios con más pestañas abiertas",
 }: {
-    devices: { usuario: string; conexiones: { socketId: string; ultConex: string }[] }[];
+    devices: {
+        usuario: string;
+        agencia: string | null;
+        conexiones: { socketId: string; ultConex: string }[];
+    }[];
     top?: number;
     title?: string;
     description?: string;
 }) {
     const data = React.useMemo<Item[]>(() => {
         return [...devices]
-            .map((d) => ({ usuario: d.usuario, tabs: d.conexiones?.length ?? 0 }))
+            .map((d) => ({
+                usuario: d.usuario,
+                tabs: d.conexiones?.length ?? 0,
+                agencia: d.agencia,
+            }))
             .sort((a, b) => b.tabs - a.tabs)
             .slice(0, top);
     }, [devices, top]);
@@ -40,10 +66,19 @@ export function ChartTopTabsBar({
                         axisLine={false}
                         tickMargin={8}
                         interval={0}
-                        tickFormatter={(v) => String(v).split(" ")[0]} // primer nombre para no saturar
+                        tickFormatter={(v) => String(v).split(" ")[0]}
                     />
                     <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                    <Bar dataKey="tabs" fill="var(--color-tabs)" radius={6} />
+
+                    {/* ✅ Color por barra usando Cell */}
+                    <Bar dataKey="tabs" radius={6}>
+                        {data.map((entry, idx) => (
+                            <Cell
+                                key={`${entry.usuario}-${idx}`}
+                                fill={colorPorAgencia(entry.agencia)}
+                            />
+                        ))}
+                    </Bar>
                 </BarChart>
             </ChartContainer>
         </ChartCard>

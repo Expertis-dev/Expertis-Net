@@ -71,10 +71,8 @@ export function ChartOnlineTimeline({
                             />
                         }
                     />
-
-                    <Line dataKey="total" type="monotone" stroke="var(--color-total)" strokeWidth={2} dot={false} />
                     <Line dataKey="expertis" type="monotone" stroke="var(--color-expertis)" strokeWidth={2} dot={false} />
-                    <Line dataKey="bpo" type="monotone" stroke="var(--color-bpo)" strokeWidth={2} dot={false} />
+                    <Line dataKey="bpo" type="monotone" stroke="var(--color-total)" strokeWidth={2} dot={false} />
                 </LineChart>
             </ChartContainer>
         </ChartCard>
