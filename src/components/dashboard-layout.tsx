@@ -92,7 +92,7 @@ export const tienePermiso = (
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
-let MENU_CONFIG: MenuItem[] = [
+const MENU_CONFIG: MenuItem[] = [
   {
     id: "home",
     title: "Home",
