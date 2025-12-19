@@ -342,13 +342,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!user) {
       return MENU_CONFIG.filter((item) => item.id === "home")
     }
-
     const permisos = getPermisosFromStorage()
-    MENU_CONFIG = MENU_CONFIG.filter(item => {      
-   
-      return true
-    }
-    );
     return (
       MENU_CONFIG
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
