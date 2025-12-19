@@ -344,10 +344,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     const permisos = getPermisosFromStorage()
-    MENU_CONFIG = MENU_CONFIG.filter(item => {
-      if (item.id === "bases") {
-        return user?.id_grupo !== 14
-      }
+    MENU_CONFIG = MENU_CONFIG.filter(item => {      
+   
       return true
     }
     );
