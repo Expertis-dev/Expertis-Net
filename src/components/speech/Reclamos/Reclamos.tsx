@@ -57,7 +57,7 @@ const columnas: ColumnDefinition[] = [
   { id: "cartera", label: "Cartera", filtrable: true, ordenable: true },
   { id: "fecha", label: "Fecha", filtrable: false, ordenable: true },
   { id: "horaInicio", label: "Hora Inicio", filtrable: false, ordenable: true },
-  { id: "duracion", label: "Duraci+n", filtrable: false, ordenable: true },
+  { id: "duracion", label: "Duración", filtrable: false, ordenable: true },
   { id: "agencia", label: "Agencia", filtrable: true, ordenable: true },
   { id: "supervisor", label: "Supervisor", filtrable: true, ordenable: true },
   { id: "tipoReclamo", label: "Tipo Reclamo", filtrable: true, ordenable: true },
@@ -89,10 +89,38 @@ const EstadoCard = ({
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0
 
-const toOptionalString = (value: string | number | null | undefined): string | undefined => {
+const toOptionalString = (value: unknown): string | undefined => {
   if (value == null) return undefined
-  return String(value)
+  return String(value).trim()
 }
+
+const toCamelCase = (key: string) => {
+  const trimmed = key?.trim().replace(/[\[\]]/g, "")
+  if (!trimmed) return ""
+  const isUpperish = /^[A-Z0-9 _-]+$/.test(trimmed)
+  const base = isUpperish ? trimmed.toLowerCase() : trimmed
+  const camel = base.replace(/[\s_-]+(.)/g, (_, chr: string) => chr.toUpperCase())
+  return camel.replace(/^[A-Z]/, (chr) => chr.toLowerCase())
+}
+
+const normalizeRecord = (record: Record<string, unknown>) => {
+  const normalized: Record<string, unknown> = {}
+  Object.entries(record).forEach(([key, value]) => {
+    if (!key) return
+    normalized[toCamelCase(key)] = value
+  })
+  return normalized
+}
+
+const normalizarCartera = (value: unknown): string => {
+  const texto = toOptionalString(value)?.toLowerCase() ?? ""
+  if (texto.startsWith("intern")) return "interno"
+  if (texto.startsWith("extern")) return "externo"
+  if (texto.startsWith("judicial")) return "judicial"
+  return texto
+}
+
+type SpeechReclamoNormalizado = SpeechReclamo & { carteraNormalizada?: string }
 
 const Reclamos = () => {
   const { hasPermiso } = useSpeechPermissions()
@@ -113,21 +141,67 @@ const Reclamos = () => {
 
   const { data: dataReclamos = [], isLoading, error } = useReclamos(fechaSeleccionada)
 
-  const tienePermisoInterno = hasPermiso("PERMISO_Reclamos-ver-Interno")
-  const tienePermisoExterno = hasPermiso("PERMISO_Reclamos-ver-Externo")
-  const tienePermisoJudicial = hasPermiso("PERMISO_Reclamos-ver-Judicial")
+  const tienePermisoInterno = hasPermiso("PERMISO_ReclamosInterno-ver")
+  const tienePermisoExterno = hasPermiso("PERMISO_ReclamosExterno-ver")
+  const tienePermisoJudicial = hasPermiso("PERMISO_ReclamosJudicial-ver")
 
-  const datosCompletos = useMemo(() => {
+  const datosCompletos = useMemo<SpeechReclamoNormalizado[]>(() => {
     if (!Array.isArray(dataReclamos)) return []
     return dataReclamos
-      .map<SpeechReclamo & { documento?: string; motivo?: string; duracion?: string }>((item) => ({
-        ...item,
-        documento: toOptionalString(item.documento ?? item.idGestion),
-        motivo: toOptionalString(item.tipificacion),
-        duracion: toOptionalString(item.tiempoHablado),
-      }))
+      .map<SpeechReclamoNormalizado>((item) => {
+        const source = normalizeRecord(item as Record<string, unknown>)
+        const documento =
+          toOptionalString(source.documento) ??
+          toOptionalString(source.idGestion) ??
+          (item.documento ?? undefined)
+        const cartera = toOptionalString(source.cartera) ?? (item.cartera ?? undefined)
+        const carteraNormalizada = normalizarCartera(cartera)
+        const fecha =
+          toOptionalString(source.fecha ?? source.fechaGestion ?? source.fechaLlamada) ?? (item.fecha ?? undefined)
+        const horaInicio =
+          toOptionalString(source.horaInicio ?? source.hora ?? source.horaInicioGestion) ?? (item.horaInicio ?? undefined)
+        const tiempoHablado =
+          toOptionalString(source.tiempoHablado ?? source.duracion ?? source.tiempo) ?? (item.tiempoHablado ?? undefined)
+        const agencia = toOptionalString(source.agencia ?? source.agenciaNombre ?? source.aliasAgencia) ?? (item.agencia ?? undefined)
+        const supervisor =
+          toOptionalString(
+            source.supervisor ??
+              source.supervisorNombre ??
+              source.aliasSupervisor ??
+              source.supervisorAlias ??
+              source.grupo ??
+              source.lider ??
+              source.jefe ??
+              source.supervisorAsignado,
+          ) ??
+          (item.supervisor ?? (item as unknown as Record<string, unknown>).grupo ?? undefined)
+        const tipoReclamo =
+          toOptionalString(source.tipoReclamo ?? source.nivel1 ?? source.categoria) ?? (item.tipoReclamo ?? undefined)
+        const tipificacion =
+          toOptionalString(source.tipificacion ?? source.motivo ?? source.nivel3) ?? (item.tipificacion ?? undefined)
+        const grabacion = toOptionalString(source.grabacion ?? source.urlGrabacion) ?? (item.grabacion ?? undefined)
+        const transcripcion = toOptionalString(source.transcripcion) ?? (item.transcripcion ?? undefined)
+        const observacion = toOptionalString(source.observacion) ?? (item.observacion ?? undefined)
+
+        return {
+          ...item,
+          documento,
+          cartera,
+          fecha,
+          horaInicio,
+          tiempoHablado,
+          agencia,
+          supervisor,
+          tipoReclamo,
+          tipificacion,
+          grabacion,
+          transcripcion,
+          observacion,
+          carteraNormalizada,
+        }
+      })
       .filter((item) => {
-        const cartera = item.cartera?.trim().toLowerCase() ?? ""
+        const cartera = item.carteraNormalizada ?? ""
         if (cartera === "interno" && !tienePermisoInterno) return false
         if (cartera === "externo" && !tienePermisoExterno) return false
         if (cartera === "judicial" && !tienePermisoJudicial) return false

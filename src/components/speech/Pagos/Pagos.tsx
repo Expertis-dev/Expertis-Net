@@ -73,6 +73,39 @@ const columnas: ColumnDefinition[] = [
   { id: "acciones", label: "Acciones" },
 ]
 
+type SpeechPagoNormalizado = SpeechPago & { carteraNormalizada?: string }
+
+const toOptionalString = (value: unknown): string | undefined => {
+  if (value == null) return undefined
+  return String(value).trim()
+}
+
+const toCamelCase = (key: string) => {
+  const trimmed = key?.trim().replace(/[\[\]]/g, "")
+  if (!trimmed) return ""
+  const isUpperish = /^[A-Z0-9 _-]+$/.test(trimmed)
+  const base = isUpperish ? trimmed.toLowerCase() : trimmed
+  const camel = base.replace(/[\s_-]+(.)/g, (_, chr: string) => chr.toUpperCase())
+  return camel.replace(/^[A-Z]/, (chr) => chr.toLowerCase())
+}
+
+const normalizeRecord = (record: Record<string, unknown>) => {
+  const normalized: Record<string, unknown> = {}
+  Object.entries(record).forEach(([key, value]) => {
+    if (!key) return
+    normalized[toCamelCase(key)] = value
+  })
+  return normalized
+}
+
+const normalizarCartera = (value: unknown): string => {
+  const texto = toOptionalString(value)?.toLowerCase() ?? ""
+  if (texto.startsWith("intern")) return "interno"
+  if (texto.startsWith("extern")) return "externo"
+  if (texto.startsWith("judicial")) return "judicial"
+  return texto
+}
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0
 
@@ -132,7 +165,7 @@ const Pagos = () => {
   } = usePagos(fechaGestion)
 
   const {
-    data: detallePago,
+    data: detallePagoRaw,
     isFetching: isDetalleCargando,
     error: errorDetalle,
   } = usePagoDetalle({
@@ -140,19 +173,102 @@ const Pagos = () => {
     idGestion: detalleIdGestion,
   })
 
-  const tienePermisoInterno = hasPermiso("PERMISO_Pagos-ver-Interno")
-  const tienePermisoExterno = hasPermiso("PERMISO_Pagos-ver-Externo")
-  const tienePermisoJudicial = hasPermiso("PERMISO_Pagos-ver-Judicial")
+  const detallePago = useMemo(() => {
+    if (!detallePagoRaw) return null
+    const source = normalizeRecord(detallePagoRaw as Record<string, unknown>)
+    const pickString = (key: string) =>
+      toOptionalString(source[key]) ??
+      (typeof (detallePagoRaw as Record<string, unknown>)[key] === "string"
+        ? ((detallePagoRaw as Record<string, unknown>)[key] as string)
+        : undefined)
 
-  const datosCompletos = useMemo<SpeechPago[]>(() => {
+    return {
+      ...detallePagoRaw,
+      idGestion:
+        (source.idGestion as SpeechPago["idGestion"]) ??
+        detallePagoRaw.idGestion ??
+        (detallePagoRaw as Record<string, unknown>).IdGestion,
+      transcripcion: pickString("transcripcion") ?? detallePagoRaw.transcripcion ?? null,
+      resumen: pickString("resumen") ?? detallePagoRaw.resumen ?? null,
+      observacion: pickString("observacion") ?? detallePagoRaw.observacion ?? null,
+    }
+  }, [detallePagoRaw])
+
+  const tienePermisoInterno = hasPermiso("PERMISO_PagosInterno-ver")
+  const tienePermisoExterno = hasPermiso("PERMISO_PagosExterno-ver")
+  const tienePermisoJudicial = hasPermiso("PERMISO_PagosJudicial-ver")
+
+  const datosCompletos = useMemo<SpeechPagoNormalizado[]>(() => {
     if (!Array.isArray(dataPagos)) return []
-    return dataPagos.filter((item) => {
-      const cartera = item.cartera?.trim().toLowerCase() ?? ""
-      if (cartera === "interno" && !tienePermisoInterno) return false
-      if (cartera === "externo" && !tienePermisoExterno) return false
-      if (cartera === "judicial" && !tienePermisoJudicial) return false
-      return true
-    })
+    return dataPagos
+      .map<SpeechPagoNormalizado>((item) => {
+        const source = normalizeRecord(item as Record<string, unknown>)
+        const documento =
+          toOptionalString(source.documento) ??
+          toOptionalString(source.idGestion) ??
+          (item.documento ?? undefined)
+        const cartera = toOptionalString(source.cartera) ?? (item.cartera ?? undefined)
+        const carteraNormalizada = normalizarCartera(cartera)
+        const fecha =
+          toOptionalString(source.fecha ?? source.fecGestion ?? source.fechaGestion ?? source.fechaLlamada) ??
+          (item.fecha ?? undefined)
+        const horaInicio =
+          toOptionalString(source.horaInicio ?? source.horaInicioGestion ?? source.horaInicioLl ?? source.hora) ??
+          (item.horaInicio ?? undefined)
+        const tiempoHablado =
+          toOptionalString(source.tiempoHablado ?? source.tiempHablado ?? source.duracion ?? source.tiempo) ??
+          (item.tiempoHablado ?? undefined)
+
+        return {
+          ...item,
+          idGestion:
+            (source.idGestion as SpeechPago["idGestion"]) ??
+            (item as SpeechPago).idGestion ??
+            (item as Record<string, unknown>).IdGestion ??
+            undefined,
+          documento,
+          cartera,
+          fecha,
+          horaInicio,
+          tiempoHablado,
+          agencia: toOptionalString(source.agencia ?? source.aliasAgencia ?? source.agenciaNombre) ??
+            (item.agencia ?? undefined),
+          supervisor:
+            toOptionalString(source.supervisor ?? source.grupo ?? source.supervisorNombre) ??
+            (item.supervisor ?? undefined),
+          asesor: toOptionalString(source.asesor ?? source.alias) ?? (item as any).asesor,
+          cosecha: toOptionalString(source.cosecha) ?? (item.cosecha ?? undefined),
+          deudaCapital:
+            (source.deudaCapital as SpeechPago["deudaCapital"]) ??
+            (source.deudaCapitalTotal as SpeechPago["deudaCapital"]) ??
+            (item.deudaCapital ?? undefined),
+          deudaTotal:
+            (source.deudaTotal as SpeechPago["deudaTotal"]) ??
+            (source.deuda as SpeechPago["deudaTotal"]) ??
+            (item.deudaTotal ?? undefined),
+          calificacion:
+            (source.calificacion as SpeechPago["calificacion"]) ??
+            (source.calificacionTotal as SpeechPago["calificacion"]) ??
+            (source.promedio as SpeechPago["calificacion"]) ??
+            (item.calificacion ?? undefined),
+          tipificacion: toOptionalString(source.tipificacion ?? source.indLlamada) ?? (item as any).tipificacion,
+          grabacion: toOptionalString(source.grabacion ?? source.rutGrabacion) ?? (item as any).grabacion,
+          razonNoPago: toOptionalString(source.razonNoPago ?? source.razonNoPagoDescripcion ?? source.razon) ??
+            (item as any).razonNoPago,
+          tratamiento: toOptionalString(source.tratamiento ?? source.segmentoTratamiento) ?? (item as any).tratamiento,
+          resumen: toOptionalString(source.resumen) ?? (item.resumen ?? undefined),
+          observacion: toOptionalString(source.observacion) ?? (item.observacion ?? undefined),
+          transcripcion: toOptionalString(source.transcripcion) ?? (item.transcripcion ?? undefined),
+          carteraNormalizada,
+        }
+      })
+      .filter((item) => {
+        const cartera = item.carteraNormalizada ?? ""
+        if (cartera === "interno" && !tienePermisoInterno) return false
+        if (cartera === "externo" && !tienePermisoExterno) return false
+        if (cartera === "judicial" && !tienePermisoJudicial) return false
+        return true
+      })
   }, [dataPagos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial])
 
   const datosPrometedoras = useMemo(

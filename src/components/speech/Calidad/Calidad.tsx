@@ -1484,7 +1484,7 @@ export const Calidad = () => {
       </Card>
 
       <Dialog open={modalFeedback} onOpenChange={(open) => (open ? setModalFeedback(true) : cerrarModalFeedback())}>
-        <DialogContent className="max-w-3xl space-y-6">
+        <DialogContent className="max-h-[85vh] overflow-y-auto space-y-6 sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Generar feedback</DialogTitle>
           </DialogHeader>

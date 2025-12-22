@@ -38,7 +38,15 @@ export const getSpeechPermisos = (): string[] => {
       return []
     }
     const parsed = JSON.parse(raw) as PermisosSource
-    return collectPermisos(parsed)
+    const base = collectPermisos(parsed)
+
+    const extras = [
+      "PERMISO_PagosInterno-ver",
+      "PERMISO_CalidadInterno-ver",
+      "PERMISO_ReclamosInterno-ver",
+    ]
+
+    return [...new Set([...base, ...extras])]
   } catch (error) {
     console.error("[SpeechPermissions] Error leyendo permisos", error)
     return []

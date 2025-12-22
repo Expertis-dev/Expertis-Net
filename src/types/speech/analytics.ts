@@ -14,6 +14,11 @@ export interface SpeechPago {
   resumen?: string | null
   observacion?: string | null
   transcripcion?: string | null
+  tipificacion?: string | null
+  grabacion?: string | null
+  razonNoPago?: string | null
+  tratamiento?: string | null
+  asesor?: string | null
 }
 
 export interface SpeechPagoDetalle extends SpeechPago {
