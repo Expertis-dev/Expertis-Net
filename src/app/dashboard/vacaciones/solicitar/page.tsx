@@ -11,16 +11,13 @@ import { CalendarDays, Clock } from "lucide-react"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
 import { SuccessModal } from "@/components/success-modal"
-import { addDays, isWeekend, format, parseISO } from "date-fns"
+import { addDays, isWeekend, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useUser } from "@/Provider/UserProvider"
 import { toast } from "sonner" // Ajusta según tu implementación de toast
 import { CargarActividad } from "@/services/CargarActividad"
-import { ajusteOptimoProporcionSaldo } from "@/lib/logicVacaciones";
 import { calcularSaldosVacaciones } from "@/lib/saldosVacaciones";
 import { ObtenerInfo } from "@/lib/apiVacacionesInfo";
-import { listarOpcionesVacaciones, OpcionVacaciones } from "@/lib/logicDiasVacaOpciones";
-import { OpcionesVacaciones } from "@/components/OpcionesVacaciones";
 // Días no laborables (ejemplo)
 const diasNoLaborables = [
   // ===== 2024 =====
@@ -48,28 +45,6 @@ interface DiasDesabilitar {
   fecFinal: string,
   fecInicial: string
 }
-type AjusteProporcionUI =
-  | {
-    ok: true;
-    Hr: number;
-    Nr: number;
-    message: string;
-    addHabiles: 0;
-    addNoHabiles: 0;
-    feasible: true;
-    uiLevel: "success";
-  }
-  | {
-    ok: false;
-    Hr: number;
-    Nr: number;
-    message: string;
-    addHabiles: number;
-    addNoHabiles: number;
-    feasible: boolean;
-    uiLevel: "warning" | "error";
-  };
-
 // Función para sumar días a una fecha
 const addDaysToDate = (date: Date, days: number): Date => {
   const result = new Date(date)
@@ -109,8 +84,6 @@ export default function SolicitarVacaciones() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showLoading, setShowLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [open, setOpen] = useState(false);
-  const [opciones, setOpciones] = useState<OpcionVacaciones[]>([]);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -216,206 +189,37 @@ export default function SolicitarVacaciones() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedDates.length === 0) return
-    setShowLoading(true);
     // Validar las fechas seleccionadas
     if (dateRange.from && dateRange.to && !isValidDateSelection(dateRange.from, dateRange.to)) {
       toast.error("Las fechas seleccionadas contienen días no disponibles. Por favor, elige otro rango.")
-      setShowLoading(false);
       return
     }
     const info = await ObtenerInfo({ dateRange, user });
     const { meses, dias } = mesesYDiasUTC(info.fecIngreso, info.FECHA_CORTE);
     const { saldoH, saldoNH } = calcularSaldosVacaciones({ meses, dias, info, dayStats });
-
     // 3) Obtienes el ajuste óptimo (tu función)
-    const opt = ajusteOptimoProporcionSaldo(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables);
-
+    //const opt = ajusteOptimoProporcionSaldo(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables);
     // 4) Generas opciones (usando target de opt)
     if (!dateRange.from || !dateRange.to) {
       toast.error("Debes seleccionar un rango de fechas válido.");
-      setShowLoading(false);
       return;
     }
-
-    // Convierte Date -> "YYYY-MM-DD" usando componentes locales (consistente con tu lógica actual)
-    const toKeyLocal = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-    // Set de feriados/no laborables en formato "YYYY-MM-DD"
-    const diasNoLaborablesSet = new Set(diasNoLaborables.map(toKeyLocal));
-
-    // Weekend para "YYYY-MM-DD" sin depender de la zona horaria (UTC date-only)
-    const isWeekendISO = (iso: string) => {
-      const [y, m, d] = iso.split("-").map(Number);
-      const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 dom, 6 sáb
-      return dow === 0 || dow === 6;
-    };
-    const isLaborableISO = (iso: string) =>
-      !isWeekendISO(iso) && !diasNoLaborablesSet.has(iso);
-    const result = sugerirDiasAdicionalesParaProporcion(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables)
-    console.log("Resultado de ajusteOptimoProporcionSaldo:", opt);
-    console.log("Resultado de la validación:", result);
-    if (result.ok) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
-      toast.warning(`Sugerencia de ajuste: Deberias tener ${opt.x_h} día(s) hábil(es) y ${opt.x_n} día(s) no hábil(es).`);
-      setShowConfirmation(false);
-      if (!dateRange?.from || !dateRange?.to) {
-        // no hay rango completo aún
-        return;
-      }
-      const op = await listarOpcionesVacaciones({
-        user,
-        selectedRange: {
-          from: format(dateRange.from, "yyyy-MM-dd"),
-          to: format(dateRange.to, "yyyy-MM-dd"),
-        },
-        targetH: opt.x_h,
-        targetNH: opt.x_n,
-        LOW: 2.65,
-        HIGH: 2.85,
-        searchRadiusDays: 60,
-        maxOptions: 5,
-        isLaborable: isLaborableISO,
-        mesesYDiasUTC,
-        saldoYaIncluyeDescuento: false,
-      });
-      setShowLoading(false);
-      setOpciones(op);
-      const todosInvalidos = op.every(o => o.porcentaje === "0");
-      if(todosInvalidos){
-        return
-      }
-      console.log("todosInvalidos", todosInvalidos);
-      setOpen(true);
-      return
+    //const result = sugerirDiasAdicionalesParaProporcion(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables)
+    if (saldoNH - dayStats.noLaborables <= 0) {
+      toast.error("Tu selección deja tu saldo de días no laborables en 0. Ajusta el rango para no descontar más días no laborables.");
+      toast.warning(`Saldo días laborables: ${Math.floor(saldoH)}. Saldo días no laborables: ${Math.floor(saldoNH)}`);
+      return;
+    }
+    if (saldoH - dayStats.laborables < 0) {
+      toast.error("Tu selección deja tu saldo de días laborables en 0. Ajusta el rango para no descontar más días laborables.");
+      toast.warning(`Saldo días laborables: ${Math.floor(saldoH)}. Saldo días no laborables: ${Math.floor(saldoNH)}`);
+      return;
     }
     if (!info) {
       toast.error("No se pudo obtener la información de días del empleado.");
-      setShowLoading(false);
       return;
     }
-    setShowLoading(false);
     setShowConfirmation(true);
-  }
-  function sugerirDiasAdicionalesParaProporcion(
-    H: number,  // saldo hábil actual
-    N: number,  // saldo no hábil actual
-    h: number,  // hábiles que ya descuenta la selección
-    n: number,  // no hábiles que ya descuenta la selección
-    LOW = 2.65,
-    HIGH = 2.85
-  ): AjusteProporcionUI {
-    const Hr = H - h;
-    const Nr = N - n;
-
-    // Excede saldos
-    if (Hr < 0 || Nr < 0) {
-      return {
-        ok: false,
-        Hr,
-        Nr,
-        message: "Tu selección supera el saldo disponible. Ajusta las fechas o la cantidad de días.",
-        addHabiles: 0,
-        addNoHabiles: 0,
-        feasible: false,
-        uiLevel: "error",
-      };
-    }
-
-    // Se queda sin no hábiles
-    if (Nr === 0) {
-      return {
-        ok: false,
-        Hr,
-        Nr,
-        message:
-          "Tu selección deja tu saldo de días no hábiles en 0. " +
-          "Ajusta el rango para no descontar más días no hábiles.",
-        addHabiles: 0,
-        addNoHabiles: 0,
-        feasible: false,
-        uiLevel: "error",
-      };
-    }
-
-    const ratioAfter = Hr / Nr;
-
-    // En rango
-    if (ratioAfter >= LOW && ratioAfter <= HIGH) {
-      return {
-        ok: true,
-        Hr,
-        Nr,
-        message: "Listo ✅ Tu selección está equilibrada.",
-        addHabiles: 0,
-        addNoHabiles: 0,
-        feasible: true,
-        uiLevel: "success",
-      };
-    }
-
-    // Si está "alto": le quedan pocos no hábiles comparado con hábiles -> debe consumir más hábiles
-    if (ratioAfter > HIGH) {
-      const needHab = Math.max(0, Math.ceil(Hr - HIGH * Nr));
-      const feasible = needHab <= Hr;
-
-      return {
-        ok: false,
-        Hr,
-        Nr,
-        message: feasible
-          ? `Tu selección no está equilibrada: te quedarían muy pocos días no hábiles. ` +
-          `Para equilibrarlo, agrega ${needHab} día(s) HÁBIL(ES) más a tu selección.`
-          : `Tu selección no está equilibrada y no es posible corregirla con el saldo actual. ` +
-          `Revisa el saldo o reduce la selección.`,
-        addHabiles: needHab,
-        addNoHabiles: 0,
-        feasible,
-        uiLevel: feasible ? "warning" : "error",
-      };
-    }
-
-    // Si está "bajo": le quedan muchos no hábiles comparado con hábiles -> debe consumir más no hábiles
-    const needNoHab = Math.max(0, Math.ceil(Nr - Hr / LOW));
-    const feasibleBase = needNoHab < Nr;
-
-    // chequeo extra: que al agregar ese mínimo no te pases al otro lado
-    const Nr2 = Nr - needNoHab;
-    const ratio2 = Nr2 > 0 ? Hr / Nr2 : Infinity;
-    const withinHigh = Nr2 > 0 && ratio2 <= HIGH;
-
-    if (feasibleBase && withinHigh) {
-      return {
-        ok: false,
-        Hr,
-        Nr,
-        message:
-          `Tu selección no está equilibrada: te quedarían demasiados días no hábiles. ` +
-          `Para equilibrarlo, agrega ${needNoHab} día(s) NO HÁBIL(ES) más a tu selección.`,
-        addHabiles: 0,
-        addNoHabiles: needNoHab,
-        feasible: true,
-        uiLevel: "warning",
-      };
-    }
-
-    // MIX: requiere combinación o no se puede
-    return {
-      ok: false,
-      Hr,
-      Nr,
-      message: !feasibleBase
-        ? "Tu selección no está equilibrada y no se puede corregir sin dejar tu saldo de días no hábiles en 0. " +
-        "Ajusta las fechas (menos días no hábiles) o revisa tu saldo."
-        : "Tu selección no está equilibrada. Para corregirlo necesitas ajustar el rango combinando más días hábiles " +
-        "y algunos días no hábiles, hasta que el sistema lo marque como equilibrado.",
-      addHabiles: 0,
-      addNoHabiles: needNoHab,
-      feasible: false,
-      uiLevel: "error",
-    };
   }
 
 
@@ -628,23 +432,6 @@ export default function SolicitarVacaciones() {
         onConfirm={confirmSubmit}
         title="Confirmar Solicitud de Vacaciones"
         message={`¿Estás seguro de que deseas solicitar ${dayStats.total} días de vacaciones (${dayStats.laborables} laborables)?`}
-      />
-
-      <OpcionesVacaciones
-        isOpen={open}
-        opciones={opciones}
-        onClose={() => setOpen(false)}
-        intentoUsuario={{
-          from: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "2025-01-01",
-          to: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "2025-01-01",
-        }}
-        onSelect={(op) => {
-          // aquí le mandas al padre el rango elegido para setear el DatePicker
-          setDateRange({
-            from: parseISO(op.dateRange.from),
-            to: parseISO(op.dateRange.to),
-          });
-        }}
       />
       <LoadingModal isOpen={showLoading} message="Procesando solicitud de vacaciones..." />
       <SuccessModal isOpen={showSuccess} message="¡Solicitud de vacaciones enviada exitosamente!" />
