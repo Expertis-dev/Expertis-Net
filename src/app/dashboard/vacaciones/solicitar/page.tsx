@@ -11,11 +11,16 @@ import { CalendarDays, Clock } from "lucide-react"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
 import { SuccessModal } from "@/components/success-modal"
-import { addDays, isWeekend, format } from "date-fns"
+import { addDays, isWeekend, format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { useUser } from "@/Provider/UserProvider"
 import { toast } from "sonner" // Ajusta según tu implementación de toast
 import { CargarActividad } from "@/services/CargarActividad"
+import { ajusteOptimoProporcionSaldo } from "@/lib/logicVacaciones";
+import { calcularSaldosVacaciones } from "@/lib/saldosVacaciones";
+import { ObtenerInfo } from "@/lib/apiVacacionesInfo";
+import { listarOpcionesVacaciones, OpcionVacaciones } from "@/lib/logicDiasVacaOpciones";
+import { OpcionesVacaciones } from "@/components/OpcionesVacaciones";
 // Días no laborables (ejemplo)
 const diasNoLaborables = [
   // ===== 2024 =====
@@ -93,6 +98,7 @@ const normalizeAndAdjustDate = (dateString: string): Date => {
 }
 export default function SolicitarVacaciones() {
   const { user } = useUser()
+  //const [ayuda, setAyuda] = useState(false)
   const [diasDesabilitar, setDiasDesabilitar] = useState<DiasDesabilitar[]>([])
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -103,7 +109,8 @@ export default function SolicitarVacaciones() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showLoading, setShowLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-
+  const [open, setOpen] = useState(false);
+  const [opciones, setOpciones] = useState<OpcionVacaciones[]>([]);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -170,37 +177,7 @@ export default function SolicitarVacaciones() {
     return { total, laborables, noLaborables }
   }
   const dayStats = calculateDays()
-  const ObtenerInfo = async () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      toast.error("Debes seleccionar un rango de fechas para la vacación.");
-      return;
-    }
-    const fecha = format(dateRange.to, "yyyy-MM-dd", { locale: es })
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/vacaciones/obtenerInfoVacacionesEmpleado`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            idEmpleado: user?.idEmpleado,
-            FechaCorte: fecha,
-          }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Error al VALIDAR la solicitud de vacaciones");
-      }
-      const data = await response.json();
-      console.log("Respuesta backend:", data.data[0]);
-      return data.data[0];
-    } catch (error) {
-      console.error("Error al VALIDAR la solicitud:", error);
-      toast.error("Ocurrió un error al VALIDAR la solicitud. Intenta nuevamente.");
-    }
-  }
+
   function toDate(v: string | Date) {
     return v instanceof Date ? v : new Date(v);
   }
@@ -235,78 +212,91 @@ export default function SolicitarVacaciones() {
 
     return { meses, dias, anclaISO: ancla.toISOString() };
   }
-  function truncar({ num, decimales = 2 }: { num: number, decimales?: number }) {
-    const factor = 10 ** decimales;
-    return Math.trunc(num * factor) / factor;
-  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedDates.length === 0) return
+    setShowLoading(true);
     // Validar las fechas seleccionadas
     if (dateRange.from && dateRange.to && !isValidDateSelection(dateRange.from, dateRange.to)) {
       toast.error("Las fechas seleccionadas contienen días no disponibles. Por favor, elige otro rango.")
+      setShowLoading(false);
       return
     }
-    const info = await ObtenerInfo();
+    const info = await ObtenerInfo({ dateRange, user });
     const { meses, dias } = mesesYDiasUTC(info.fecIngreso, info.FECHA_CORTE);
+    const { saldoH, saldoNH } = calcularSaldosVacaciones({ meses, dias, info, dayStats });
 
-    const totalMeses = truncar({ num: meses + (dias / 30), decimales: 2 });
-    console.log("Numero de meses:", totalMeses);
+    // 3) Obtienes el ajuste óptimo (tu función)
+    const opt = ajusteOptimoProporcionSaldo(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables);
 
-    const años = Math.floor(totalMeses / 12);
-    console.log("Numero de años:", años);
+    // 4) Generas opciones (usando target de opt)
+    if (!dateRange.from || !dateRange.to) {
+      toast.error("Debes seleccionar un rango de fechas válido.");
+      setShowLoading(false);
+      return;
+    }
 
-    const mesesSinAnios = truncar({ num: totalMeses % 12, decimales: 2 });
-    console.log("Meses sin años:", mesesSinAnios);
+    // Convierte Date -> "YYYY-MM-DD" usando componentes locales (consistente con tu lógica actual)
+    const toKeyLocal = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-    const vacaciones = truncar({ num: mesesSinAnios * 2.5, decimales: 2 });
-    console.log("Días Periodo actual:", vacaciones);
+    // Set de feriados/no laborables en formato "YYYY-MM-DD"
+    const diasNoLaborablesSet = new Set(diasNoLaborables.map(toKeyLocal));
 
-    const periodos22 = truncar({ num: años * 22 + (vacaciones * 22 / 30), decimales: 2 });
-    console.log("H_periodos:", periodos22);
-
-    const periodos8 = truncar({ num: años * 8 + (vacaciones * 8 / 30), decimales: 2 });
-    console.log("NH_periodos:", periodos8);
-
-    const H_meta = truncar({ num: periodos22 - info.VG_Habiles_PeriodoAnterior, decimales: 2 });
-    console.log("H_meta:", H_meta);
-
-    const NH_meta = truncar({ num: periodos8 - info.VG_NoHabiles_PeriodoAnterior, decimales: 2 });
-    console.log("NH_meta:", NH_meta);
-
-    const saldoH = truncar({ num: (H_meta - info.VG_Habiles_PeriodoActual), decimales: 2 });
-    console.log("Saldo Habiles:", saldoH);
-
-    const saldoNH = truncar({ num: (NH_meta - info.VG_NoHabiles_PeriodoActual), decimales: 2 });
-    console.log("Saldo No Habiles:", saldoNH);
-
-
-    console.log("Días laborables seleccionados:", dayStats.laborables);
-    console.log("Dias habiles usados en el periodo:", info.VG_Habiles_PeriodoActual);
-    const H_after = truncar({ num: info.VG_Habiles_PeriodoActual + dayStats.laborables, decimales: 2 });
-    console.log("H_after:", H_after);
-    console.log("Días no laborables seleccionados:", dayStats.noLaborables);
-    console.log("Dias no habiles usados en el periodo:", info.VG_NoHabiles_PeriodoActual);
-    const NH_after = truncar({ num: info.VG_NoHabiles_PeriodoActual + dayStats.noLaborables, decimales: 2 });
-    console.log("NH_after:", NH_after);
-    const C_after = truncar({ num: H_after + NH_after, decimales: 2 });
-    console.log("C_after:", C_after);
-
-    const NH_min_acum = Math.floor(C_after * (NH_meta / 30))
-    console.log("NH_min_acum:", NH_min_acum);
+    // Weekend para "YYYY-MM-DD" sin depender de la zona horaria (UTC date-only)
+    const isWeekendISO = (iso: string) => {
+      const [y, m, d] = iso.split("-").map(Number);
+      const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 dom, 6 sáb
+      return dow === 0 || dow === 6;
+    };
+    const isLaborableISO = (iso: string) =>
+      !isWeekendISO(iso) && !diasNoLaborablesSet.has(iso);
     const result = sugerirDiasAdicionalesParaProporcion(saldoH, saldoNH, dayStats.laborables, dayStats.noLaborables)
+    console.log("Resultado de ajusteOptimoProporcionSaldo:", opt);
     console.log("Resultado de la validación:", result);
     if (result.ok) {
       toast.success(result.message);
     } else {
       toast.error(result.message);
+      toast.warning(`Sugerencia de ajuste: Deberias tener ${opt.x_h} día(s) hábil(es) y ${opt.x_n} día(s) no hábil(es).`);
       setShowConfirmation(false);
+      if (!dateRange?.from || !dateRange?.to) {
+        // no hay rango completo aún
+        return;
+      }
+      const op = await listarOpcionesVacaciones({
+        user,
+        selectedRange: {
+          from: format(dateRange.from, "yyyy-MM-dd"),
+          to: format(dateRange.to, "yyyy-MM-dd"),
+        },
+        targetH: opt.x_h,
+        targetNH: opt.x_n,
+        LOW: 2.65,
+        HIGH: 2.85,
+        searchRadiusDays: 60,
+        maxOptions: 5,
+        isLaborable: isLaborableISO,
+        mesesYDiasUTC,
+        saldoYaIncluyeDescuento: false,
+      });
+      setShowLoading(false);
+      setOpciones(op);
+      const todosInvalidos = op.every(o => o.porcentaje === "0");
+      if(todosInvalidos){
+        return
+      }
+      console.log("todosInvalidos", todosInvalidos);
+      setOpen(true);
       return
     }
     if (!info) {
       toast.error("No se pudo obtener la información de días del empleado.");
+      setShowLoading(false);
       return;
     }
+    setShowLoading(false);
     setShowConfirmation(true);
   }
   function sugerirDiasAdicionalesParaProporcion(
@@ -598,7 +588,16 @@ export default function SolicitarVacaciones() {
           {/* Formulario */}
           <Card>
             <CardHeader>
-              <CardTitle>Detalle de las Vacaciones</CardTitle>
+              <CardTitle className="flex justify-between">
+                <p>Detalle de las Vacaciones</p>
+                {/*<div className="flex  items-center justify-center gap-2"> 
+                  <Label>Solicitar Ayuda</Label>
+                  <Checkbox
+                    checked={ayuda}
+                    onCheckedChange={() => setAyuda(!ayuda)}
+                  />
+                </div>*/}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-3">
@@ -629,6 +628,23 @@ export default function SolicitarVacaciones() {
         onConfirm={confirmSubmit}
         title="Confirmar Solicitud de Vacaciones"
         message={`¿Estás seguro de que deseas solicitar ${dayStats.total} días de vacaciones (${dayStats.laborables} laborables)?`}
+      />
+
+      <OpcionesVacaciones
+        isOpen={open}
+        opciones={opciones}
+        onClose={() => setOpen(false)}
+        intentoUsuario={{
+          from: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "2025-01-01",
+          to: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "2025-01-01",
+        }}
+        onSelect={(op) => {
+          // aquí le mandas al padre el rango elegido para setear el DatePicker
+          setDateRange({
+            from: parseISO(op.dateRange.from),
+            to: parseISO(op.dateRange.to),
+          });
+        }}
       />
       <LoadingModal isOpen={showLoading} message="Procesando solicitud de vacaciones..." />
       <SuccessModal isOpen={showSuccess} message="¡Solicitud de vacaciones enviada exitosamente!" />
