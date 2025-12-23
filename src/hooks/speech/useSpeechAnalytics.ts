@@ -5,6 +5,7 @@ import speechAnalyticsService from "@/services/speech/speechAnalytics"
 import type {
   SpeechCalidadDetalle,
   SpeechFeedbackUploadPayload,
+  SpeechFeedbackViewPayload,
   SpeechPago,
   SpeechPagoDetalle,
   SpeechReclamo,
@@ -46,4 +47,9 @@ export const useCalidadDetalle = (params: { desde: string; hasta: string }) =>
 export const useSubirFeedbackPdf = () =>
   useMutation({
     mutationFn: (payload: SpeechFeedbackUploadPayload) => speechAnalyticsService.subirFeedbackPdf(payload),
+  })
+
+export const useFeedbackPdfUrl = () =>
+  useMutation({
+    mutationFn: (payload: SpeechFeedbackViewPayload) => speechAnalyticsService.obtenerFeedbackPdfUrl(payload),
   })

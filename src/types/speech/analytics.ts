@@ -70,9 +70,22 @@ export interface SpeechCalidadDetalle {
 
 export interface SpeechFeedbackUploadPayload {
   supervisor: string
+  asesor: string
   fechaCarpeta: string
   nombreArchivo: string
   archivo: File
+}
+
+export interface SpeechFeedbackViewPayload {
+  supervisor: string
+  asesor: string
+  nombreArchivo: string
+}
+
+export interface SpeechFeedbackViewResponse {
+  url: string
+  expiresIn?: number
+  key?: string
 }
 
 export type SpeechPermiso = string

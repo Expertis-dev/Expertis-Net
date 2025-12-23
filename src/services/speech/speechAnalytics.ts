@@ -2,6 +2,8 @@ import { speechAnalyticsApi } from "./api"
 import type {
   SpeechCalidadDetalle,
   SpeechFeedbackUploadPayload,
+  SpeechFeedbackViewPayload,
+  SpeechFeedbackViewResponse,
   SpeechPago,
   SpeechPagoDetalle,
   SpeechReclamo,
@@ -74,6 +76,7 @@ export const speechAnalyticsService = {
   async subirFeedbackPdf(payload: SpeechFeedbackUploadPayload) {
     const formData = new FormData()
     formData.append("supervisor", payload.supervisor)
+    formData.append("asesor", payload.asesor)
     formData.append("fechaCarpeta", payload.fechaCarpeta)
     formData.append("nombreArchivo", payload.nombreArchivo)
     formData.append("file", payload.archivo, payload.nombreArchivo)
@@ -83,6 +86,13 @@ export const speechAnalyticsService = {
         "Content-Type": "multipart/form-data",
       },
       withCredentials: true,
+    })
+    return response.data
+  },
+
+  async obtenerFeedbackPdfUrl(payload: SpeechFeedbackViewPayload): Promise<SpeechFeedbackViewResponse> {
+    const response = await speechAnalyticsApi.get<SpeechFeedbackViewResponse>("/feedback/view-url", {
+      params: payload,
     })
     return response.data
   },

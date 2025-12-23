@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback, type ElementType } from 'react';
-import { useCalidadDetalle, useSubirFeedbackPdf } from '@/hooks/speech/useSpeechAnalytics';
+import { isAxiosError } from 'axios';
+import { useCalidadDetalle, useFeedbackPdfUrl, useSubirFeedbackPdf } from '@/hooks/speech/useSpeechAnalytics';
 import { useSpeechAccess } from '@/hooks/speech/useSpeechAccess';
 import { useUser } from '@/Provider/UserProvider';
 import * as XLSX from 'xlsx';
@@ -20,6 +21,7 @@ import {
   Download,
   Eraser,
   FileText,
+  Eye,
   Filter as FilterIcon,
   LineChart,
   List,
@@ -168,6 +170,12 @@ const calcularEvolutivoSemanal = (rows, baseIso, totalWeeks = 4) => {
 
 const safeFileName = (texto: string) => (texto ?? '').replace(/[^\w-]+/g, '_') || 'feedback';
 
+const buildFeedbackFileName = (metadata?: { asesor?: string | null; fecha?: string | null }) => {
+  if (!metadata) return 'feedback.pdf';
+  const fechaPDF = metadata.fecha || toISODateString(new Date());
+  return `feedback_${safeFileName(metadata.asesor || 'asesor')}_${fechaPDF}.pdf`;
+};
+
 const etiquetaFirmaPorCuartil = (quartil: string) =>
   String(quartil ?? '').toUpperCase() === 'Q4' ? 'Analista de formación' : 'Supervisor';
 
@@ -223,10 +231,11 @@ export const Calidad = () => {
   const [asesorSeleccionadoFeedback, setAsesorSeleccionadoFeedback] = useState(null);
   const [feedbackTexto, setFeedbackTexto] = useState('');
   const [actitudesSeleccionadas, setActitudesSeleccionadas] = useState([]);
-  const [feedbackMetadata, setFeedbackMetadata] = useState(null);
-  const [feedbackSugerencia, setFeedbackSugerencia] = useState('');
-  const [feedbackCompromiso, setFeedbackCompromiso] = useState('');
-  const [generandoPdf, setGenerandoPdf] = useState(false);
+const [feedbackMetadata, setFeedbackMetadata] = useState(null);
+const [feedbackSugerencia, setFeedbackSugerencia] = useState('');
+const [feedbackCompromiso, setFeedbackCompromiso] = useState('');
+const [generandoPdf, setGenerandoPdf] = useState(false);
+const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
   const logoDataUrlRef = useRef(null);
   const loadLogo = useCallback(async () => {
     if (logoDataUrlRef.current) {
@@ -486,17 +495,18 @@ export const Calidad = () => {
       });
       doc.text('Asesor', x2 + firmaWidth / 2, yLine + gapLabel, { align: 'center' });
 
-      const nombre = `feedback_${safeFileName(metadata.asesor)}_${fechaPDF}.pdf`;
+      const nombre = buildFeedbackFileName({ asesor: metadata.asesor, fecha: fechaPDF });
       return { doc, nombre };
     },
     [loadLogo]
   );
   // Cargar datos
-  const { data: dataCalidad, isLoading, error } = useCalidadDetalle({
-    desde: fechaDesde,
-    hasta: fechaHasta
-  });
-  const subirFeedbackPdfMutation = useSubirFeedbackPdf();
+const { data: dataCalidad, isLoading, error } = useCalidadDetalle({
+  desde: fechaDesde,
+  hasta: fechaHasta
+});
+const subirFeedbackPdfMutation = useSubirFeedbackPdf();
+const feedbackPdfUrlMutation = useFeedbackPdfUrl();
 
   // ============ DATOS PROCESADOS ============
   const datosCompletos = useMemo(() => {
@@ -939,6 +949,60 @@ const limpiarFiltroColumna = (columna) => {
     );
   };
 
+  const requestFeedbackPdfUrl = useCallback(
+    async (metadata) => {
+      if (!metadata?.asesor || !metadata?.supervisor) {
+        toast.error('No hay informaciИn suficiente para abrir el PDF.');
+        return null;
+      }
+      const nombreArchivo = buildFeedbackFileName(metadata);
+      try {
+        const response = await feedbackPdfUrlMutation.mutateAsync({
+          supervisor: metadata.supervisor,
+          asesor: metadata.asesor,
+          nombreArchivo
+        });
+        if (response?.url) {
+          window.open(response.url, '_blank', 'noopener,noreferrer');
+          return response.url;
+        }
+        toast.error('No se pudo obtener el enlace del PDF.');
+        return null;
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 404) {
+          toast.error('AИn no existe un PDF para este asesor. Genera uno primero.');
+          return null;
+        }
+        console.error('[Calidad] Error al obtener URL del PDF', err);
+        toast.error('No se pudo abrir el PDF. Intenta nuevamente.');
+        return null;
+      }
+    },
+    [feedbackPdfUrlMutation]
+  );
+
+  const handleVisualizarPdf = useCallback(
+    async (asesor) => {
+      if (!asesor) {
+        toast.error('Selecciona un asesor para ver el PDF.');
+        return;
+      }
+      const key = asesor.asesor || '__DESCONOCIDO__';
+      setVisualizandoPdf(key);
+      try {
+        const metadata = buildFeedbackPayload(asesor);
+        if (!metadata) {
+          toast.error('No hay datos suficientes para generar el PDF.');
+          return;
+        }
+        await requestFeedbackPdfUrl(metadata);
+      } finally {
+        setVisualizandoPdf(null);
+      }
+    },
+    [buildFeedbackPayload, requestFeedbackPdfUrl]
+  );
+
   const generarPDF = async () => {
     if (!asesorSeleccionadoFeedback || !feedbackTexto.trim()) {
       toast.error('Por favor, completa el feedback antes de generar el PDF');
@@ -946,6 +1010,10 @@ const limpiarFiltroColumna = (columna) => {
     }
     if (!feedbackMetadata) {
       toast.error('No hay datos suficientes para generar el PDF');
+      return;
+    }
+    if (!feedbackMetadata.asesor || !feedbackMetadata.supervisor) {
+      toast.error('No se pudo determinar el asesor o supervisor para el PDF');
       return;
     }
 
@@ -962,17 +1030,17 @@ const limpiarFiltroColumna = (columna) => {
       const arrayBuffer = doc.output('arraybuffer');
       const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
       const archivo = new File([blob], nombre, { type: 'application/pdf' });
-      const supervisor = user?.usuario || 'DESCONOCIDO'
+      const supervisor = user?.usuario || feedbackMetadata.supervisor || 'DESCONOCIDO';
       const fechaCarpeta = toISODateString(new Date());
-
-      subirFeedbackPdfMutation.mutate({
+      await subirFeedbackPdfMutation.mutateAsync({
         supervisor,
+        asesor: feedbackMetadata.asesor,
         fechaCarpeta,
         nombreArchivo: nombre,
         archivo
       });
-
-      doc.save(nombre);
+      await requestFeedbackPdfUrl(feedbackMetadata);
+      toast.success('Feedback generado y almacenado correctamente.');
       cerrarModalFeedback();
     } catch (error) {
       console.error('[Calidad] Error al generar el PDF', error);
@@ -1442,8 +1510,11 @@ const limpiarFiltroColumna = (columna) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {datosPaginados.map((fila, idx) => (
-                      <TableRow key={`${fila.documento ?? fila.asesor}-${idx}`}>
+                    {datosPaginados.map((fila, idx) => {
+                      const isViewingPdf =
+                        visualizandoPdf !== null && visualizandoPdf === (fila.asesor || '__DESCONOCIDO__');
+                      return (
+                        <TableRow key={`${fila.documento ?? fila.asesor}-${idx}`}>
                         {modoVista === "detalle" ? (
                           <>
                             <TableCell>{fila.documento}</TableCell>
@@ -1478,19 +1549,35 @@ const limpiarFiltroColumna = (columna) => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                title="Generar feedback"
-                                onClick={() => abrirModalFeedback(fila)}
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  title="Generar feedback"
+                                  onClick={() => abrirModalFeedback(fila)}
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  title="Ver PDF"
+                                  onClick={() => handleVisualizarPdf(fila)}
+                                  disabled={isViewingPdf}
+                                >
+                                  {isViewingPdf ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </TableCell>
                           </>
                         )}
-                      </TableRow>
-                    ))}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
