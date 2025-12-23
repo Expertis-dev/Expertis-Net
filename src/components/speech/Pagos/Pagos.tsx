@@ -713,7 +713,7 @@ const Pagos = () => {
                               <button
                                 type="button"
                                 className={cn(
-                                  "flex flex-1 items-center gap-1 text-left text-xs font-semibold uppercase tracking-wide",
+                                  "flex flex-1 items-center gap-1 text-left text-xs font-semibold tracking-wide",
                                   col.ordenable ? "cursor-pointer" : "cursor-default",
                                 )}
                                 onClick={() => col.ordenable && handleOrden(col.id)}
