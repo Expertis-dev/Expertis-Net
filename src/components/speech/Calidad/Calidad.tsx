@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback, type ElementType } from 'react';
 import { useCalidadDetalle, useSubirFeedbackPdf } from '@/hooks/speech/useSpeechAnalytics';
+import { useSpeechAccess } from '@/hooks/speech/useSpeechAccess';
 import { useUser } from '@/Provider/UserProvider';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -191,6 +192,7 @@ const getValue = (obj: Record<string, any>, ...keys: string[]) => {
 
 export const Calidad = () => {
   const { user } = useUser();
+  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess();
 
   // ============ ESTADOS PRINCIPALES ============
   const [modoVista, setModoVista] = useState('detalle'); // 'detalle' | 'general'
@@ -561,13 +563,31 @@ export const Calidad = () => {
 
   // Resetear filtros dependientes
   useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return;
+    }
     setSupervisorSeleccionado('');
     setAsesorSeleccionado('');
-  }, [agenciaSeleccionada]);
+  }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados]);
 
   useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return;
+    }
     setAsesorSeleccionado('');
-  }, [supervisorSeleccionado]);
+  }, [supervisorSeleccionado, puedeUsarFiltrosAvanzados]);
+
+  useEffect(() => {
+    if (puedeUsarFiltrosAvanzados) {
+      return;
+    }
+    setAgenciaSeleccionada('EXPERTIS');
+    setSupervisorSeleccionado(aliasActual ?? '');
+    setAsesorSeleccionado('');
+    setFiltrosColumnas({});
+    setBusquedaFiltro({});
+    setMenuFiltroAbierto(null);
+  }, [puedeUsarFiltrosAvanzados, aliasActual]);
 
   // Aplicar filtros principales
   const datosFiltradosPrincipales = useMemo(() => {
@@ -719,11 +739,18 @@ export const Calidad = () => {
     setPaginaActual(prev => Math.min(prev, totalPaginas));
   }, [totalPaginas]);
 
+  const filtrosInteractivosActivos =
+    puedeUsarFiltrosAvanzados &&
+    (
+      Boolean(agenciaSeleccionada) ||
+      Boolean(supervisorSeleccionado) ||
+      Boolean(asesorSeleccionado) ||
+      Object.keys(filtrosColumnas).length > 0
+    );
+
   const hayFiltrosActivos = Boolean(
-    fechaDesde || fechaHasta || fechaDesdeTemp || fechaHastaTemp ||
-    agenciaSeleccionada || supervisorSeleccionado || asesorSeleccionado ||
-    Object.keys(filtrosColumnas).length
-  );
+    fechaDesde || fechaHasta || fechaDesdeTemp || fechaHastaTemp
+  ) || filtrosInteractivosActivos;
 
   // KPIs generales
   const kpis = useMemo(() => 
@@ -791,7 +818,10 @@ export const Calidad = () => {
     return unicos;
   };
 
-  const handleFiltroColumnaChange = (columna, valor) => {
+const handleFiltroColumnaChange = (columna, valor) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return;
+    }
     setFiltrosColumnas(prev => {
       const valoresActuales = prev[columna] || [];
       const nuevosValores = valoresActuales.includes(valor)
@@ -805,7 +835,10 @@ export const Calidad = () => {
     });
   };
 
-  const seleccionarTodosFiltro = (columna) => {
+const seleccionarTodosFiltro = (columna) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return;
+    }
     const todosValores = obtenerValoresUnicos(columna);
     setFiltrosColumnas(prev => ({
       ...prev,
@@ -813,7 +846,10 @@ export const Calidad = () => {
     }));
   };
 
-  const limpiarFiltroColumna = (columna) => {
+const limpiarFiltroColumna = (columna) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return;
+    }
     setFiltrosColumnas(prev => {
       const nuevo = { ...prev };
       delete nuevo[columna];
@@ -1060,7 +1096,7 @@ export const Calidad = () => {
               <Select
                 value={agenciaSeleccionada || "all"}
                 onValueChange={(value) => setAgenciaSeleccionada(value === "all" ? "" : value)}
-                disabled={datosCompletos.length === 0}
+                disabled={!puedeUsarFiltrosAvanzados || datosCompletos.length === 0}
               >
                 <SelectTrigger id="agencia" className="w-[210px]">
                   <SelectValue placeholder="Todas las agencias" />
@@ -1086,7 +1122,9 @@ export const Calidad = () => {
               <Select
                 value={supervisorSeleccionado || "all"}
                 onValueChange={(value) => setSupervisorSeleccionado(value === "all" ? "" : value)}
-                disabled={!agenciaSeleccionada || supervisoresUnicos.length === 0}
+                disabled={
+                  !puedeUsarFiltrosAvanzados || !agenciaSeleccionada || supervisoresUnicos.length === 0
+                }
               >
                 <SelectTrigger id="supervisor" className="w-[210px]">
                   <SelectValue placeholder="Todos los supervisores" />
@@ -1112,7 +1150,9 @@ export const Calidad = () => {
               <Select
                 value={asesorSeleccionado || "all"}
                 onValueChange={(value) => setAsesorSeleccionado(value === "all" ? "" : value)}
-                disabled={!supervisorSeleccionado || asesoresUnicos.length === 0}
+                disabled={
+                  !puedeUsarFiltrosAvanzados || !supervisorSeleccionado || asesoresUnicos.length === 0
+                }
               >
                 <SelectTrigger id="asesor" className="w-[210px]">
                   <SelectValue placeholder="Todos los asesores" />
@@ -1309,7 +1349,7 @@ export const Calidad = () => {
                                   </span>
                                 )}
                               </button>
-                              {col.filtrable && (
+                              {col.filtrable && puedeUsarFiltrosAvanzados && (
                                 <Popover
                                   open={menuFiltroAbierto === col.id}
                                   onOpenChange={(open) => setMenuFiltroAbierto(open ? col.id : null)}

@@ -21,6 +21,7 @@ import {
   User2,
 } from "lucide-react"
 import { usePagos, usePagoDetalle } from "@/hooks/speech/useSpeechAnalytics"
+import { useSpeechAccess } from "@/hooks/speech/useSpeechAccess"
 import { useSpeechPermissions } from "@/hooks/speech/useSpeechPermissions"
 import type { SpeechPago } from "@/types/speech/analytics"
 import { toast } from "sonner"
@@ -139,6 +140,7 @@ const EstadoCard = ({
 
 const Pagos = () => {
   const { hasPermiso } = useSpeechPermissions()
+  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess()
 
   const [fechaGestion, setFechaGestion] = useState("")
   const [fechaGestionTemp, setFechaGestionTemp] = useState("")
@@ -307,8 +309,21 @@ const Pagos = () => {
   }, [datosActivos, agenciaSeleccionada])
 
   useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setSupervisorSeleccionado("")
-  }, [agenciaSeleccionada])
+  }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados])
+
+  useEffect(() => {
+    if (puedeUsarFiltrosAvanzados) {
+      return
+    }
+    setAgenciaSeleccionada("EXPERTIS")
+    setSupervisorSeleccionado(aliasActual ?? "")
+    setFiltrosColumnas({})
+    setMenuFiltroAbierto(null)
+  }, [puedeUsarFiltrosAvanzados, aliasActual])
 
   const datosFiltrados = useMemo(() => {
     let datos = [...datosActivos]
@@ -383,9 +398,11 @@ const Pagos = () => {
     setPaginaActual((prev) => Math.min(prev, totalPaginas))
   }, [totalPaginas])
 
-  const hayFiltrosActivos =
-    Boolean(fechaGestion || fechaGestionTemp || agenciaSeleccionada || supervisorSeleccionado) ||
-    Object.keys(filtrosColumnas).length > 0
+  const filtrosInteractivosActivos =
+    puedeUsarFiltrosAvanzados &&
+    (Boolean(agenciaSeleccionada) || Boolean(supervisorSeleccionado) || Object.keys(filtrosColumnas).length > 0)
+
+  const hayFiltrosActivos = Boolean(fechaGestion || fechaGestionTemp) || filtrosInteractivosActivos
 
   const handleBuscar = () => {
     if (!fechaGestionTemp) {
@@ -430,6 +447,9 @@ const Pagos = () => {
   }
 
   const handleFiltroColumnaChange = (columna: string, valor: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setFiltrosColumnas((prev) => {
       const valoresActuales = prev[columna] ?? []
       const nuevosValores = valoresActuales.includes(valor)
@@ -443,6 +463,9 @@ const Pagos = () => {
   }
 
   const limpiarFiltroColumna = (columna: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setFiltrosColumnas((prev) => {
       const nuevo = { ...prev }
       delete nuevo[columna]
@@ -452,6 +475,9 @@ const Pagos = () => {
   }
 
   const seleccionarTodosFiltro = (columna: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     const valores = obtenerValoresUnicos(columna as keyof SpeechPago)
     setFiltrosColumnas((prev) => ({
       ...prev,
@@ -565,9 +591,9 @@ const Pagos = () => {
                 </span>
               </Label>
               <Select
-                value={agenciaSeleccionada || undefined}
+                value={agenciaSeleccionada || "all"}
                 onValueChange={(value) => setAgenciaSeleccionada(value === "all" ? "" : value)}
-                disabled={datosActivos.length === 0}
+                disabled={!puedeUsarFiltrosAvanzados || datosActivos.length === 0}
               >
                 <SelectTrigger id="agencia" className="w-[210px]">
                   <SelectValue placeholder="Todas las agencias" />
@@ -591,9 +617,9 @@ const Pagos = () => {
                 </span>
               </Label>
               <Select
-                value={supervisorSeleccionado || undefined}
+                value={supervisorSeleccionado || "all"}
                 onValueChange={(value) => setSupervisorSeleccionado(value === "all" ? "" : value)}
-                disabled={!agenciaSeleccionada || supervisoresUnicos.length === 0}
+                disabled={!puedeUsarFiltrosAvanzados || !agenciaSeleccionada || supervisoresUnicos.length === 0}
               >
                 <SelectTrigger id="supervisor" className="w-[210px]">
                   <SelectValue placeholder="Todos los supervisores" />
@@ -725,7 +751,7 @@ const Pagos = () => {
                                   </span>
                                 )}
                               </button>
-                              {col.filtrable && (
+                              {col.filtrable && puedeUsarFiltrosAvanzados && (
                                 <Popover
                                   open={menuFiltroAbierto === col.id}
                                   onOpenChange={(open) => setMenuFiltroAbierto(open ? col.id : null)}

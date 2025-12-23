@@ -22,6 +22,7 @@ import {
   User2,
 } from "lucide-react"
 import { useReclamos } from "@/hooks/speech/useSpeechAnalytics"
+import { useSpeechAccess } from "@/hooks/speech/useSpeechAccess"
 import { useSpeechPermissions } from "@/hooks/speech/useSpeechPermissions"
 import type { SpeechReclamo } from "@/types/speech/analytics"
 import { Button } from "@/components/ui/button"
@@ -124,6 +125,7 @@ type SpeechReclamoNormalizado = SpeechReclamo & { carteraNormalizada?: string }
 
 const Reclamos = () => {
   const { hasPermiso } = useSpeechPermissions()
+  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess()
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState("")
   const [fechaTemporal, setFechaTemporal] = useState("")
@@ -235,8 +237,22 @@ const Reclamos = () => {
   }, [datosCompletos, agenciaSeleccionada])
 
   useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setSupervisorSeleccionado("")
-  }, [agenciaSeleccionada])
+  }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados])
+
+  useEffect(() => {
+    if (puedeUsarFiltrosAvanzados) {
+      return
+    }
+    setAgenciaSeleccionada("EXPERTIS")
+    setSupervisorSeleccionado(aliasActual ?? "")
+    setFiltrosColumnas({})
+    setBusquedaFiltro({})
+    setMenuFiltroAbierto(null)
+  }, [puedeUsarFiltrosAvanzados, aliasActual])
 
   const datosFiltradosPrincipales = useMemo(() => {
     let datos = [...datosCompletos]
@@ -317,9 +333,11 @@ const Reclamos = () => {
     setPaginaActual((prev) => Math.min(prev, totalPaginas))
   }, [totalPaginas])
 
-  const hayFiltrosActivos =
-    Boolean(fechaSeleccionada || fechaTemporal || agenciaSeleccionada || supervisorSeleccionado) ||
-    Object.keys(filtrosColumnas).length > 0
+  const filtrosInteractivosActivos =
+    puedeUsarFiltrosAvanzados &&
+    (Boolean(agenciaSeleccionada) || Boolean(supervisorSeleccionado) || Object.keys(filtrosColumnas).length > 0)
+
+  const hayFiltrosActivos = Boolean(fechaSeleccionada || fechaTemporal) || filtrosInteractivosActivos
 
   const handleBuscar = () => {
     if (!fechaTemporal) {
@@ -356,6 +374,9 @@ const Reclamos = () => {
   }
 
   const handleFiltroColumnaChange = (columna: string, valor: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setFiltrosColumnas((prev) => {
       const valoresActuales = prev[columna] ?? []
       const nuevosValores = valoresActuales.includes(valor)
@@ -369,6 +390,9 @@ const Reclamos = () => {
   }
 
   const seleccionarTodosFiltro = (columna: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     const todosValores = obtenerValoresUnicos(columna as keyof SpeechReclamo)
     setFiltrosColumnas((prev) => ({
       ...prev,
@@ -377,6 +401,9 @@ const Reclamos = () => {
   }
 
   const limpiarFiltroColumna = (columna: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setFiltrosColumnas((prev) => {
       const nuevo = { ...prev }
       delete nuevo[columna]
@@ -385,6 +412,9 @@ const Reclamos = () => {
   }
 
   const aplicarFiltroColumna = (columna: string) => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
     setMenuFiltroAbierto(null)
     if (!filtrosColumnas[columna]?.length) {
       setFiltrosColumnas((prev) => {
@@ -495,7 +525,7 @@ const Reclamos = () => {
               <Select
                 value={agenciaSeleccionada || "all"}
                 onValueChange={(value) => setAgenciaSeleccionada(value === "all" ? "" : value)}
-                disabled={datosCompletos.length === 0}
+                disabled={!puedeUsarFiltrosAvanzados || datosCompletos.length === 0}
               >
                 <SelectTrigger id="agencia" className="w-[210px]">
                   <SelectValue placeholder="Todas las agencias" />
@@ -521,7 +551,9 @@ const Reclamos = () => {
               <Select
                 value={supervisorSeleccionado || "all"}
                 onValueChange={(value) => setSupervisorSeleccionado(value === "all" ? "" : value)}
-                disabled={!agenciaSeleccionada || supervisoresUnicos.length === 0}
+                disabled={
+                  !puedeUsarFiltrosAvanzados || !agenciaSeleccionada || supervisoresUnicos.length === 0
+                }
               >
                 <SelectTrigger id="supervisor" className="w-[210px]">
                   <SelectValue placeholder="Todos los supervisores" />
@@ -609,7 +641,7 @@ const Reclamos = () => {
                                   </span>
                                 )}
                               </button>
-                              {col.filtrable && (
+                              {col.filtrable && puedeUsarFiltrosAvanzados && (
                                 <Popover
                                   open={menuFiltroAbierto === col.id}
                                   onOpenChange={(open) => setMenuFiltroAbierto(open ? col.id : null)}
