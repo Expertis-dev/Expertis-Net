@@ -327,19 +327,21 @@ const Pagos = () => {
 
   const datosFiltrados = useMemo(() => {
     let datos = [...datosActivos]
-    if (agenciaSeleccionada) {
+    if (puedeUsarFiltrosAvanzados && agenciaSeleccionada) {
       datos = datos.filter((item) => item.agencia === agenciaSeleccionada)
     }
-    if (supervisorSeleccionado) {
+    if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
     }
-    Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
-      if (valores && valores.length > 0) {
-        datos = datos.filter((item) => valores.includes(String(item[columna as keyof SpeechPago] ?? "")))
-      }
-    })
+    if (puedeUsarFiltrosAvanzados) {
+      Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
+        if (valores && valores.length > 0) {
+          datos = datos.filter((item) => valores.includes(String(item[columna as keyof SpeechPago] ?? "")))
+        }
+      })
+    }
     return datos
-  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, filtrosColumnas])
+  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, filtrosColumnas, puedeUsarFiltrosAvanzados])
 
   const datosOrdenados = useMemo(() => {
     if (!ordenColumna.columna) return datosFiltrados

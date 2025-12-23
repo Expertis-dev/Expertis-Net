@@ -256,24 +256,26 @@ const Reclamos = () => {
 
   const datosFiltradosPrincipales = useMemo(() => {
     let datos = [...datosCompletos]
-    if (agenciaSeleccionada) {
+    if (puedeUsarFiltrosAvanzados && agenciaSeleccionada) {
       datos = datos.filter((item) => item.agencia === agenciaSeleccionada)
     }
-    if (supervisorSeleccionado) {
+    if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
     }
     return datos
-  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado])
+  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, puedeUsarFiltrosAvanzados])
 
   const datosFiltrados = useMemo(() => {
     let datos = [...datosFiltradosPrincipales]
-    Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
-      if (valores && valores.length > 0) {
-        datos = datos.filter((item) => valores.includes(String(item[columna as keyof SpeechReclamo] ?? "")))
-      }
-    })
+    if (puedeUsarFiltrosAvanzados) {
+      Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
+        if (valores && valores.length > 0) {
+          datos = datos.filter((item) => valores.includes(String(item[columna as keyof SpeechReclamo] ?? "")))
+        }
+      })
+    }
     return datos
-  }, [datosFiltradosPrincipales, filtrosColumnas])
+  }, [datosFiltradosPrincipales, filtrosColumnas, puedeUsarFiltrosAvanzados])
 
   const filtrosColumnasKey = useMemo(() => JSON.stringify(filtrosColumnas), [filtrosColumnas])
 

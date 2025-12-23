@@ -593,18 +593,18 @@ export const Calidad = () => {
   const datosFiltradosPrincipales = useMemo(() => {
     let datos = [...datosCompletos];
 
-    if (agenciaSeleccionada) {
+    if (puedeUsarFiltrosAvanzados && agenciaSeleccionada) {
       datos = datos.filter(item => item.agencia === agenciaSeleccionada);
     }
-    if (supervisorSeleccionado) {
+    if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter(item => item.supervisor === supervisorSeleccionado);
     }
-    if (asesorSeleccionado) {
+    if (puedeUsarFiltrosAvanzados && asesorSeleccionado) {
       datos = datos.filter(item => item.asesor === asesorSeleccionado);
     }
 
     return datos;
-  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado]);
+  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, puedeUsarFiltrosAvanzados]);
 
   const buildFeedbackPayload = useCallback(
     (asesor) => {
@@ -686,14 +686,16 @@ export const Calidad = () => {
   const datosFiltradosColumnas = useMemo(() => {
     let datos = [...datosVista];
 
-    Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
-      if (valores?.length > 0) {
-        datos = datos.filter(item => valores.includes(String(item[columna])));
-      }
-    });
+    if (puedeUsarFiltrosAvanzados) {
+      Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
+        if (valores?.length > 0) {
+          datos = datos.filter(item => valores.includes(String(item[columna])));
+        }
+      });
+    }
 
     return datos;
-  }, [datosVista, filtrosColumnas]);
+  }, [datosVista, filtrosColumnas, puedeUsarFiltrosAvanzados]);
 
   // Aplicar ordenamiento
   const filtrosColumnasKey = useMemo(() => JSON.stringify(filtrosColumnas), [filtrosColumnas]);
