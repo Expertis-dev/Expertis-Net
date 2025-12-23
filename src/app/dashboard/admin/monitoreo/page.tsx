@@ -6,10 +6,19 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { ChartRadialShape } from "@/components/chart-circular";
+import { ChartTopTabsBar } from "@/components/ChartTopTabsBar";
+import { ChartOnlineTimeline } from "@/components/ChartOnlineTimeline";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-// ---- tipos: NUEVO (por dispositivo) ----
 type Geo = { lat: number; lng: number } | null;
 
 interface DeviceFromServer {
@@ -24,10 +33,9 @@ interface DeviceFromServer {
     agencia?: string;
 }
 
-// ---- tipos: VIEJO (por pestaña) ----
 interface TabFromServerLegacy {
-    id: string;        // socketId
-    nombre: string;    // usuario
+    id: string;
+    nombre: string;
     ultConex: string | Date;
 }
 
@@ -38,11 +46,11 @@ interface Conexion {
 
 interface DispositivoUI {
     usuario: string;
-    deviceId: string;      // si no existe, lo ponemos "unknown"
+    deviceId: string;
     ip?: string;
     userAgent?: string;
     geo?: Geo;
-    conexiones: Conexion[]; // pestañas
+    conexiones: Conexion[];
     ultimaConexion: string;
     agencia?: string;
 }
@@ -56,39 +64,37 @@ const toISO = (v: string | Date) => {
 
 const normalizePayloadToDevices = (data: DeviceFromServer[]): DispositivoUI[] => {
     if (!Array.isArray(data)) return [];
-    // Detectar si es formato nuevo (tiene "deviceId" o "tabs" o "usuario")
     const looksNew = data.some((x) => x && (x.deviceId || x.tabs || x.usuario));
     if (looksNew) {
-        return (data as DeviceFromServer[]).map((d) => {
-            const tabs = (d.tabs ?? []).map((t) => ({
-                socketId: t.socketId,
-                ultConex: toISO(t.ultConex),
-            }));
-            const conexiones = tabs.length ? tabs : [];
-            return {
-                usuario: d.usuario ?? "SIN_USUARIO",
-                deviceId: d.deviceId ?? "unknown",
-                ip: d.ip,
-                userAgent: d.userAgent,
-                geo: d.geo ?? null,
-                conexiones,
-                ultimaConexion: toISO(d.ultimaConexion),
-                agencia: d.agencia
-            };
-        }).sort((a, b) => new Date(b.ultimaConexion).getTime() - new Date(a.ultimaConexion).getTime());
+        return (data as DeviceFromServer[])
+            .map((d) => {
+                const tabs = (d.tabs ?? []).map((t) => ({
+                    socketId: t.socketId,
+                    ultConex: toISO(t.ultConex),
+                }));
+                return {
+                    usuario: d.usuario ?? "SIN_USUARIO",
+                    deviceId: d.deviceId ?? "unknown",
+                    ip: d.ip,
+                    userAgent: d.userAgent,
+                    geo: d.geo ?? null,
+                    conexiones: tabs, // pestañas
+                    ultimaConexion: toISO(d.ultimaConexion),
+                    agencia: d.agencia,
+                };
+            })
+            .sort(
+                (a, b) =>
+                    new Date(b.ultimaConexion).getTime() - new Date(a.ultimaConexion).getTime()
+            );
     }
-
-    // Formato viejo: agrupar por nombre (usuario)
     const map = new Map<string, DispositivoUI>();
     for (const u of data as unknown as TabFromServerLegacy[]) {
         const usuario = (u.nombre || "").trim();
         if (!usuario) continue;
-
         const key = usuario.toLowerCase();
         const existing = map.get(key);
-
         const conn: Conexion = { socketId: u.id, ultConex: toISO(u.ultConex) };
-
         if (!existing) {
             map.set(key, {
                 usuario,
@@ -98,42 +104,41 @@ const normalizePayloadToDevices = (data: DeviceFromServer[]): DispositivoUI[] =>
             });
         } else {
             existing.conexiones.push(conn);
-            if (new Date(conn.ultConex).getTime() > new Date(existing.ultimaConexion).getTime()) {
+            if (
+                new Date(conn.ultConex).getTime() >
+                new Date(existing.ultimaConexion).getTime()
+            ) {
                 existing.ultimaConexion = conn.ultConex;
             }
         }
     }
-
     return Array.from(map.values()).sort(
-        (a, b) => new Date(b.ultimaConexion).getTime() - new Date(a.ultimaConexion).getTime()
+        (a, b) =>
+            new Date(b.ultimaConexion).getTime() - new Date(a.ultimaConexion).getTime()
     );
 };
 const formatPE = (iso: string) =>
     new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima" });
 const calculatePorcentajes = (devices: DispositivoUI[]) => {
     const total = devices.length;
-    console.log("calculatePorcentajes - total devices:", devices);
     if (total === 0) return { expertis: 0, bpo: 0 };
-    const expertisCount = devices.filter(d => d.agencia?.startsWith("EXPERTIS")).length;
-    const bpoCount = devices.filter(d => d.agencia?.startsWith("BPO")).length;
+    const expertisCount = devices.filter((d) =>
+        d.agencia?.startsWith("EXPERTIS")
+    ).length;
+    const bpoCount = devices.filter((d) => d.agencia?.startsWith("BPO")).length;
     return {
         expertis: Math.round((expertisCount / total) * 100),
         bpo: Math.round((bpoCount / total) * 100),
     };
-}
+};
 export default function MonitoreoUsuarios() {
     const { socket } = useContext(SocketContext);
     const [devices, setDevices] = useState<DispositivoUI[]>([]);
-    const [porcentajes, setPorcentajes] = useState({ expertis: 0, bpo: 0 })
     const [q, setQ] = useState("");
     useEffect(() => {
         if (!socket) return;
         const handler = (payload: DeviceFromServer[]) => {
-            console.log("lista-usuarios payload:", payload);
             const normalized = normalizePayloadToDevices(payload);
-            console.log("normalized:", normalized);
-            const pct = calculatePorcentajes(payload as DispositivoUI[]);
-            setPorcentajes(pct);
             setDevices(normalized);
         };
         socket.on("lista-usuarios", handler);
@@ -145,42 +150,66 @@ export default function MonitoreoUsuarios() {
     const filtered = useMemo(() => {
         const term = q.trim().toLowerCase();
         if (!term) return devices;
-        return devices.filter((d) =>
-            d.usuario.toLowerCase().includes(term) ||
-            (d.ip ?? "").toLowerCase().includes(term) ||
-            d.agencia?.toLowerCase().includes(term)
-        );
+        return devices.filter((d) => {
+            const usuario = d.usuario.toLowerCase();
+            const ip = (d.ip ?? "").toLowerCase();
+            const agencia = (d.agencia ?? "").toLowerCase();
+            return usuario.includes(term) || ip.includes(term) || agencia.includes(term);
+        });
     }, [devices, q]);
+    const chartStats = useMemo(() => {
+        const total = devices.length;
+        const expertisCount = devices.filter((d) =>
+            d.agencia?.startsWith("EXPERTIS")
+        ).length;
+        const bpoCount = devices.filter((d) => d.agencia?.startsWith("BPO")).length;
+        return { total, expertisCount, bpoCount };
+    }, [devices]);
+
+    const porcentajes = useMemo(() => calculatePorcentajes(devices), [devices]);
+
     const cerrarDispositivo = (d: DispositivoUI) => {
         if (!socket) return;
         socket.emit("admin:disconnectDevice", { usuario: d.usuario, deviceId: d.deviceId });
     };
+
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-4">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-4"
+        >
             <Card>
                 <CardHeader>
                     <CardTitle>
-
-                        <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Monitoreo</h1>
-
+                        <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">
+                            Monitoreo
+                        </h1>
                     </CardTitle>
                 </CardHeader>
+
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar (usuario / IP / agencia)..." className="col-span-2 pr-10 w-full" />
-                        <Button
-                            onClick={() => setQ("")}
-                            className="bg-slate-300 text-black/80 hover:bg-slate-400 dark:bg-neutral-700 dark:hover:bg-neutral-800 dark:text-white"
-                        >
-                            Limpiar
-                        </Button>
+                        <ChartRadialShape
+                            vistas={chartStats.total}
+                            bpo={porcentajes.bpo}
+                            expertis={porcentajes.expertis}
+                        />
+                        <ChartOnlineTimeline
+                            total={chartStats.total}
+                            expertis={chartStats.expertisCount}
+                            bpo={chartStats.bpoCount}
+                        />
+                        <ChartTopTabsBar devices={devices.map(d => ({ ...d, agencia: d.agencia ?? null }))} top={10} />
                     </div>
                 </CardContent>
             </Card>
+
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
-                        Dispositivos ({filtered.length})
+                    <CardTitle className="grid grid-cols-3 items-center gap-3">
+                        <p>Dispositivos ({filtered.length})</p>
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1 text-[15px] font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
                                 Expertis <span className="ml-2 font-semibold">{porcentajes.expertis}%</span>
@@ -189,8 +218,16 @@ export default function MonitoreoUsuarios() {
                                 BPO <span className="ml-2 font-semibold">{porcentajes.bpo}%</span>
                             </span>
                         </div>
+
+                        <Input
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="Buscar (usuario / IP / agencia)..."
+                            className="w-full"
+                        />
                     </CardTitle>
                 </CardHeader>
+
                 <CardContent className="overflow-x-auto">
                     <Table>
                         <TableHeader>
@@ -230,15 +267,20 @@ export default function MonitoreoUsuarios() {
                                     <TableCell>{d.conexiones.length}</TableCell>
                                     <TableCell>{formatPE(d.ultimaConexion)}</TableCell>
                                     <TableCell className="text-right flex justify-center gap-2">
-                                        <Button variant="destructive" size="sm" onClick={() => cerrarDispositivo(d)}>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => cerrarDispositivo(d)}
+                                        >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
+
                             {filtered.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-slate-500">
+                                    <TableCell colSpan={8} className="text-center text-slate-500">
                                         No hay dispositivos conectados
                                     </TableCell>
                                 </TableRow>
