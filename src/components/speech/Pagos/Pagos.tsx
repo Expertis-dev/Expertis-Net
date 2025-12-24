@@ -90,9 +90,16 @@ const toCamelCase = (key: string) => {
   return camel.replace(/^[A-Z]/, (chr) => chr.toLowerCase())
 }
 
-const normalizeRecord = (record: Record<string, unknown>) => {
+const toUnknownRecord = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== "object") {
+    return {}
+  }
+  return value as Record<string, unknown>
+}
+
+const normalizeRecord = (record: unknown) => {
   const normalized: Record<string, unknown> = {}
-  Object.entries(record).forEach(([key, value]) => {
+  Object.entries(toUnknownRecord(record)).forEach(([key, value]) => {
     if (!key) return
     normalized[toCamelCase(key)] = value
   })
@@ -109,6 +116,14 @@ const normalizarCartera = (value: unknown): string => {
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0
+
+const toIdGestion = (value: unknown): SpeechPago["idGestion"] | undefined => {
+  if (typeof value === "number" || typeof value === "string") {
+    return value
+  }
+  const asString = toOptionalString(value)
+  return asString ? asString : undefined
+}
 
 const calificacionBadgeStyles = (calificacion: SpeechPago["calificacion"]) => {
   const cal = Number(calificacion) || 0
@@ -177,19 +192,18 @@ const Pagos = () => {
 
   const detallePago = useMemo(() => {
     if (!detallePagoRaw) return null
-    const source = normalizeRecord(detallePagoRaw as Record<string, unknown>)
+    const source = normalizeRecord(detallePagoRaw)
+    const detalleRecord = toUnknownRecord(detallePagoRaw)
     const pickString = (key: string) =>
       toOptionalString(source[key]) ??
-      (typeof (detallePagoRaw as Record<string, unknown>)[key] === "string"
-        ? ((detallePagoRaw as Record<string, unknown>)[key] as string)
-        : undefined)
+      toOptionalString(detalleRecord[key])
 
     return {
       ...detallePagoRaw,
       idGestion:
-        (source.idGestion as SpeechPago["idGestion"]) ??
-        detallePagoRaw.idGestion ??
-        (detallePagoRaw as Record<string, unknown>).IdGestion,
+        toIdGestion(source.idGestion) ??
+        toIdGestion(detallePagoRaw.idGestion) ??
+        toIdGestion(detalleRecord.IdGestion),
       transcripcion: pickString("transcripcion") ?? detallePagoRaw.transcripcion ?? null,
       resumen: pickString("resumen") ?? detallePagoRaw.resumen ?? null,
       observacion: pickString("observacion") ?? detallePagoRaw.observacion ?? null,
@@ -204,7 +218,8 @@ const Pagos = () => {
     if (!Array.isArray(dataPagos)) return []
     return dataPagos
       .map<SpeechPagoNormalizado>((item) => {
-        const source = normalizeRecord(item as Record<string, unknown>)
+        const source = normalizeRecord(item)
+        const rawItem = toUnknownRecord(item)
         const documento =
           toOptionalString(source.documento) ??
           toOptionalString(source.idGestion) ??
@@ -224,21 +239,21 @@ const Pagos = () => {
         return {
           ...item,
           idGestion:
-            (source.idGestion as SpeechPago["idGestion"]) ??
-            (item as SpeechPago).idGestion ??
-            (item as Record<string, unknown>).IdGestion ??
-            undefined,
+            toIdGestion(source.idGestion) ??
+            toIdGestion(item.idGestion) ??
+            toIdGestion(rawItem.IdGestion),
           documento,
           cartera,
           fecha,
           horaInicio,
           tiempoHablado,
-          agencia: toOptionalString(source.agencia ?? source.aliasAgencia ?? source.agenciaNombre) ??
+          agencia:
+            toOptionalString(source.agencia ?? source.aliasAgencia ?? source.agenciaNombre) ??
             (item.agencia ?? undefined),
           supervisor:
             toOptionalString(source.supervisor ?? source.grupo ?? source.supervisorNombre) ??
             (item.supervisor ?? undefined),
-          asesor: toOptionalString(source.asesor ?? source.alias) ?? (item as any).asesor,
+          asesor: toOptionalString(source.asesor ?? source.alias) ?? (item.asesor ?? undefined),
           cosecha: toOptionalString(source.cosecha) ?? (item.cosecha ?? undefined),
           deudaCapital:
             (source.deudaCapital as SpeechPago["deudaCapital"]) ??
@@ -253,11 +268,12 @@ const Pagos = () => {
             (source.calificacionTotal as SpeechPago["calificacion"]) ??
             (source.promedio as SpeechPago["calificacion"]) ??
             (item.calificacion ?? undefined),
-          tipificacion: toOptionalString(source.tipificacion ?? source.indLlamada) ?? (item as any).tipificacion,
-          grabacion: toOptionalString(source.grabacion ?? source.rutGrabacion) ?? (item as any).grabacion,
-          razonNoPago: toOptionalString(source.razonNoPago ?? source.razonNoPagoDescripcion ?? source.razon) ??
-            (item as any).razonNoPago,
-          tratamiento: toOptionalString(source.tratamiento ?? source.segmentoTratamiento) ?? (item as any).tratamiento,
+          tipificacion: toOptionalString(source.tipificacion ?? source.indLlamada) ?? (item.tipificacion ?? undefined),
+          grabacion: toOptionalString(source.grabacion ?? source.rutGrabacion) ?? (item.grabacion ?? undefined),
+          razonNoPago:
+            toOptionalString(source.razonNoPago ?? source.razonNoPagoDescripcion ?? source.razon) ??
+            (item.razonNoPago ?? undefined),
+          tratamiento: toOptionalString(source.tratamiento ?? source.segmentoTratamiento) ?? (item.tratamiento ?? undefined),
           resumen: toOptionalString(source.resumen) ?? (item.resumen ?? undefined),
           observacion: toOptionalString(source.observacion) ?? (item.observacion ?? undefined),
           transcripcion: toOptionalString(source.transcripcion) ?? (item.transcripcion ?? undefined),
