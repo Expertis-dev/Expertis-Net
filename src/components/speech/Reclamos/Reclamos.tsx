@@ -176,7 +176,8 @@ const Reclamos = () => {
               source.jefe ??
               source.supervisorAsignado,
           ) ??
-          (item.supervisor ?? (item as unknown as Record<string, unknown>).grupo ?? undefined)
+          item.supervisor ??
+          toOptionalString((item as unknown as Record<string, unknown>).grupo)
         const tipoReclamo =
           toOptionalString(source.tipoReclamo ?? source.nivel1 ?? source.categoria) ?? (item.tipoReclamo ?? undefined)
         const tipificacion =

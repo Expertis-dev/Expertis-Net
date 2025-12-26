@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback, type ElementType } from 'react';
@@ -58,6 +57,82 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { agruparPorAsesor, calcularKPIsGenerales, distribuirPorCuartiles } from "./utils/CalidadCalculos"
+import type { SpeechCalidadDetalle } from "@/types/speech/analytics"
+import type { CalidadAsesorAgrupado, CalidadRegistroAgrupable } from "./utils/CalidadCalculos"
+
+type ColumnFilters = Record<string, string[] | undefined>
+type ColumnSearch = Record<string, string>
+
+interface PeriodoEvaluacion {
+  desde?: string
+  hasta?: string
+}
+
+interface FeedbackCalificaciones {
+  apertura: number
+  negociacion: number
+  comunicacionefectiva: number
+  cumplimientonormativo: number
+  cierre: number
+  actitud: number
+  total: number
+}
+
+interface FeedbackMetadata {
+  asesor: string
+  supervisor: string
+  agencia?: string | null
+  quartil?: string
+  periodo?: PeriodoEvaluacion
+  totalAudios: number
+  nroSemana?: number
+  califs: FeedbackCalificaciones
+  observacion: string
+  fecha: string
+  evolutivoLabels: string[]
+  evolutivoValores: Array<number | null>
+  evolutivoPromedio: number
+}
+
+interface BuildFeedbackPdfParams {
+  metadata: FeedbackMetadata
+  retroalimentacion: string
+  sugerencia?: string
+  compromiso?: string
+  actitudes?: string[]
+}
+
+type CalidadRegistroNormalizado = CalidadRegistroAgrupable & {
+  documento?: string | number | null
+  cartera?: string | null
+  fecha?: string | null
+  fechaLlamada?: string | null
+  agencia?: string | null
+  supervisor?: string | null
+  asesor?: string | null
+  promedio?: number | string | null
+  actitud?: number | string | null
+  apertura?: number | string | null
+  desarrollo?: number | string | null
+  negociacion?: number | string | null
+  comunicacionefectiva?: number | string | null
+  cumplimientonormativo?: number | string | null
+  cierre?: number | string | null
+  calificaciontotal?: number | string | null
+  observacionCalidad?: string | null
+  grabacion?: string | null
+  transcripcion?: string | null
+  resumen?: string | null
+  tipificacion?: string | null
+  codmes?: string | number | null
+  cantidad?: number
+  cuartil?: string
+  [key: string]: unknown
+}
+
+type VistaDato = CalidadRegistroNormalizado | CalidadAsesorAgrupado
+type PdfWithAutoTable = jsPDF & { lastAutoTable?: { finalY: number } }
 
 const LOGO_PATH = '/icono-logo.png';
 
@@ -77,7 +152,7 @@ const toISODateString = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseISODate = (value: string) => {
+const parseISODate = (value?: string | null) => {
   if (!value) return null;
   const [year, month = 1, day = 1] = value.split('-').map(Number);
   if (!year) return null;
@@ -98,7 +173,7 @@ const getISOWeekNumber = (date: Date) => {
   const dayNumber = (tempDate.getDay() + 6) % 7;
   tempDate.setDate(tempDate.getDate() - dayNumber + 3);
   const firstThursday = new Date(tempDate.getFullYear(), 0, 4);
-  const diff = tempDate - firstThursday;
+  const diff = tempDate.getTime() - firstThursday.getTime();
   return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
 };
 
@@ -121,28 +196,33 @@ const promedioValores = (valores: (number | string)[]) => {
   return Number((numeros.reduce((acc, val) => acc + val, 0) / numeros.length).toFixed(1));
 };
 
-const calcularEvolutivoSemanal = (rows, baseIso, totalWeeks = 4) => {
+const calcularEvolutivoSemanal = (
+  rows: CalidadRegistroNormalizado[],
+  baseIso?: string | null,
+  totalWeeks = 4
+): { labels: string[]; valores: Array<number | null>; promedio: number } => {
   if (!rows.length || !baseIso) {
     return { labels: [], valores: [], promedio: 0 };
   }
 
   const baseDate = parseISODate(baseIso) || new Date();
   const baseYearMonth = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}`;
-  const acumulado = new Map();
+  const acumulado = new Map<number, { sum: number; count: number }>();
 
   rows
     .filter((row) => {
-      const fecha = row.fecha || row.fechaLlamada;
-      return fecha && fecha.startsWith(baseYearMonth);
+      const fechaRaw = typeof row.fecha === 'string' ? row.fecha : row.fechaLlamada;
+      return typeof fechaRaw === 'string' && fechaRaw.startsWith(baseYearMonth);
     })
     .forEach((row) => {
-      const fecha = row.fecha || row.fechaLlamada;
-      if (!fecha) return;
+      const fecha = typeof row.fecha === 'string' ? row.fecha : row.fechaLlamada;
+      if (typeof fecha !== 'string') return;
       const fechaDate = parseISODate(fecha);
       if (!fechaDate) return;
       const week = getISOWeekNumber(fechaDate);
       const current = acumulado.get(week) || { sum: 0, count: 0 };
-      current.sum += Number(row.promedio ?? row.calificacionCalidad ?? 0) || 0;
+      const promedio = Number(row.promedio ?? row.calificacionCalidad ?? 0) || 0;
+      current.sum += promedio;
       current.count += 1;
       acumulado.set(week, current);
     });
@@ -179,18 +259,14 @@ const buildFeedbackFileName = (metadata?: { asesor?: string | null; fecha?: stri
 const etiquetaFirmaPorCuartil = (quartil: string) =>
   String(quartil ?? '').toUpperCase() === 'Q4' ? 'Analista de formación' : 'Supervisor';
 
-// Importar utilidades
-import {
-  agruparPorAsesor,
-  calcularKPIsGenerales,
-  distribuirPorCuartiles
-} from './utils/CalidadCalculos';
-
-const getValue = (obj: Record<string, any>, ...keys: string[]) => {
+const getValue = <T = unknown>(obj: Record<string, unknown> | null | undefined, ...keys: string[]): T | undefined => {
   if (!obj) return undefined;
   for (const key of keys) {
-    if (Object.prototype.hasOwnProperty.call(obj, key) && obj[key] != null) {
-      return obj[key];
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      if (value != null) {
+        return value as T;
+      }
     }
   }
   return undefined;
@@ -217,9 +293,9 @@ export const Calidad = () => {
   const [asesorSeleccionado, setAsesorSeleccionado] = useState('');
 
   // Filtros de tabla
-  const [filtrosColumnas, setFiltrosColumnas] = useState({});
-  const [menuFiltroAbierto, setMenuFiltroAbierto] = useState(null);
-  const [busquedaFiltro, setBusquedaFiltro] = useState({});
+  const [filtrosColumnas, setFiltrosColumnas] = useState<ColumnFilters>({});
+  const [menuFiltroAbierto, setMenuFiltroAbierto] = useState<string | null>(null);
+  const [busquedaFiltro, setBusquedaFiltro] = useState<ColumnSearch>({});
   const [paginaActual, setPaginaActual] = useState(1);
 
   // Ordenamiento
@@ -228,16 +304,16 @@ export const Calidad = () => {
 
   // Modal
   const [modalFeedback, setModalFeedback] = useState(false);
-  const [asesorSeleccionadoFeedback, setAsesorSeleccionadoFeedback] = useState(null);
+  const [asesorSeleccionadoFeedback, setAsesorSeleccionadoFeedback] = useState<CalidadAsesorAgrupado | null>(null);
   const [feedbackTexto, setFeedbackTexto] = useState('');
-  const [actitudesSeleccionadas, setActitudesSeleccionadas] = useState([]);
-const [feedbackMetadata, setFeedbackMetadata] = useState(null);
-const [feedbackSugerencia, setFeedbackSugerencia] = useState('');
-const [feedbackCompromiso, setFeedbackCompromiso] = useState('');
-const [generandoPdf, setGenerandoPdf] = useState(false);
-const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
-  const logoDataUrlRef = useRef(null);
-  const loadLogo = useCallback(async () => {
+  const [actitudesSeleccionadas, setActitudesSeleccionadas] = useState<string[]>([]);
+  const [feedbackMetadata, setFeedbackMetadata] = useState<FeedbackMetadata | null>(null);
+  const [feedbackSugerencia, setFeedbackSugerencia] = useState('');
+  const [feedbackCompromiso, setFeedbackCompromiso] = useState('');
+  const [generandoPdf, setGenerandoPdf] = useState(false);
+  const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
+  const logoDataUrlRef = useRef<string | ArrayBuffer | null>(null);
+  const loadLogo = useCallback(async (): Promise<string | ArrayBuffer | null> => {
     if (logoDataUrlRef.current) {
       return logoDataUrlRef.current;
     }
@@ -247,7 +323,7 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
         throw new Error('No se pudo obtener el logo');
       }
       const blob = await response.blob();
-      const dataUrl = await new Promise((resolve, reject) => {
+      const dataUrl = await new Promise<string | ArrayBuffer | null>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
@@ -261,12 +337,12 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
     }
   }, []);
   const buildFeedbackPdf = useCallback(
-    async ({ metadata, retroalimentacion, sugerencia, compromiso, actitudes }) => {
+    async ({ metadata, retroalimentacion, sugerencia, compromiso, actitudes }: BuildFeedbackPdfParams): Promise<{ doc: PdfWithAutoTable; nombre: string }> => {
       if (!metadata) {
         throw new Error('No hay información para generar el PDF');
       }
 
-      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' }) as PdfWithAutoTable;
       doc.setProperties({
         title: `Ficha de Retroalimentación - ${metadata.asesor ?? ''}`,
         subject: 'Gestión de Cobranzas',
@@ -279,13 +355,14 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
       const pageWidth = doc.internal.pageSize.getWidth();
       const textWidth = pageWidth - margin * 2;
 
-      const drawHeader = () => {
+      const drawHeader = (): number => {
         const top = 10;
         const logoW = 26;
         const logoH = 26;
-        if (logoDataUrl) {
+        const dataUrl = typeof logoDataUrl === 'string' ? logoDataUrl : null;
+        if (dataUrl) {
           try {
-            doc.addImage(logoDataUrl, 'PNG', margin, top, logoW, logoH, undefined, 'FAST');
+            doc.addImage(dataUrl, 'PNG', margin, top, logoW, logoH, undefined, 'FAST');
           } catch (error) {
             console.warn('[Calidad] No fue posible insertar el logo en el PDF', error);
           }
@@ -305,7 +382,7 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
         return sepY;
       };
 
-      const section = (titulo) => {
+      const section = (titulo: string) => {
         doc.setTextColor(azul.r, azul.g, azul.b);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
@@ -316,14 +393,14 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
         doc.setFontSize(10);
       };
 
-      const paragraph = (texto, minHeight = 14) => {
+      const paragraph = (texto: string | null | undefined, minHeight = 14) => {
         const contenido = (texto ?? '—').toString().trim() || '—';
         const lines = doc.splitTextToSize(contenido, textWidth);
         doc.text(lines, margin, y);
         y += Math.max(minHeight, lines.length * 5.2) + 2;
       };
 
-      const drawCheck = (x, yBase, label, checked) => {
+      const drawCheck = (x: number, yBase: number, label: string, checked: boolean) => {
         const size = 3.8;
         doc.setDrawColor(0);
         doc.setLineWidth(0.2);
@@ -388,27 +465,29 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
           styles: { fontSize: 9, cellPadding: 3, lineWidth: 0.1 },
           headStyles: { fillColor: [azul.r, azul.g, azul.b], textColor: 255 }
         });
-        y = doc.lastAutoTable.finalY + 10;
+        const ultimoAutoTable = doc.lastAutoTable;
+        y = (ultimoAutoTable?.finalY ?? y) + 10;
       }
 
       autoTable(doc, {
         startY: y,
         head: [['Criterio', 'Promedio']],
         body: [
-          ['Apertura', `${metadata.califs?.apertura ?? 0}`],
-          ['Negociación', `${metadata.califs?.negociacion ?? 0}`],
-          ['Comunicación efectiva', `${metadata.califs?.comunicacionefectiva ?? 0}`],
-          ['Cumplimiento normativo', `${metadata.califs?.cumplimientonormativo ?? 0}`],
-          ['Cierre', `${metadata.califs?.cierre ?? 0}`],
-          ['Actitud', `${metadata.califs?.actitud ?? 0}`],
-          ['Promedio total', `${metadata.califs?.total ?? 0}`]
+          ['Apertura', `${metadata.califs.apertura ?? 0}`],
+          ['Negociación', `${metadata.califs.negociacion ?? 0}`],
+          ['Comunicación efectiva', `${metadata.califs.comunicacionefectiva ?? 0}`],
+          ['Cumplimiento normativo', `${metadata.califs.cumplimientonormativo ?? 0}`],
+          ['Cierre', `${metadata.califs.cierre ?? 0}`],
+          ['Actitud', `${metadata.califs.actitud ?? 0}`],
+          ['Promedio total', `${metadata.califs.total ?? 0}`]
         ],
         theme: 'grid',
         margin: { left: margin, right: margin },
         styles: { fontSize: 9, cellPadding: 3, lineWidth: 0.1 },
         headStyles: { fillColor: [azul.r, azul.g, azul.b], textColor: 255 }
       });
-      y = doc.lastAutoTable.finalY + 10;
+      const ultimoCriterio = doc.lastAutoTable;
+      y = (ultimoCriterio?.finalY ?? y) + 10;
 
       ensureSpace();
       section('Retroalimentación brindada:');
@@ -466,7 +545,7 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
       const gapLabel = 9;
       const x1 = margin;
       const x2 = pageWidth - margin - firmaWidth;
-      const ensureSpaceFor = (need) => {
+      const ensureSpaceFor = (need: number) => {
         const pageHeight = doc.internal.pageSize.getHeight();
         if (y + need > pageHeight - bottomMargin) {
           doc.addPage();
@@ -490,7 +569,7 @@ const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
       const yLine = y + 8;
       doc.line(x1, yLine, x1 + firmaWidth, yLine);
       doc.line(x2, yLine, x2 + firmaWidth, yLine);
-      doc.text(etiquetaFirmaPorCuartil(metadata.quartil), x1 + firmaWidth / 2, yLine + gapLabel, {
+      doc.text(etiquetaFirmaPorCuartil(metadata.quartil ?? ''), x1 + firmaWidth / 2, yLine + gapLabel, {
         align: 'center'
       });
       doc.text('Asesor', x2 + firmaWidth / 2, yLine + gapLabel, { align: 'center' });
@@ -509,66 +588,74 @@ const subirFeedbackPdfMutation = useSubirFeedbackPdf();
 const feedbackPdfUrlMutation = useFeedbackPdfUrl();
 
   // ============ DATOS PROCESADOS ============
-  const datosCompletos = useMemo(() => {
+  const datosCompletos = useMemo<CalidadRegistroNormalizado[]>(() => {
     if (!dataCalidad || !Array.isArray(dataCalidad)) return [];
-    
-    return dataCalidad
-      .map(item => ({
-        documento: getValue(item, 'idGestion', 'IdGestion'),
-        cartera: getValue(item, 'cartera', 'Cartera'),
-        fecha: getValue(item, 'fechaLlamada', 'FechaLlamada', 'fecha', 'Fecha'),
-        asesor: getValue(item, 'asesor', 'Asesor'),
-        agencia: getValue(item, 'agencia', 'Agencia'),
-        supervisor: getValue(item, 'supervisor', 'Supervisor'),
-        promedio: getValue(item, 'calificacionCalidad', 'calificacion_calidad'),
-        actitud: getValue(item, 'calificacionActitud', 'calificacion_actitud'),
-        apertura: getValue(item, 'calificacionApertura', 'calificacion_apertura'),
-        desarrollo: getValue(item, 'calificacionNegociacion', 'calificacion_negociacion'),
-        negociacion: getValue(item, 'calificacionNegociacion', 'calificacion_negociacion'),
-        comunicacionefectiva: getValue(
-          item,
-          'calificacionComunicacionefectiva',
-          'calificacion_comunicacionefectiva'
-        ),
-        cumplimientonormativo: getValue(
-          item,
-          'calificacionCumplimientoNormativo',
-          'calificacion_cumplimiento_normativo'
-        ),
-        cierre: getValue(item, 'calificacionCierre', 'calificacion_cierre'),
-        calificaciontotal: getValue(item, 'calificacionCalidad', 'calificacion_calidad'),
-        observacionCalidad: getValue(item, 'observacionCalidad', 'observacion_calidad'),
-        grabacion: getValue(item, 'grabacion', 'rutGrabacion'),
-        transcripcion: getValue(item, 'transcripcion', 'Transcripcion'),
-        resumen: getValue(item, 'resumen', 'Resumen'),
-        tipificacion: getValue(item, 'tipificacion', 'Tipificacion', 'indLlamada'),
-        codmes: getValue(item, 'codmes', 'CodMes')
-      }))
+
+    return dataCalidad.map<CalidadRegistroNormalizado>((item: SpeechCalidadDetalle) => ({
+      documento: getValue<string | number | null>(item, 'idGestion', 'IdGestion') ?? null,
+      cartera: getValue<string | null>(item, 'cartera', 'Cartera') ?? null,
+      fecha: getValue<string | null>(item, 'fechaLlamada', 'FechaLlamada', 'fecha', 'Fecha') ?? null,
+      fechaLlamada: getValue<string | null>(item, 'fechaLlamada', 'FechaLlamada') ?? null,
+      asesor: getValue<string | null>(item, 'asesor', 'Asesor') ?? null,
+      agencia: getValue<string | null>(item, 'agencia', 'Agencia') ?? null,
+      supervisor: getValue<string | null>(item, 'supervisor', 'Supervisor') ?? null,
+      promedio: getValue<number | string | null>(item, 'calificacionCalidad', 'calificacion_calidad') ?? null,
+      actitud: getValue<number | string | null>(item, 'calificacionActitud', 'calificacion_actitud') ?? null,
+      apertura: getValue<number | string | null>(item, 'calificacionApertura', 'calificacion_apertura') ?? null,
+      desarrollo: getValue<number | string | null>(item, 'calificacionNegociacion', 'calificacion_negociacion') ?? null,
+      negociacion: getValue<number | string | null>(item, 'calificacionNegociacion', 'calificacion_negociacion') ?? null,
+      comunicacionefectiva: getValue<number | string | null>(
+        item,
+        'calificacionComunicacionefectiva',
+        'calificacion_comunicacionefectiva'
+      ) ?? null,
+      cumplimientonormativo: getValue<number | string | null>(
+        item,
+        'calificacionCumplimientoNormativo',
+        'calificacion_cumplimiento_normativo'
+      ) ?? null,
+      cierre: getValue<number | string | null>(item, 'calificacionCierre', 'calificacion_cierre') ?? null,
+      calificaciontotal: getValue<number | string | null>(item, 'calificacionCalidad', 'calificacion_calidad') ?? null,
+      observacionCalidad: getValue<string | null>(item, 'observacionCalidad', 'observacion_calidad') ?? null,
+      grabacion: getValue<string | null>(item, 'grabacion', 'rutGrabacion') ?? null,
+      transcripcion: getValue<string | null>(item, 'transcripcion', 'Transcripcion') ?? null,
+      resumen: getValue<string | null>(item, 'resumen', 'Resumen') ?? null,
+      tipificacion: getValue<string | null>(item, 'tipificacion', 'Tipificacion', 'indLlamada') ?? null,
+      codmes: getValue<string | number | null>(item, 'codmes', 'CodMes') ?? null,
+    }));
   }, [dataCalidad]);
 
   // Opciones de filtros
-  const agenciasUnicas = useMemo(() => 
-    [...new Set(datosCompletos.map(item => item.agencia).filter(Boolean))].sort(),
-    [datosCompletos]
-  );
+  const agenciasUnicas = useMemo(() => {
+    const agencias = datosCompletos
+      .map((item) => item.agencia)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    return [...new Set(agencias)].sort();
+  }, [datosCompletos]);
 
   const supervisoresUnicos = useMemo(() => {
     let datos = datosCompletos;
     if (agenciaSeleccionada) {
-      datos = datos.filter(item => item.agencia === agenciaSeleccionada);
+      datos = datos.filter((item) => item.agencia === agenciaSeleccionada);
     }
-    return [...new Set(datos.map(item => item.supervisor).filter(Boolean))].sort();
+    const supervisores = datos
+      .map((item) => item.supervisor)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    return [...new Set(supervisores)].sort();
   }, [datosCompletos, agenciaSeleccionada]);
 
   const asesoresUnicos = useMemo(() => {
     let datos = datosCompletos;
     if (agenciaSeleccionada) {
-      datos = datos.filter(item => item.agencia === agenciaSeleccionada);
+      datos = datos.filter((item) => item.agencia === agenciaSeleccionada);
     }
     if (supervisorSeleccionado) {
-      datos = datos.filter(item => item.supervisor === supervisorSeleccionado);
+      datos = datos.filter((item) => item.supervisor === supervisorSeleccionado);
     }
-    return [...new Set(datos.map(item => item.asesor).filter(Boolean))].sort();
+    const asesores = datos
+      .map((item) => item.asesor)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    return [...new Set(asesores)].sort();
   }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado]);
 
   // Resetear filtros dependientes
@@ -617,9 +704,9 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, puedeUsarFiltrosAvanzados]);
 
   const buildFeedbackPayload = useCallback(
-    (asesor) => {
+    (asesor: CalidadAsesorAgrupado | null): FeedbackMetadata | null => {
       if (!asesor) return null;
-      const rows = datosFiltradosPrincipales.filter(item => item.asesor === asesor.asesor);
+      const rows = datosFiltradosPrincipales.filter((item) => item.asesor === asesor.asesor);
       if (!rows.length) {
         return {
           asesor: asesor.asesor,
@@ -636,19 +723,20 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
             cumplimientonormativo: 0,
             cierre: 0,
             actitud: 0,
-            total: 0
+            total: 0,
           },
           observacion: '',
           fecha: toISODateString(new Date()),
           evolutivoLabels: [],
           evolutivoValores: [],
-          evolutivoPromedio: 0
+          evolutivoPromedio: 0,
         };
       }
 
       const periodoRef = fechaDesde || rows[0]?.fecha || toISODateString(new Date());
       const evolutivo = calcularEvolutivoSemanal(rows, fechaDesde || rows[0]?.fecha);
-      const observacion = rows.find(row => row.observacionCalidad)?.observacionCalidad || '';
+      const observacion = rows.find((row) => row.observacionCalidad)?.observacionCalidad || '';
+      const fechaSemana = rows[0]?.fecha ? parseISODate(rows[0]?.fecha) : null;
 
       return {
         asesor: asesor.asesor,
@@ -657,21 +745,21 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
         quartil: asesor.cuartil,
         periodo: getWeekRangeFromDate(periodoRef),
         totalAudios: rows.length,
-        nroSemana: rows[0]?.fecha ? getISOWeekNumber(parseISODate(rows[0].fecha)) : undefined,
+        nroSemana: fechaSemana ? getISOWeekNumber(fechaSemana) : undefined,
         califs: {
-          apertura: promedioValores(rows.map(row => row.apertura)),
-          negociacion: promedioValores(rows.map(row => row.negociacion ?? row.desarrollo)),
-          comunicacionefectiva: promedioValores(rows.map(row => row.comunicacionefectiva)),
-          cumplimientonormativo: promedioValores(rows.map(row => row.cumplimientonormativo)),
-          cierre: promedioValores(rows.map(row => row.cierre)),
-          actitud: promedioValores(rows.map(row => row.actitud)),
-          total: promedioValores(rows.map(row => row.promedio))
+          apertura: promedioValores(rows.map((row) => row.apertura ?? 0)),
+          negociacion: promedioValores(rows.map((row) => row.negociacion ?? row.desarrollo ?? 0)),
+          comunicacionefectiva: promedioValores(rows.map((row) => row.comunicacionefectiva ?? 0)),
+          cumplimientonormativo: promedioValores(rows.map((row) => row.cumplimientonormativo ?? 0)),
+          cierre: promedioValores(rows.map((row) => row.cierre ?? 0)),
+          actitud: promedioValores(rows.map((row) => row.actitud ?? 0)),
+          total: promedioValores(rows.map((row) => row.promedio ?? 0)),
         },
         observacion,
         fecha: toISODateString(new Date()),
         evolutivoLabels: evolutivo.labels,
         evolutivoValores: evolutivo.valores,
-        evolutivoPromedio: evolutivo.promedio
+        evolutivoPromedio: evolutivo.promedio,
       };
     },
     [datosFiltradosPrincipales, fechaDesde]
@@ -684,7 +772,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   }, [modalFeedback, asesorSeleccionadoFeedback, buildFeedbackPayload]);
 
   // Vista detalle o general
-  const datosVista = useMemo(() => {
+  const datosVista = useMemo<VistaDato[]>(() => {
     if (modoVista === 'detalle') {
       return datosFiltradosPrincipales;
     } else {
@@ -698,8 +786,11 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
 
     if (puedeUsarFiltrosAvanzados) {
       Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
-        if (valores?.length > 0) {
-          datos = datos.filter(item => valores.includes(String(item[columna])));
+        if (Array.isArray(valores) && valores.length > 0) {
+          datos = datos.filter((item) => {
+            const valor = (item as Record<string, unknown>)[columna];
+            return valores.includes(String(valor ?? ''));
+          });
         }
       });
     }
@@ -714,8 +805,8 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     if (!ordenColumna.columna) return datosFiltradosColumnas;
 
     return [...datosFiltradosColumnas].sort((a, b) => {
-      const valorA = a[ordenColumna.columna];
-      const valorB = b[ordenColumna.columna];
+      const valorA = (a as Record<string, unknown>)[ordenColumna.columna] as unknown;
+      const valorB = (b as Record<string, unknown>)[ordenColumna.columna] as unknown;
 
       if (valorA == null) return 1;
       if (valorB == null) return -1;
@@ -771,10 +862,12 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   );
 
   // Cuartiles
-  const cuartiles = useMemo(() => 
-    distribuirPorCuartiles(modoVista === 'general' ? datosVista : []),
-    [modoVista, datosVista]
-  );
+  const cuartiles = useMemo(() => {
+    if (modoVista !== 'general') {
+      return distribuirPorCuartiles([]);
+    }
+    return distribuirPorCuartiles(datosVista as CalidadAsesorAgrupado[]);
+  }, [modoVista, datosVista]);
 
   // ============ HANDLERS ============
   const handleBuscar = () => {
@@ -819,18 +912,23 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     setPaginaActual(prev => Math.min(prev + 1, totalPaginas));
   };
 
-  const obtenerValoresUnicos = (columna) => {
-    const valores = datosVista.map(item => String(item[columna])).filter(Boolean);
+  const obtenerValoresUnicos = (columna: string) => {
+    const valores = datosVista
+      .map((item) => {
+        const valor = (item as Record<string, unknown>)[columna];
+        return valor != null ? String(valor) : '';
+      })
+      .filter((valor) => valor.length > 0);
     const unicos = [...new Set(valores)].sort();
 
     const busqueda = busquedaFiltro[columna]?.toLowerCase() || '';
     if (busqueda) {
-      return unicos.filter(val => val.toLowerCase().includes(busqueda));
+      return unicos.filter((val) => val.toLowerCase().includes(busqueda));
     }
     return unicos;
   };
 
-const handleFiltroColumnaChange = (columna, valor) => {
+  const handleFiltroColumnaChange = (columna: string, valor: string) => {
     if (!puedeUsarFiltrosAvanzados) {
       return;
     }
@@ -847,7 +945,7 @@ const handleFiltroColumnaChange = (columna, valor) => {
     });
   };
 
-const seleccionarTodosFiltro = (columna) => {
+  const seleccionarTodosFiltro = (columna: string) => {
     if (!puedeUsarFiltrosAvanzados) {
       return;
     }
@@ -858,7 +956,7 @@ const seleccionarTodosFiltro = (columna) => {
     }));
   };
 
-const limpiarFiltroColumna = (columna) => {
+  const limpiarFiltroColumna = (columna: string) => {
     if (!puedeUsarFiltrosAvanzados) {
       return;
     }
@@ -876,31 +974,32 @@ const limpiarFiltroColumna = (columna) => {
       return;
     }
 
-    const datosExcel = datosOrdenados.map(item => {
+    const datosExcel = datosOrdenados.map((item) => {
       if (modoVista === 'detalle') {
+        const detalle = item as CalidadRegistroNormalizado;
         return {
-          'Documento': item.documento,
-          'Cartera': item.cartera,
-          'Fecha': item.fecha,
-          'Asesor': item.asesor,
-          'Agencia': item.agencia,
-          'Supervisor': item.supervisor,
-          'Promedio': item.promedio,
-          'Actitud': item.actitud,
-          'Apertura': item.apertura,
-          'Desarrollo': item.desarrollo,
-          'Cierre': item.cierre
-        };
-      } else {
-        return {
-          'Asesor': item.asesor,
-          'Agencia': item.agencia,
-          'Supervisor': item.supervisor,
-          'Cantidad': item.cantidad,
-          'Promedio': item.promedio,
-          'Cuartil': item.cuartil
+          Documento: detalle.documento ?? '',
+          Cartera: detalle.cartera ?? '',
+          Fecha: detalle.fecha ?? '',
+          Asesor: detalle.asesor ?? '',
+          Agencia: detalle.agencia ?? '',
+          Supervisor: detalle.supervisor ?? '',
+          Promedio: detalle.promedio ?? '',
+          Actitud: detalle.actitud ?? '',
+          Apertura: detalle.apertura ?? '',
+          Desarrollo: detalle.desarrollo ?? '',
+          Cierre: detalle.cierre ?? '',
         };
       }
+      const general = item as CalidadAsesorAgrupado;
+      return {
+        Asesor: general.asesor ?? '',
+        Agencia: general.agencia ?? '',
+        Supervisor: general.supervisor ?? '',
+        Cantidad: general.cantidad ?? '',
+        Promedio: general.promedio ?? '',
+        Cuartil: general.cuartil ?? '',
+      };
     });
 
     const ws = XLSX.utils.json_to_sheet(datosExcel);
@@ -915,7 +1014,7 @@ const limpiarFiltroColumna = (columna) => {
   };
 
   // Modal feedback
-  const abrirModalFeedback = (asesor) => {
+  const abrirModalFeedback = (asesor: CalidadAsesorAgrupado | null) => {
     if (!asesor) return;
     const mismaPersona = feedbackMetadata?.asesor === asesor.asesor;
     setAsesorSeleccionadoFeedback(asesor);
@@ -941,16 +1040,14 @@ const limpiarFiltroColumna = (columna) => {
     setGenerandoPdf(false);
   };
 
-  const handleActitudChange = (actitud) => {
-    setActitudesSeleccionadas(prev =>
-      prev.includes(actitud)
-        ? prev.filter(a => a !== actitud)
-        : [...prev, actitud]
+  const handleActitudChange = (actitud: string) => {
+    setActitudesSeleccionadas((prev) =>
+      prev.includes(actitud) ? prev.filter((a) => a !== actitud) : [...prev, actitud]
     );
   };
 
   const requestFeedbackPdfUrl = useCallback(
-    async (metadata) => {
+    async (metadata: FeedbackMetadata | null) => {
       if (!metadata?.asesor || !metadata?.supervisor) {
         toast.error('No hay informaciИn suficiente para abrir el PDF.');
         return null;
@@ -982,7 +1079,7 @@ const limpiarFiltroColumna = (columna) => {
   );
 
   const handleVisualizarPdf = useCallback(
-    async (asesor) => {
+    async (asesor: CalidadAsesorAgrupado | null) => {
       if (!asesor) {
         toast.error('Selecciona un asesor para ver el PDF.');
         return;
@@ -1511,72 +1608,73 @@ const limpiarFiltroColumna = (columna) => {
                   </TableHeader>
                   <TableBody>
                     {datosPaginados.map((fila, idx) => {
+                      if (modoVista === "detalle") {
+                        const detalle = fila as CalidadRegistroNormalizado
+                        return (
+                          <TableRow key={`${detalle.documento ?? detalle.asesor}-${idx}`}>
+                            <TableCell>{detalle.documento}</TableCell>
+                            <TableCell>{detalle.cartera}</TableCell>
+                            <TableCell>{detalle.fecha}</TableCell>
+                            <TableCell>{detalle.asesor}</TableCell>
+                            <TableCell>{detalle.agencia}</TableCell>
+                            <TableCell>{detalle.supervisor}</TableCell>
+                            <TableCell>{detalle.promedio}</TableCell>
+                            <TableCell>{detalle.actitud}</TableCell>
+                            <TableCell>{detalle.apertura}</TableCell>
+                            <TableCell>{detalle.desarrollo}</TableCell>
+                            <TableCell>{detalle.cierre}</TableCell>
+                          </TableRow>
+                        )
+                      }
+                      const general = fila as CalidadAsesorAgrupado
                       const isViewingPdf =
-                        visualizandoPdf !== null && visualizandoPdf === (fila.asesor || '__DESCONOCIDO__');
+                        visualizandoPdf !== null && visualizandoPdf === (general.asesor || "__DESCONOCIDO__")
                       return (
-                        <TableRow key={`${fila.documento ?? fila.asesor}-${idx}`}>
-                        {modoVista === "detalle" ? (
-                          <>
-                            <TableCell>{fila.documento}</TableCell>
-                            <TableCell>{fila.cartera}</TableCell>
-                            <TableCell>{fila.fecha}</TableCell>
-                            <TableCell>{fila.asesor}</TableCell>
-                            <TableCell>{fila.agencia}</TableCell>
-                            <TableCell>{fila.supervisor}</TableCell>
-                            <TableCell>{fila.promedio}</TableCell>
-                            <TableCell>{fila.actitud}</TableCell>
-                            <TableCell>{fila.apertura}</TableCell>
-                            <TableCell>{fila.desarrollo}</TableCell>
-                            <TableCell>{fila.cierre}</TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell>{fila.asesor}</TableCell>
-                            <TableCell>{fila.agencia}</TableCell>
-                            <TableCell>{fila.supervisor}</TableCell>
-                            <TableCell>{fila.cantidad}</TableCell>
-                            <TableCell>{fila.promedio}</TableCell>
-                            <TableCell>
-                              <Badge
+                        <TableRow key={`${general.asesor ?? "general"}-${idx}`}>
+                          <TableCell>{general.asesor}</TableCell>
+                          <TableCell>{general.agencia}</TableCell>
+                          <TableCell>{general.supervisor}</TableCell>
+                          <TableCell>{general.cantidad}</TableCell>
+                          <TableCell>{general.promedio}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "px-3 py-1 font-semibold uppercase",
+                                quartilBadgeStyles[(general.cuartil ?? "").toLowerCase()] ??
+                                  "border-muted bg-muted/40 text-muted-foreground",
+                              )}
+                            >
+                              {general.cuartil || "N/D"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
                                 variant="outline"
-                                className={cn(
-                                  "px-3 py-1 font-semibold uppercase",
-                                  quartilBadgeStyles[(fila.cuartil ?? "").toLowerCase()] ??
-                                    "border-muted bg-muted/40 text-muted-foreground",
-                                )}
+                                size="icon"
+                                title="Generar feedback"
+                                onClick={() => abrirModalFeedback(general)}
                               >
-                                {fila.cuartil || "N/D"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  title="Generar feedback"
-                                  onClick={() => abrirModalFeedback(fila)}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  title="Ver PDF"
-                                  onClick={() => handleVisualizarPdf(fila)}
-                                  disabled={isViewingPdf}
-                                >
-                                  {isViewingPdf ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Eye className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                title="Ver PDF"
+                                onClick={() => handleVisualizarPdf(general)}
+                                disabled={isViewingPdf}
+                              >
+                                {isViewingPdf ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
-                      );
+                      )
                     })}
                   </TableBody>
                 </Table>
