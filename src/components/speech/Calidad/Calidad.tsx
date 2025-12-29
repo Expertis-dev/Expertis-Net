@@ -1049,7 +1049,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   const requestFeedbackPdfUrl = useCallback(
     async (metadata: FeedbackMetadata | null) => {
       if (!metadata?.asesor || !metadata?.supervisor) {
-        toast.error('No hay informaciИn suficiente para abrir el PDF.');
+        toast.error('No hay información suficiente para abrir el PDF.');
         return null;
       }
       const nombreArchivo = buildFeedbackFileName(metadata);
