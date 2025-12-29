@@ -257,7 +257,7 @@ const buildFeedbackFileName = (metadata?: { asesor?: string | null; fecha?: stri
 };
 
 const etiquetaFirmaPorCuartil = (quartil: string) =>
-  String(quartil ?? '').toUpperCase() === 'Q4' ? 'Analista de formación' : 'Supervisor';
+  String(quartil ?? '').toUpperCase() === 'Q1' ? 'Analista de formación' : 'Supervisor';
 
 const getValue = <T = unknown>(obj: Record<string, unknown> | null | undefined, ...keys: string[]): T | undefined => {
   if (!obj) return undefined;
@@ -1175,10 +1175,10 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   const columnas = modoVista === 'detalle' ? columnasDetalle : columnasGeneral;
 
   const quartilBadgeStyles: Record<string, string> = {
-    q1: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    q2: "border-sky-200 bg-sky-50 text-sky-700",
-    q3: "border-amber-200 bg-amber-50 text-amber-700",
-    q4: "border-rose-200 bg-rose-50 text-rose-700",
+    q1: "border-rose-200 bg-rose-50 text-rose-700",
+    q2: "border-amber-200 bg-amber-50 text-amber-700",
+    q3: "border-sky-200 bg-sky-50 text-sky-700",
+    q4: "border-emerald-200 bg-emerald-50 text-emerald-700",
   };
 
   const EstadoCard = ({

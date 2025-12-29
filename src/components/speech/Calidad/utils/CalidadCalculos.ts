@@ -85,11 +85,11 @@ export const calcularLimitesCuartiles = (valores?: NumericLike[]): LimitesCuarti
 export const calcularCuartil = (calificacion: NumericLike, limitesCuartiles?: LimitesCuartiles): "Q1" | "Q2" | "Q3" | "Q4" => {
   const cal = normalizarCalificacion(calificacion)
 
-  if (!limitesCuartiles) return "Q1"
-  if (cal >= limitesCuartiles.Q3) return "Q1"
-  if (cal >= limitesCuartiles.Q2) return "Q2"
-  if (cal >= limitesCuartiles.Q1) return "Q3"
-  return "Q4"
+  if (!limitesCuartiles) return "Q4"
+  if (cal >= limitesCuartiles.Q3) return "Q4"
+  if (cal >= limitesCuartiles.Q2) return "Q3"
+  if (cal >= limitesCuartiles.Q1) return "Q2"
+  return "Q1"
 }
 
 export const calcularPromedio = (valores: NumericLike[]): number => {
@@ -264,6 +264,20 @@ export const calcularKPIsGenerales = (datos: Array<CalidadRegistroAgrupable | Ca
     calificaciones = detalle.map((d) => normalizarCalificacion(d.promedio))
     totalLlamadas = detalle.length
     mejorPromedio = Math.max(...calificaciones, 0)
+    const asesoresUnicos = new Set(
+      detalle
+        .map((d) => {
+          if (typeof d.asesor === "string") {
+            return d.asesor.trim()
+          }
+          if (d.asesor != null) {
+            return String(d.asesor).trim()
+          }
+          return ""
+        })
+        .filter((value) => value.length > 0),
+    )
+    totalAsesores = asesoresUnicos.size
   }
 
   return {
