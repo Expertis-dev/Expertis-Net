@@ -1067,7 +1067,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
         return null;
       } catch (err) {
         if (isAxiosError(err) && err.response?.status === 404) {
-          toast.error('AИn no existe un PDF para este asesor. Genera uno primero.');
+          toast.error('No existe un PDF para este asesor. Genera uno primero.');
           return null;
         }
         console.error('[Calidad] Error al obtener URL del PDF', err);
@@ -1127,7 +1127,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
       const arrayBuffer = doc.output('arraybuffer');
       const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
       const archivo = new File([blob], nombre, { type: 'application/pdf' });
-      const supervisor = user?.usuario || feedbackMetadata.supervisor || 'DESCONOCIDO';
+      const supervisor = feedbackMetadata.supervisor || user?.usuario || 'DESCONOCIDO';
       const fechaCarpeta = toISODateString(new Date());
       await subirFeedbackPdfMutation.mutateAsync({
         supervisor,
