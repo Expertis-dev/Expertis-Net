@@ -19,5 +19,6 @@ export type Justificaciones = {
     idJefe: string;
     idEmpleado: string;
     codigoEmpleado: string;
+    id_grupo: number;
 }
 export type ArrayJustificaciones = Array<Justificaciones>;

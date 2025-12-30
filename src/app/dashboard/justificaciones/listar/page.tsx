@@ -29,6 +29,7 @@ export default function ListarJustificaciones() {
     asesor: "",
     grupo: "",
     tipo: "Todos",
+    consultar: "Todos",
     tipo3: "",
   })
 
@@ -48,6 +49,9 @@ export default function ListarJustificaciones() {
     }
     if (filters.tipo !== "Todos") {
       filtered = filtered.filter((item) => item.nivel1 === filters.tipo)
+    }
+    if (filters.consultar !== "Todos") {
+      filtered = filtered.filter((item) => item.descuento === filters.consultar)
     }
     if (filters.tipo3) {
       filtered = filtered.filter(
@@ -163,6 +167,7 @@ export default function ListarJustificaciones() {
                     grupo: "",
                     tipo: "Todos",
                     tipo3: "",
+                    consultar: "Todos",
                   })
                 }}
                 className="w-full bg-slate-300 text-black/80 hover:bg-slate-400 dark:bg-neutral-700 dark:hover:bg-neutral-800 dark:text-white"
@@ -210,13 +215,20 @@ export default function ListarJustificaciones() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subtipo</Label>
-              <Input
-                placeholder="Buscar..."
-                value={filters.tipo3}
-                onChange={(e) => setFilters((prev) => ({ ...prev, tipo3: e.target.value }))}
-                className="pr-10 w-full"
-              />
+              <Label>Descuento</Label>
+              <Select
+                value={filters.consultar}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, consultar: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NO">NO</SelectItem>
+                  <SelectItem value="SI">SI</SelectItem>
+                  <SelectItem value="CONSULTAR">CONSULTAR</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -236,6 +248,7 @@ export default function ListarJustificaciones() {
                   <TableHead>Grupo</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Subtipo</TableHead>
+                  <TableHead>Descuento</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -251,6 +264,7 @@ export default function ListarJustificaciones() {
                     <TableCell>{item.grupo}</TableCell>
                     <TableCell>{item.nivel1}</TableCell>
                     <td className="w-40 p-1 align-middle">{item.nivel3}</td>
+                    <TableCell>{item.descuento}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
