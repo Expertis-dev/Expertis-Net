@@ -2,11 +2,17 @@ import { useState, useEffect } from "react";
 
 export const useBaseLogic = (storageKeyPrefix: string, limit: number = 2) => {
   // Fechas por defecto
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const maxDate = getTodayStr();
 
-  const [date, setDate] = useState<string>(today);
-  const [dateY, setDateY] = useState<string>(yesterday);
+  const getInitialStartDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 2);
+    return d.toISOString().split('T')[0];
+  };
+
+  const [date, setDate] = useState<string>(maxDate);
+  const [dateY, setDateY] = useState<string>(getInitialStartDate());
   
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -15,9 +21,9 @@ export const useBaseLogic = (storageKeyPrefix: string, limit: number = 2) => {
   const [bloqueado, setBloqueado] = useState<boolean>(false);
   const [contadorProcesos, setContadorProcesos] = useState<number>(0);
 
-  // Cargar estado inicial del localStorage
+    // Cargar estado inicial del localStorage
   useEffect(() => {
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = getTodayStr();
     const keyConteo = `${storageKeyPrefix}_procesos_realizados`;
     const keyFecha = `${storageKeyPrefix}_fecha_procesos`;
 
@@ -36,22 +42,18 @@ export const useBaseLogic = (storageKeyPrefix: string, limit: number = 2) => {
     }
   }, [storageKeyPrefix, limit]);
 
-  // Manejadores de Fecha
+ // Manejadores de Fecha
   const handleChangeStartDate = (value: string) => {
+    if (value > maxDate) return;
     setDateY(value);
-    const nuevaFin = new Date(value);
-    nuevaFin.setDate(nuevaFin.getDate() + 1);
-    setDate(nuevaFin.toISOString().split("T")[0]);
   };
 
   const handleChangeEndDate = (value: string) => {
+    if (value > maxDate) return;
     setDate(value);
-    const nuevaInicio = new Date(value);
-    nuevaInicio.setDate(nuevaInicio.getDate() - 1);
-    setDateY(nuevaInicio.toISOString().split("T")[0]);
   };
 
-  // Manejadores de Archivo
+  // Manejadores de Archivo 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -70,13 +72,14 @@ export const useBaseLogic = (storageKeyPrefix: string, limit: number = 2) => {
     const nuevoContador = contadorProcesos + 1;
     setContadorProcesos(nuevoContador);
     localStorage.setItem(`${storageKeyPrefix}_procesos_realizados`, nuevoContador.toString());
-    localStorage.setItem(`${storageKeyPrefix}_fecha_procesos`, new Date().toISOString().split("T")[0]);
+    localStorage.setItem(`${storageKeyPrefix}_fecha_procesos`, getTodayStr());
     if (nuevoContador >= limit) setBloqueado(true);
   };
 
   return {
     date,
     dateY,
+    maxDate,
     handleChangeStartDate,
     handleChangeEndDate,
     archivoSeleccionado,

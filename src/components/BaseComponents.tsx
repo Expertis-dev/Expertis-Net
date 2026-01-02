@@ -82,6 +82,7 @@ export const FileStatus = ({ file, onClear, error }: FileStatusProps) => (
 interface FilterProps {
   dateStart: string;
   dateEnd: string;
+  maxDate: string; // Recibimos la fecha tope
   onStartChange: (val: string) => void;
   onEndChange: (val: string) => void;
   onProcess: () => void;
@@ -93,6 +94,7 @@ interface FilterProps {
 export const ProcessFilters = ({ 
   dateStart, 
   dateEnd, 
+  maxDate,
   onStartChange, 
   onEndChange, 
   onProcess, 
@@ -116,6 +118,7 @@ export const ProcessFilters = ({
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input 
               type="date" 
+              max={maxDate}
               value={dateStart} 
               onChange={(e) => onStartChange(e.target.value)} 
               className="w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" 
@@ -128,6 +131,7 @@ export const ProcessFilters = ({
              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
              <input 
                type="date" 
+               max={maxDate}
                value={dateEnd} 
                onChange={(e) => onEndChange(e.target.value)} 
                className="w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" 

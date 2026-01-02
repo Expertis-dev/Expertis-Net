@@ -15,7 +15,7 @@ const columnasNvl2 = ["Nombre", "VLL", "CAN", "PAR", "PPC", "PPM", "REN", "RPP",
 const columnasHoras = ["Nombre", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
 export default function Grupos() {
-  const logic = useBaseLogic("bases_grupos", 50);
+  const logic = useBaseLogic("bases_grupos", 2);
   const [vistaActiva, setVistaActiva] = useState<VistaActiva>("nvl1");
   const [datosBackend, setDatosBackend] = useState<GrupoResponse | null>(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<string | null>(null);
@@ -172,6 +172,7 @@ export default function Grupos() {
           <ProcessFilters 
             dateStart={logic.dateY} 
             dateEnd={logic.date}
+            maxDate={logic.maxDate}
             onStartChange={logic.handleChangeStartDate} 
             onEndChange={logic.handleChangeEndDate}
             onProcess={ProcesarInformacion} 

@@ -15,7 +15,7 @@ const columnasNvl2 = ["Asesor", "VLL", "CAN", "PAR", "PPC", "PPM", "REN", "RPP",
 const columnasHoras = ["Asesor", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
 export default function Bases() {
-  const logic = useBaseLogic("bases_manuales", 50);
+  const logic = useBaseLogic("bases_manuales", 2);
   const [vistaActiva, setVistaActiva] = useState<VistaActiva>("nvl1");
   const [datosBackend, setDatosBackend] = useState<ResponseData | null>(null);
   const [cargando, setCargando] = useState<boolean>(false);
@@ -133,9 +133,14 @@ export default function Bases() {
       <FileStatus file={logic.archivoSeleccionado} onClear={logic.handleClearFile} error={logic.error} />
       
       <ProcessFilters 
-        dateStart={logic.dateY} dateEnd={logic.date}
-        onStartChange={logic.handleChangeStartDate} onEndChange={logic.handleChangeEndDate}
-        onProcess={ProcesarInformacion} loading={cargando} blocked={logic.bloqueado}
+        dateStart={logic.dateY} 
+        dateEnd={logic.date}
+        maxDate={logic.maxDate}
+        onStartChange={logic.handleChangeStartDate} 
+        onEndChange={logic.handleChangeEndDate}
+        onProcess={ProcesarInformacion} 
+        loading={cargando} 
+        blocked={logic.bloqueado}
       />
 
       <section className="space-y-4">
