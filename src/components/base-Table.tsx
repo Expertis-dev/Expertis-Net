@@ -6,7 +6,15 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { DetailModal } from "./detail-modal";
 import type { BaseTableProps, SortDirection, DetalleAsesor } from "@/types/Bases";
 
-export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseTableProps) {
+type FilaTabla = Record<string, string | number>;
+
+
+interface ExtendedBaseTableProps extends BaseTableProps {
+  onRowClick?: (fila: FilaTabla) => void;
+  rowClassName?: string;
+}
+
+export default function BaseTable({ columnas, datos = [], datosGlobales, onRowClick, rowClassName }: ExtendedBaseTableProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [detalleSeleccionado, setDetalleSeleccionado] = useState<DetalleAsesor | null>(null);
@@ -45,7 +53,7 @@ export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseT
 
     const aValue = a[sortColumn];
     const bValue = b[sortColumn];
-
+    
     // Manejar valores undefined o null
     if (aValue === undefined || aValue === null) return 1;
     if (bValue === undefined || bValue === null) return -1;
@@ -68,36 +76,58 @@ export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseT
     }
   });
 
-  // Calcular totales para cada columna
+    // Calcular totales para cada columna
   const calcularTotales = (): Record<string, string | number> => {
     const totales: Record<string, string | number> = {};
     
     columnas.forEach((columna, index) => {
+
       if (index === 0) {
         totales[columna] = "TOTAL";
-      } else {
-        const valores = datos.map(fila => {
-          const valor = fila[columna];
-          if (valor === undefined || valor === null) return 0;
+        return;
+      }
 
-          const numStr = String(valor).replace(/[%,$]/g, '').trim();
-          const num = parseFloat(numStr);
-          
-          return isNaN(num) ? 0 : num;
-        });
+      if (columna === "Porcentaje gestionados") {
+        const sumaClientes = datos.reduce((acc, row) => {
+            const val = parseFloat(String(row["Total clientes"] || 0));
+            return acc + (isNaN(val) ? 0 : val);
+        }, 0);
+
+        const sumaGestionados = datos.reduce((acc, row) => {
+            const val = parseFloat(String(row["Total gestionados"] || 0));
+            return acc + (isNaN(val) ? 0 : val);
+        }, 0);
+
+        const porcentajeReal = sumaClientes > 0 
+            ? ((sumaGestionados / sumaClientes) * 100) 
+            : 0;
+
+        totales[columna] = porcentajeReal.toFixed(2) + "%";
+        return;
+      }
+
+      // Lógica estándar para sumar columnas numéricas
+      const valores = datos.map(fila => {
+        const valor = fila[columna];
+        if (valor === undefined || valor === null) return 0;
+
+        const numStr = String(valor).replace(/[%,$]/g, '').trim();
+        const num = parseFloat(numStr);
         
-        const suma = valores.reduce((acc, val) => acc + val, 0);
-        
-        const todosStrings = datos.every(fila => {
-          const valor = fila[columna];
-          return valor === undefined || valor === null || isNaN(parseFloat(String(valor).replace(/[%,$]/g, '')));
-        });
-        
-        if (suma === 0 && todosStrings) {
-          totales[columna] = "-";
-        } else {
-          totales[columna] = suma % 1 === 0 ? suma : suma.toFixed(2);
-        }
+        return isNaN(num) ? 0 : num;
+      });
+      
+      const suma = valores.reduce((acc, val) => acc + val, 0);
+      
+      const todosStrings = datos.every(fila => {
+        const valor = fila[columna];
+        return valor === undefined || valor === null || isNaN(parseFloat(String(valor).replace(/[%,$]/g, '')));
+      });
+      
+      if (suma === 0 && todosStrings) {
+        totales[columna] = "-";
+      } else {
+        totales[columna] = suma % 1 === 0 ? suma : suma.toFixed(2);
       }
     });
     
@@ -106,16 +136,19 @@ export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseT
 
   const totales = datos.length > 0 ? calcularTotales() : null;
 
-  const AbrirModal = (fila: Record<string, string | number>) => {
-    // Verificar que hay gestiones y datos globales
-    if (!datosGlobales || fila["Total gestionados"] === 0) return;
+  // Lógica de Modal para vista de asesores
+  const AbrirModal = (fila: FilaTabla) => {
+    // Protección: Si estamos en vista de grupos, datosGlobales no tiene la estructura de asesores
+    if (!datosGlobales?.gestiones_detalladas_por_asesor) return;
+
+    if (fila["Total gestionados"] === 0) return;
     
-    const asesor = fila.Asesor as string;
-    
+    // En la vista de asesores la columna es 'Asesor', en grupos es 'Nombre'.
+    const asesor = (fila.Asesor || fila.Nombre) as string;
+
+    if (!datosGlobales.gestiones_detalladas_por_asesor[asesor]) return;
+
     console.log("Asesor seleccionado:", asesor);
-    console.log("DATOS GLOBALES", datosGlobales);
-    console.log("GESTIONES DETALLADAS", datosGlobales.gestiones_detalladas_por_asesor[asesor]);
-    console.log("GESTIONES NO GESTIONADAS", datosGlobales.no_gestionados_por_asesor[asesor]);
     
     setDetalleSeleccionado({
       gestionesDetalladas: datosGlobales.gestiones_detalladas_por_asesor[asesor] || [],
@@ -156,8 +189,16 @@ export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseT
               {sortedDatos.map((fila, rowIndex) => (
                 <TableRow 
                   key={rowIndex} 
-                  onClick={() => AbrirModal(fila)} 
-                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => {
+                    if (fila.esTotal) return;
+                    if (onRowClick) {
+                      onRowClick(fila);
+                    } 
+                    else {
+                      AbrirModal(fila);
+                    }
+                  }} 
+                  className={`hover:bg-muted/50 cursor-pointer ${rowClassName || ''}`}
                 >
                   {columnas.map((columna, colIndex) => (
                     <TableCell key={colIndex} className="text-foreground">
@@ -186,7 +227,7 @@ export default function BaseTable({ columnas, datos = [], datosGlobales }: BaseT
       {datos.length > 0 && (
         <div className="bg-muted px-4 py-3 border-t">
           <p className="text-sm text-muted-foreground">
-            Total de asesores: <span className="font-medium text-foreground">{datos.length}</span>
+            Total de registros: <span className="font-medium text-foreground">{datos.length}</span>
             {sortColumn && sortDirection && (
               <span className="ml-4">
                 Ordenado por: <span className="font-medium">{sortColumn}</span> ({sortDirection === 'asc' ? 'Ascendente' : 'Descendente'})

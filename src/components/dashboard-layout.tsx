@@ -108,16 +108,16 @@ const MENU_CONFIG: MenuItem[] = [
     subItems: [
       {
         title: "Seguimiento Asesor",
-        href: "/dashboard/bases",
+        href: "/dashboard/bases/seguimiento-asesor",
         modulo: "Bases",
         permiso: "SeguimientoAsesor-ver",
       },
-      /*{
+      {
         title: "Seguimiento Grupo",
         href: "/dashboard/bases/seguimiento-grupo",
         modulo: "Bases",
         permiso: "SeguimientoGrupo-ver",
-      },*/
+      },
     ],
   },
   {

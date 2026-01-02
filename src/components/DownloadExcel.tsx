@@ -1,78 +1,89 @@
 "use client";
+
+import React from "react";
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
+import { saveAs } from "file-saver";
 
-// interfaces para los tipos
-interface Registro {
-  documento: string;
-  cartera: string;
-  fechaLlamada?: string;
-  hora?: string;
-  nvl1?: string;
-  nvl2?: string;
-  asesor?: string;
-}
+type FilaDatos = object;
 
-interface DatosPorAsesor {
-  [asesor: string]: Registro[];
-}
+type DatosHoja = FilaDatos[] | Record<string, FilaDatos[]>;
 
-interface Hoja {
+export interface HojaExcel {
   nombre: string;
-  datos: DatosPorAsesor;
+
+  datos: DatosHoja | null | undefined;
 }
 
 interface DownloadExcelProps {
-  hojas: Hoja[];
+  hojas: HojaExcel[];
+  nombreArchivo?: string;
+  className?: string;
 }
 
-export default function DownloadExcel({ hojas }: DownloadExcelProps) {
+export default function DownloadExcel({
+  hojas,
+  nombreArchivo = "Reporte_Gestion",
+  className,
+}: DownloadExcelProps) {
+
   const handleExport = () => {
-    if (!hojas || hojas.length === 0) {
-      alert("No hay datos para exportar.");
-      return;
-    }
+    try {
+      if (!Array.isArray(hojas)) {
+        console.error("Error: 'hojas' debe ser un array.");
+        return;
+      }
 
-    // Crear un nuevo libro Excel
-    const workbook = XLSX.utils.book_new();
+      const wb = XLSX.utils.book_new();
+      let hayDatos = false;
 
-    hojas.forEach(({ nombre, datos }) => {
-      // Asegurar que los datos sean válidos
-      if (!datos || Object.keys(datos).length === 0) return;
+      hojas.forEach((hoja) => {
+        let datosParaExcel: FilaDatos[] = [];
 
-      // Convertir los datos por asesor en filas planas
-      const filas: Registro[] = [];
-      Object.entries(datos).forEach(([asesor,registros]) => {
-        console.log(asesor)
-        registros.forEach((r: Registro) => {
-          filas.push({  
-            ...r,
-            documento: r.documento ? String(r.documento) : "",
-          });
-        });
+        // Normalización de datos
+        if (!hoja.datos) {
+          datosParaExcel = [];
+        } else if (Array.isArray(hoja.datos)) {
+          datosParaExcel = hoja.datos;
+        } else {
+
+          datosParaExcel = Object.values(hoja.datos).flat();
+        }
+
+        //  Generación de hoja
+        if (datosParaExcel.length > 0) {
+          hayDatos = true;
+          const ws = XLSX.utils.json_to_sheet(datosParaExcel);
+          const nombreSeguro = (hoja.nombre || "Datos").substring(0, 31);
+          XLSX.utils.book_append_sheet(wb, ws, nombreSeguro);
+        }
       });
 
-      // Crear hoja
-      const worksheet = XLSX.utils.json_to_sheet(filas);
-      XLSX.utils.book_append_sheet(workbook, worksheet, nombre.slice(0, 31)); 
-    });
+      if (!hayDatos) {
+        alert("No hay datos para exportar.");
+        return;
+      }
 
-    // Generar buffer Excel
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      // Descarga
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
 
-    // Descargar
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, `Reporte_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      const fecha = new Date().toISOString().slice(0, 10);
+      saveAs(blob, `${nombreArchivo}_${fecha}.xlsx`);
+
+    } catch (error) {
+      console.error("Error al exportar Excel:", error);
+      alert("Error al generar el archivo. Revise la consola.");
+    }
   };
 
   return (
     <Button
       onClick={handleExport}
-      className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+      className={`bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 ${className || ""}`}
     >
       <FileDown className="w-4 h-4" />
       Descargar Excel
