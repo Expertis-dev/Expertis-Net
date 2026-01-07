@@ -207,6 +207,8 @@ const calcularEvolutivoSemanal = (
 
   const baseDate = parseISODate(baseIso) || new Date();
   const baseYearMonth = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}`;
+  const baseWeekStart = startOfISOWeek(baseDate);
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
   const acumulado = new Map<number, { sum: number; count: number }>();
 
   rows
@@ -219,12 +221,17 @@ const calcularEvolutivoSemanal = (
       if (typeof fecha !== 'string') return;
       const fechaDate = parseISODate(fecha);
       if (!fechaDate) return;
-      const week = getISOWeekNumber(fechaDate);
-      const current = acumulado.get(week) || { sum: 0, count: 0 };
+      const fechaWeekStart = startOfISOWeek(fechaDate);
+      const diffWeeks = Math.floor((fechaWeekStart.getTime() - baseWeekStart.getTime()) / MS_PER_WEEK);
+      const semanaRelativa = diffWeeks + 1;
+      if (semanaRelativa < 1 || semanaRelativa > totalWeeks) {
+        return;
+      }
+      const current = acumulado.get(semanaRelativa) || { sum: 0, count: 0 };
       const promedio = Number(row.promedio ?? row.calificacionCalidad ?? 0) || 0;
       current.sum += promedio;
       current.count += 1;
-      acumulado.set(week, current);
+      acumulado.set(semanaRelativa, current);
     });
 
   const labels = [];
@@ -345,7 +352,7 @@ export const Calidad = () => {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' }) as PdfWithAutoTable;
       doc.setProperties({
         title: `Ficha de Retroalimentación - ${metadata.asesor ?? ''}`,
-        subject: 'Gestión de Cobranzas',
+        subject: 'Speech Analytics',
         author: 'Calidad'
       });
 
@@ -1021,7 +1028,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     const metadata = buildFeedbackPayload(asesor);
     setFeedbackMetadata(metadata);
     if (!mismaPersona) {
-      setFeedbackTexto(metadata?.observacion ?? '');
+      setFeedbackTexto('');
       setActitudesSeleccionadas([]);
       setFeedbackSugerencia('');
       setFeedbackCompromiso('');
@@ -1413,7 +1420,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
           <Card className="lg:col-span-4">
             <CardHeader className="pb-2">
               <CardTitle>Distribucion por cuartiles</CardTitle>
-              <CardDescription>Identifica donde se concentra el desempeno.</CardDescription>
+              <CardDescription>Identifica donde se concentra el desempeño.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {(["Q1", "Q2", "Q3", "Q4"] as const).map((quartil) => {
