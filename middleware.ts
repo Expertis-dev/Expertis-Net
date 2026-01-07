@@ -64,21 +64,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Obtener datos del usuario desde las cookies o headers
-  const username = request.cookies.get("username")?.value
-  const isAuthenticated = request.cookies.get("isAuthenticated")?.value
+    // Obtener datos del usuario desde las cookies o headers
+    const username = request.cookies.get("username")?.value
+    const isAuthenticated = request.cookies.get("isAuthenticated")?.value
 
-  // Si no está autenticado, redirigir al login
-  if (!isAuthenticated || !username) {
-    return NextResponse.redirect(new URL("/", request.url))
-  }
+    // Si no está autenticado, redirigir al login
+    if (!isAuthenticated || !username) {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
 
-  // Obtener información del usuario
-  const userData = users[username as keyof typeof users]
+    // Obtener información del usuario
+    const userData = users[username as keyof typeof users]
 
-  if (!userData) {
-    return NextResponse.redirect(new URL("/", request.url))
-  }
+    if (!userData) {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
 
   // Verificar permisos de ruta según el cargo
   const allowedRoutes = routePermissions[userData.idCargo as keyof typeof routePermissions]
