@@ -283,7 +283,7 @@ const getValue = <T = unknown>(obj: Record<string, unknown> | null | undefined, 
 
 export const Calidad = () => {
   const { user } = useUser();
-  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess();
+  const { alias: aliasActual, canUseFilters: puedeUsarFiltrosAvanzados } = useSpeechAccess();
 
   // ============ ESTADOS PRINCIPALES ============
   const [modoVista, setModoVista] = useState('detalle'); // 'detalle' | 'general'

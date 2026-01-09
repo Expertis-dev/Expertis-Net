@@ -155,7 +155,7 @@ const EstadoCard = ({
 
 const Pagos = () => {
   const { hasPermiso } = useSpeechPermissions()
-  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess()
+  const { alias: aliasActual, canUseFilters: puedeUsarFiltrosAvanzados } = useSpeechAccess()
 
   const [fechaGestion, setFechaGestion] = useState("")
   const [fechaGestionTemp, setFechaGestionTemp] = useState("")
