@@ -985,7 +985,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
       if (modoVista === 'detalle') {
         const detalle = item as CalidadRegistroNormalizado;
         return {
-          Documento: detalle.documento ?? '',
+          "Id Gestion": detalle.documento ?? '',
           Cartera: detalle.cartera ?? '',
           Fecha: detalle.fecha ?? '',
           Asesor: detalle.asesor ?? '',
@@ -1156,7 +1156,7 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
 
   // Columnas según vista
   const columnasDetalle = [
-    { id: 'documento', label: 'Documento', filtrable: true },
+    { id: 'documento', label: 'Id Gestion', filtrable: true },
     { id: 'cartera', label: 'Cartera', filtrable: true },
     { id: 'fecha', label: 'Fecha', filtrable: false },
     { id: 'asesor', label: 'Asesor', filtrable: true },
