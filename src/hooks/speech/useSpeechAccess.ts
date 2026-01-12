@@ -1,9 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getCurrentSpeechAdminStatus } from "@/lib/speechAdmins"
+import { isSpeechAdminPerms } from "@/lib/speechAdmins"
+import { getSpeechAlias, getSpeechPermisos } from "@/lib/speechPermissions"
 
-const readAccessSnapshot = () => getCurrentSpeechAdminStatus()
+const readAccessSnapshot = () => {
+  const permisos = getSpeechPermisos()
+  const alias = getSpeechAlias()
+  const isAdmin = isSpeechAdminPerms(permisos)
+  return {
+    alias,
+    isAdmin,
+    canUseFilters: true,
+  }
+}
 
 export const useSpeechAccess = () => {
   const [state, setState] = useState(readAccessSnapshot)
@@ -14,7 +24,7 @@ export const useSpeechAccess = () => {
     sync()
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key && event.key !== "alias" && event.key !== "user") {
+      if (event.key && event.key !== "alias" && event.key !== "user" && event.key !== "permisos") {
         return
       }
       sync()

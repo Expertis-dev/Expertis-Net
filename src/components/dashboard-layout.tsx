@@ -19,6 +19,7 @@ import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
 import { useUser } from "@/Provider/UserProvider"
+import { getSpeechPermisos } from "@/lib/speechPermissions"
 import { SocketContext } from "@/Context/SocketContex"
 import * as UAParser from "ua-parser-js";
 
@@ -37,6 +38,7 @@ interface SubItem {
   href: string
   modulo?: Modulo       // módulo al que pertenece
   permiso?: string      // nombre del permiso. Si es undefined → acceso libre
+  speechPermisos?: string[]
 }
 
 interface MenuItem {
@@ -89,6 +91,7 @@ export const tienePermiso = (
 
   return lista.includes(permiso)
 }
+
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
@@ -212,18 +215,34 @@ const MENU_CONFIG: MenuItem[] = [
       {
         title: "Reporte",
         href: "/dashboard/speech/tablero",
+        speechPermisos: ["PERMISO_Tablero-ver"],
       },
       {
         title: "Pagos",
         href: "/dashboard/speech/pagos",
+        speechPermisos: [
+          "PERMISO_PagosInterno-ver",
+          "PERMISO_PagosExterno-ver",
+          "PERMISO_PagosJudicial-ver",
+        ],
       },
       {
         title: "Calidad",
         href: "/dashboard/speech/calidad",
+        speechPermisos: [
+          "PERMISO_CalidadInterno-ver",
+          "PERMISO_CalidadExterno-ver",
+          "PERMISO_CalidadJudicial-ver",
+        ],
       },
       {
         title: "Reclamos",
         href: "/dashboard/speech/reclamos",
+        speechPermisos: [
+          "PERMISO_ReclamosInterno-ver",
+          "PERMISO_ReclamosExterno-ver",
+          "PERMISO_ReclamosJudicial-ver",
+        ],
       },
     ],
   },
@@ -367,6 +386,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return MENU_CONFIG.filter((item) => item.id === "home")
     }
     const permisos = getPermisosFromStorage()
+    const speechPermisos = getSpeechPermisos()
+    const hasSpeechPermiso = (required?: string[]) => {
+      if (!required || required.length === 0) return true
+      return required.some((permiso) => speechPermisos.includes(permiso))
+    }
     return (
       MENU_CONFIG
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
@@ -375,9 +399,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             return menu
           }
 
-          const filteredSubItems = menu.subItems.filter((sub) =>
-            tienePermiso(permisos, sub.modulo, sub.permiso),
-          )
+          const filteredSubItems = menu.subItems.filter((sub) => {
+            if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
+              return false
+            }
+            return hasSpeechPermiso(sub.speechPermisos)
+          })
 
           if (filteredSubItems.length === 0) return null
 

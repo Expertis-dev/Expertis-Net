@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ElementType } from "react"
+import { useState, type ElementType } from "react"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -26,10 +26,6 @@ export default function Reportes() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [iframeKey, setIframeKey] = useState(0)
-
-  useEffect(() => {
-    document.title = "Tablero de Control - Speech Analytics"
-  }, [])
 
   const handleIframeLoad = () => {
     setIsLoading(false)

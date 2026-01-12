@@ -125,7 +125,7 @@ type SpeechReclamoNormalizado = SpeechReclamo & { carteraNormalizada?: string }
 
 const Reclamos = () => {
   const { hasPermiso } = useSpeechPermissions()
-  const { alias: aliasActual, isAdmin: puedeUsarFiltrosAvanzados } = useSpeechAccess()
+  const { alias: aliasActual, canUseFilters: puedeUsarFiltrosAvanzados } = useSpeechAccess()
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState("")
   const [fechaTemporal, setFechaTemporal] = useState("")
