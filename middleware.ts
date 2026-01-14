@@ -27,6 +27,7 @@ const routePermissions = {
     "/dashboard/vacaciones/mis-solicitudes",
     "/dashboard/vacaciones/registrar-asesor",
     "/dashboard/vacaciones/solicitudes-asesor",
+    "/dashboard/asistencia/mi-asistencia",
     // ...speechRoutes,
   ],
   2: [
@@ -37,6 +38,7 @@ const routePermissions = {
     "/dashboard/vacaciones/solicitar",
     "/dashboard/vacaciones/mis-solicitudes",
     "/dashboard/vacaciones/solicitudes-asesor",
+    "/dashboard/asistencia/mi-asistencia",
     // ...speechRoutes,
   ],
   3: [
@@ -44,6 +46,7 @@ const routePermissions = {
     "/dashboard",
     "/dashboard/vacaciones/solicitar",
     "/dashboard/vacaciones/mis-solicitudes",
+    "/dashboard/asistencia/mi-asistencia",
     // "/dashboard/speech",
     // "/dashboard/speech/tablero",
   ],

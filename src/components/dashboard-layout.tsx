@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -197,6 +197,21 @@ const MENU_CONFIG: MenuItem[] = [
         modulo: "Vacaciones",
         permiso: "CalendarioJefes-ver",
       },
+    ],
+  },
+  {
+    id: "asistencia",
+    title: "Asistencia",
+    icon: Calendar,
+    href: "#",
+    subItems: [
+      {
+        title: "Mi Asistencia",
+        href: "/dashboard/asistencia/mi-asistencia",
+        modulo: "Asistencia",
+        // permiso: "MiAsistencia-ver",
+      }
+
     ],
   },
   /*{
