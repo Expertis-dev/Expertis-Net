@@ -146,6 +146,7 @@ const Reclamos = () => {
   const tienePermisoInterno = hasPermiso("PERMISO_ReclamosInterno-ver")
   const tienePermisoExterno = hasPermiso("PERMISO_ReclamosExterno-ver")
   const tienePermisoJudicial = hasPermiso("PERMISO_ReclamosJudicial-ver")
+  const tienePermisoBpo = hasPermiso("PERMISO_ReclamosBPO-ver")
 
   const datosCompletos = useMemo<SpeechReclamoNormalizado[]>(() => {
     if (!Array.isArray(dataReclamos)) return []
@@ -205,12 +206,13 @@ const Reclamos = () => {
       })
       .filter((item) => {
         const cartera = item.carteraNormalizada ?? ""
+        if (tienePermisoBpo) return true
         if (cartera === "interno" && !tienePermisoInterno) return false
         if (cartera === "externo" && !tienePermisoExterno) return false
         if (cartera === "judicial" && !tienePermisoJudicial) return false
         return true
       })
-  }, [dataReclamos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial])
+  }, [dataReclamos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial, tienePermisoBpo])
 
   useEffect(() => {
     if (dataReclamos && dataReclamos.length > 0) {

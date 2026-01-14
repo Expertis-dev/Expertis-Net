@@ -224,6 +224,7 @@ const MENU_CONFIG: MenuItem[] = [
           "PERMISO_PagosInterno-ver",
           "PERMISO_PagosExterno-ver",
           "PERMISO_PagosJudicial-ver",
+          "PERMISO_PagosBPO-ver"
         ],
       },
       {
@@ -233,6 +234,7 @@ const MENU_CONFIG: MenuItem[] = [
           "PERMISO_CalidadInterno-ver",
           "PERMISO_CalidadExterno-ver",
           "PERMISO_CalidadJudicial-ver",
+          "PERMISO_CalidadBPO-ver"
         ],
       },
       {
@@ -242,6 +244,7 @@ const MENU_CONFIG: MenuItem[] = [
           "PERMISO_ReclamosInterno-ver",
           "PERMISO_ReclamosExterno-ver",
           "PERMISO_ReclamosJudicial-ver",
+          "PERMISO_ReclamosBPO-ver"
         ],
       },
     ],
