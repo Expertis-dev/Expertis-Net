@@ -206,46 +206,49 @@ const MENU_CONFIG: MenuItem[] = [
     href: "/dashboard/consultas",
     subItems: [], // sin permiso → acceso libre
   },*/
-  /*  {
-      id: "speech",
-      title: "Speech Analytics",
-      icon: AudioLines,
-      href: "/dashboard/speech/tablero",
-      subItems: [
-        {
-          title: "Reporte",
-          href: "/dashboard/speech/tablero",
-          speechPermisos: ["PERMISO_Tablero-ver"],
-        },
-        {
-          title: "Pagos",
-          href: "/dashboard/speech/pagos",
-          speechPermisos: [
-            "PERMISO_PagosInterno-ver",
-            "PERMISO_PagosExterno-ver",
-            "PERMISO_PagosJudicial-ver",
-          ],
-        },
-        {
-          title: "Calidad",
-          href: "/dashboard/speech/calidad",
-          speechPermisos: [
-            "PERMISO_CalidadInterno-ver",
-            "PERMISO_CalidadExterno-ver",
-            "PERMISO_CalidadJudicial-ver",
-          ],
-        },
-        {
-          title: "Reclamos",
-          href: "/dashboard/speech/reclamos",
-          speechPermisos: [
-            "PERMISO_ReclamosInterno-ver",
-            "PERMISO_ReclamosExterno-ver",
-            "PERMISO_ReclamosJudicial-ver",
-          ],
-        },
-      ],
-    },*/
+  {
+    id: "speech",
+    title: "Speech Analytics",
+    icon: AudioLines,
+    href: "/dashboard/speech/tablero",
+    subItems: [
+      {
+        title: "Reporte",
+        href: "/dashboard/speech/tablero",
+        speechPermisos: ["PERMISO_Tablero-ver"],
+      },
+      {
+        title: "Pagos",
+        href: "/dashboard/speech/pagos",
+        speechPermisos: [
+          "PERMISO_PagosInterno-ver",
+          "PERMISO_PagosExterno-ver",
+          "PERMISO_PagosJudicial-ver",
+          "PERMISO_PagosBPO-ver"
+        ],
+      },
+      {
+        title: "Calidad",
+        href: "/dashboard/speech/calidad",
+        speechPermisos: [
+          "PERMISO_CalidadInterno-ver",
+          "PERMISO_CalidadExterno-ver",
+          "PERMISO_CalidadJudicial-ver",
+          "PERMISO_CalidadBPO-ver"
+        ],
+      },
+      {
+        title: "Reclamos",
+        href: "/dashboard/speech/reclamos",
+        speechPermisos: [
+          "PERMISO_ReclamosInterno-ver",
+          "PERMISO_ReclamosExterno-ver",
+          "PERMISO_ReclamosJudicial-ver",
+          "PERMISO_ReclamosBPO-ver"
+        ],
+      },
+    ],
+  },
   {
     id: "admin",
     title: "Admin",
