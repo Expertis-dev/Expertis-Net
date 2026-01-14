@@ -27,7 +27,7 @@ const routePermissions = {
     "/dashboard/vacaciones/mis-solicitudes",
     "/dashboard/vacaciones/registrar-asesor",
     "/dashboard/vacaciones/solicitudes-asesor",
-    ...speechRoutes,
+    // ...speechRoutes,
   ],
   2: [
     // Supervisor - sin registro de vacaciones de asesor
@@ -37,15 +37,15 @@ const routePermissions = {
     "/dashboard/vacaciones/solicitar",
     "/dashboard/vacaciones/mis-solicitudes",
     "/dashboard/vacaciones/solicitudes-asesor",
-    ...speechRoutes,
+    // ...speechRoutes,
   ],
   3: [
     // Asesor - solo funciones básicas
     "/dashboard",
     "/dashboard/vacaciones/solicitar",
     "/dashboard/vacaciones/mis-solicitudes",
-    "/dashboard/speech",
-    "/dashboard/speech/tablero",
+    // "/dashboard/speech",
+    // "/dashboard/speech/tablero",
   ],
 }
 
@@ -64,21 +64,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-    // Obtener datos del usuario desde las cookies o headers
-    const username = request.cookies.get("username")?.value
-    const isAuthenticated = request.cookies.get("isAuthenticated")?.value
+  // Obtener datos del usuario desde las cookies o headers
+  const username = request.cookies.get("username")?.value
+  const isAuthenticated = request.cookies.get("isAuthenticated")?.value
 
-    // Si no está autenticado, redirigir al login
-    if (!isAuthenticated || !username) {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated || !username) {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
 
-    // Obtener información del usuario
-    const userData = users[username as keyof typeof users]
+  // Obtener información del usuario
+  const userData = users[username as keyof typeof users]
 
-    if (!userData) {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+  if (!userData) {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
 
   // Verificar permisos de ruta según el cargo
   const allowedRoutes = routePermissions[userData.idCargo as keyof typeof routePermissions]
