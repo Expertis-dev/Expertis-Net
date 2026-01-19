@@ -24,6 +24,7 @@ interface Registro {
     horaSalida: string | null;
     esFeriado?: string | null;
     esVacaciones?: boolean;
+    esTardanza?: boolean;
 }
 
 interface StaffData {
@@ -188,7 +189,7 @@ const ReporteAsistenciaStaff = () => {
     const stats = useMemo(() => {
         const total = processedRegistros.length;
         const faltas = processedRegistros.filter(r => !r.horaIngreso && !r.esFeriado && !r.esVacaciones).length;
-        const tardanzas = processedRegistros.filter(r => (r as any).esTardanza).length;
+        const tardanzas = processedRegistros.filter(r => r.esTardanza).length;
         const feriados = processedRegistros.filter(r => r.esFeriado).length;
         const vacsCount = processedRegistros.filter(r => r.esVacaciones).length;
         const asistencias = processedRegistros.filter(r => r.horaIngreso).length;
@@ -362,11 +363,11 @@ const ReporteAsistenciaStaff = () => {
                                                                 ? "bg-orange-100 text-orange-700 hover:bg-orange-100 border-none shadow-sm"
                                                                 : isFalta
                                                                     ? "bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-sm"
-                                                                    : (row as any).esTardanza
+                                                                    : row.esTardanza
                                                                         ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
                                                                         : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
                                                     }>
-                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : (row as any).esTardanza ? "Tardanza" : "Asistió"}
+                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Asistió"}
                                                     </Badge>
                                                 </TableCell>
                                             </TableRow>
