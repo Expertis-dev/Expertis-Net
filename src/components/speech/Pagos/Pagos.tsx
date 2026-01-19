@@ -213,6 +213,7 @@ const Pagos = () => {
   const tienePermisoInterno = hasPermiso("PERMISO_PagosInterno-ver")
   const tienePermisoExterno = hasPermiso("PERMISO_PagosExterno-ver")
   const tienePermisoJudicial = hasPermiso("PERMISO_PagosJudicial-ver")
+  const tienePermisoBpo = hasPermiso("PERMISO_PagosBPO-ver")
 
   const datosCompletos = useMemo<SpeechPagoNormalizado[]>(() => {
     if (!Array.isArray(dataPagos)) return []
@@ -282,12 +283,13 @@ const Pagos = () => {
       })
       .filter((item) => {
         const cartera = item.carteraNormalizada ?? ""
+        if (tienePermisoBpo) return true
         if (cartera === "interno" && !tienePermisoInterno) return false
         if (cartera === "externo" && !tienePermisoExterno) return false
         if (cartera === "judicial" && !tienePermisoJudicial) return false
         return true
       })
-  }, [dataPagos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial])
+  }, [dataPagos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial, tienePermisoBpo])
 
   const datosPrometedoras = useMemo(
     () =>
