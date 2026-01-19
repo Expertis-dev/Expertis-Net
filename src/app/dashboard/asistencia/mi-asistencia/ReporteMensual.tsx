@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,6 @@ import {
     Clock,
     CheckCircle2,
     AlertCircle,
-    TrendingUp,
-    Filter,
     Loader2
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -80,7 +78,7 @@ export default function ReporteMensual() {
     const [error, setError] = useState<string | null>(null);
 
     // Función para obtener datos desde el backend
-    const fetchAsistencia = async () => {
+    const fetchAsistencia = useCallback(async () => {
         if (!user?.usuario) return;
 
         setLoading(true);
@@ -131,12 +129,12 @@ export default function ReporteMensual() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.usuario, user?.id_grupo]);
 
     // Cargar datos al iniciar o cambiar fechas
     useEffect(() => {
         fetchAsistencia();
-    }, [user, startDate, endDate]);
+    }, [fetchAsistencia, startDate, endDate]);
 
     // Lógica para procesar los datos obtenidos (Cruzando asistencia vs días laborales)
     const processedData = useMemo(() => {
@@ -211,7 +209,7 @@ export default function ReporteMensual() {
                 };
             }
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    }, [asistencias, diasLaborales, startDate, endDate]);
+    }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo]);
 
     const stats = useMemo(() => {
         const total = processedData.length;
