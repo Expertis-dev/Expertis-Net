@@ -47,6 +47,25 @@ const parseAsLocal = (dateString: string) => {
     return new Date(year, month - 1, day);
 };
 
+/**
+ * Clasifica si una marcación de entrada es tardanza o puntual según el grupo del usuario
+ */
+const calcularEsTardanza = (horas: number, minutos: number, id_grupo?: number): boolean => {
+    // Grupo 14: Entrada 8:00 AM (con 10 min de tolerancia)
+    if (id_grupo === 14) {
+        return horas > 8 || (horas === 8 && minutos > 10);
+    }
+    // Default: Entrada 7:00 AM (con 10 min de tolerancia)
+    return horas > 7 || (horas === 7 && minutos > 10);
+};
+
+/**
+ * Retorna el texto del estado de asistencia
+ */
+const obtenerEstadoAsistencia = (esTardanza: boolean): string => {
+    return esTardanza ? "Tardanza" : "Puntual";
+};
+
 export default function ReporteMensual() {
     const { user } = useUser();
 
@@ -85,8 +104,15 @@ export default function ReporteMensual() {
             }
 
             // 2. Usar el ID obtenido para las consultas de asistencia y días laborales
+            const rolRaw = localStorage.getItem("rol");
+            const rol = rolRaw ? rolRaw.replace(/"/g, "") : "";
+
+            const endpointAsistencia = rol === "SUPERVISOR" && user?.id_grupo === 14
+                ? `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeSupervisor/${currentId}`
+                : `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeAsesor/${currentId}`;
+
             const [respAsistencia, respLaborales] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeAsesor/${currentId}`),
+                fetch(endpointAsistencia),
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDiasLaborales/${currentId}`)
             ]);
 
@@ -156,14 +182,17 @@ export default function ReporteMensual() {
             if (registro) {
                 const entryTime = extractTime(registro.horaInicio_EnLaCola);
                 const exitTime = extractTime(registro.horaInicio_Desconectado);
-                const esTardanza = entryTime.horas > 7 || (entryTime.horas === 7 && entryTime.minutos > 10);
+
+                // Usamos las funciones aisladas para clasificar la asistencia
+                const esTardanza = calcularEsTardanza(entryTime.horas, entryTime.minutos, user?.id_grupo);
+                const estado = obtenerEstadoAsistencia(esTardanza);
 
                 return {
                     fecha: dia.fecha,
                     fechaFormateada: format(itemDate, 'EEEE dd/MM/yyyy', { locale: es }),
                     entrada: entryTime.display,
                     salida: exitTime.display,
-                    estado: esTardanza ? "Tardanza" : "Puntual",
+                    estado: estado,
                     esTardanza,
                     esFalta: false,
                     entradaDecimal: entryTime.horas + entryTime.minutos / 60
