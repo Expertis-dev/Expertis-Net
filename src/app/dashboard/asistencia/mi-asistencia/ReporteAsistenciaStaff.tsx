@@ -40,6 +40,17 @@ interface Vacacion {
     codMes: string;
 }
 
+const SUPERVISORES_INTERNOS = [
+    "JORDAN MAYA",
+    "JOHAN MAYA",
+    "MELINA AYRE",
+    "KENNETH CUBA",
+    "JORGE PALOMINO",
+    "SANDY LOPEZ",
+    "LEONOR NAVARRO",
+    "JORGE VASQUEZ"
+];
+
 // Función solicitada: Devuelve un array con todas las fechas (YYYY-MM-DD) entre fecinicial y fecFinal
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string): string[] => {
     try {
@@ -144,14 +155,26 @@ const ReporteAsistenciaStaff = () => {
     const processedRegistros = useMemo(() => {
         if (!staffData?.registros) return [];
 
+        const isInterno = SUPERVISORES_INTERNOS.includes(user?.usuario?.toUpperCase() || "");
+
         return staffData.registros
             .map(reg => {
                 // Normalizar la fecha del registro para comparación (YYYY-MM-DD)
                 const dateKey = reg.fecha.split('T')[0];
+
+                // Cálculo de tardanza si es supervisor interno (Límite 7:10 AM)
+                let esTardanza = false;
+                if (isInterno && reg.horaIngreso) {
+                    const [h, m] = reg.horaIngreso.split(':').map(Number);
+                    // Tardanza si es después de las 7:10 AM
+                    esTardanza = h > 7 || (h === 7 && m > 10);
+                }
+
                 return {
                     ...reg,
                     esFeriado: getFeriado(reg.fecha),
-                    esVacaciones: diasVacaciones.includes(dateKey)
+                    esVacaciones: diasVacaciones.includes(dateKey),
+                    esTardanza
                 };
             })
             .filter(reg => {
@@ -160,16 +183,17 @@ const ReporteAsistenciaStaff = () => {
                 return day >= 1 && day <= 5; // Mon-Fri
             })
             .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-    }, [staffData, diasVacaciones]);
+    }, [staffData, diasVacaciones, user?.usuario]);
 
     const stats = useMemo(() => {
         const total = processedRegistros.length;
         const faltas = processedRegistros.filter(r => !r.horaIngreso && !r.esFeriado && !r.esVacaciones).length;
+        const tardanzas = processedRegistros.filter(r => (r as any).esTardanza).length;
         const feriados = processedRegistros.filter(r => r.esFeriado).length;
         const vacsCount = processedRegistros.filter(r => r.esVacaciones).length;
         const asistencias = processedRegistros.filter(r => r.horaIngreso).length;
 
-        return { total, faltas, asistencias, feriados, vacsCount };
+        return { total, faltas, asistencias, feriados, vacsCount, tardanzas };
     }, [processedRegistros]);
 
     if (loading) {
@@ -338,9 +362,11 @@ const ReporteAsistenciaStaff = () => {
                                                                 ? "bg-orange-100 text-orange-700 hover:bg-orange-100 border-none shadow-sm"
                                                                 : isFalta
                                                                     ? "bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-sm"
-                                                                    : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
+                                                                    : (row as any).esTardanza
+                                                                        ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
+                                                                        : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
                                                     }>
-                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : "Asistió"}
+                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : (row as any).esTardanza ? "Tardanza" : "Asistió"}
                                                     </Badge>
                                                 </TableCell>
                                             </TableRow>
