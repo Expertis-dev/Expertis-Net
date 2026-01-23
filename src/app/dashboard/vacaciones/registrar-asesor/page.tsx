@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent } from "@/components/ui/popover"
 import { PopoverTrigger } from "@radix-ui/react-popover"
 import { CalendarIcon, User } from "lucide-react"
-import { format, addDays, differenceInDays, isWeekend, startOfDay, startOfMonth, addMonths } from "date-fns"
+import { format, addDays, differenceInDays, isWeekend, startOfDay, startOfMonth, addMonths, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
@@ -47,13 +47,7 @@ export default function RegistrarVacacionesAsesor() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showLoading, setShowLoading] = useState(false)
 
-  const calculateDays = () => {
-    if (!formData.fechaInicio || !formData.fechaFin)
-      return { total: 0, laborables: 0, noLaborables: 0 }
-
-    const inicio = startOfDay(formData.fechaInicio)
-    const fin = startOfDay(formData.fechaFin)
-
+  const getStatsForRange = (inicio: Date, fin: Date) => {
     const total = differenceInDays(fin, inicio) + 1
     let laborables = 0
     let noLaborables = 0
@@ -64,6 +58,13 @@ export default function RegistrarVacacionesAsesor() {
     }
 
     return { total, laborables, noLaborables }
+  }
+
+  const calculateDays = () => {
+    if (!formData.fechaInicio || !formData.fechaFin)
+      return { total: 0, laborables: 0, noLaborables: 0 }
+
+    return getStatsForRange(startOfDay(formData.fechaInicio), startOfDay(formData.fechaFin))
   }
 
   const dayStats = calculateDays()
@@ -85,40 +86,61 @@ export default function RegistrarVacacionesAsesor() {
     setShowConfirmation(false)
     setShowLoading(true)
     try {
-      // Prepara payload limpio (DATE 'YYYY-MM-DD')
-      const codMes = formData.fechaInicio
-        ? format(startOfMonth(formData.fechaInicio), "yyyy-MM-dd") // → "2025-11-01"
-        : undefined;
-      const payload = {
-        id_Empleado: asesor?.idEmpleado, // ajusta según tu tipo
-        codMes,
-        fechaInicial: toDateOnly(formData.fechaInicio),
-        fechaFinal: toDateOnly(formData.fechaFin),
-        cantDias: dayStats.total,
-        estadoVacaciones: "APROBADO",
-        tipoVacaciones: "REGISTRADAS Y GOZADAS",
-        detalle: "CONTABLE",
-        cantDiasHabiles: dayStats.laborables,
-        cantDiasNoHabiles: dayStats.noLaborables,
-        estado: "I",
-        usrInsert: user?.usuario || "desconocido",
+      // 1. Generar segmentos por mes
+      const segments = []
+      let runner = startOfDay(formData.fechaInicio!)
+      const finalEnd = startOfDay(formData.fechaFin!)
+
+      while (runner <= finalEnd) {
+        const monthEnd = endOfMonth(runner)
+        const segmentEnd = monthEnd < finalEnd ? startOfDay(monthEnd) : finalEnd
+        const stats = getStatsForRange(runner, segmentEnd)
+
+        segments.push({
+          id_Empleado: asesor?.idEmpleado,
+          codMes: format(startOfMonth(runner), "yyyy-MM-dd"),
+          fechaInicial: toDateOnly(runner),
+          fechaFinal: toDateOnly(segmentEnd),
+          cantDias: stats.total,
+          estadoVacaciones: "APROBADO",
+          tipoVacaciones: "REGISTRADAS Y GOZADAS",
+          detalle: "CONTABLE",
+          cantDiasHabiles: stats.laborables,
+          cantDiasNoHabiles: stats.noLaborables,
+          estado: "I",
+          usrInsert: user?.usuario || "desconocido",
+        })
+
+        // El siguiente día después del fin de mes
+        runner = startOfDay(addDays(monthEnd, 1))
       }
-      console.log("Payload a enviar:", payload)
-      const respose = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrarVacacionesAsesor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      if (!respose.ok) {
-        throw new Error("Error al crear la justificación")
+
+      console.log("Segmentos a registrar:", segments)
+
+      // 2. Enviar cada segmento a la API
+      const requests = segments.map((payload) =>
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrarVacacionesAsesor`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }),
+      )
+
+      const responses = await Promise.all(requests)
+
+      for (const res of responses) {
+        if (!res.ok) {
+          throw new Error("Error al registrar uno de los periodos mensuales")
+        }
       }
+
       setShowLoading(false)
-      toast.success("Vacaciones registradas exitosamente")
+      toast.success("Vacaciones registradas exitosamente (Fragmentadas por mes)")
       CargarActividad({
         usuario: user?.usuario || "Desconocido",
         titulo: "Resgistro de Vacaciones Asesor",
-        descripcion: `Se registro vacaciones para el asesor ${asesor?.usuario || "Desconocido"} desde ${toDateOnly(formData.fechaInicio)} hasta ${toDateOnly(formData.fechaFin)}.`,
-        estado: "completed"
+        descripcion: `Se registro vacaciones para el asesor ${asesor?.usuario || "Desconocido"} desde ${toDateOnly(formData.fechaInicio)} hasta ${toDateOnly(formData.fechaFin)} (${segments.length} registros mensuales).`,
+        estado: "completed",
       })
       setAsesor(null)
       setFormData({ fechaInicio: undefined, fechaFin: undefined })
@@ -199,11 +221,10 @@ export default function RegistrarVacacionesAsesor() {
                         }))
                       }
                       disabled={(date) => {
-                        const today = startOfMonth(new Date());                 // 1 nov
-                        const firstOfThird = startOfMonth(addMonths(today, 2)); // 1 ene
-                        return startOfDay(date) < today || startOfDay(date) >= firstOfThird;
-                      }
-                      }
+                        const today = startOfMonth(new Date())
+                        const limitDate = startOfMonth(addMonths(today, 3)) // Permite mes actual + 2 meses adelante (ej: Enero, Febrero, Marzo)
+                        return startOfDay(date) < today || startOfDay(date) >= limitDate
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -232,11 +253,12 @@ export default function RegistrarVacacionesAsesor() {
                         }))
                       }
                       disabled={(date) => {
-                        const today = startOfMonth(new Date());
-                        const firstOfThird = startOfMonth(addMonths(today, 2));
-                        return formData.fechaInicio ? startOfDay(date) < startOfDay(formData.fechaInicio) || startOfDay(date) >= firstOfThird : false
-                      }
-                      }
+                        const today = startOfMonth(new Date())
+                        const limitDate = startOfMonth(addMonths(today, 3))
+                        return formData.fechaInicio
+                          ? startOfDay(date) < startOfDay(formData.fechaInicio) || startOfDay(date) >= limitDate
+                          : false
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
