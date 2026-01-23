@@ -74,6 +74,7 @@ const nivel3Options = {
     { value: "Presenta documentación de atención medica de familiar dependiente. ", label: "Atención médica de familiar dependiente" },
     { value: "Tiene tres a + motivos de tardanza justificada sin descuento", label: "Tres o más motivos de tardanza justificada" },
     { value: "Accidente de transporte", label: "Accidente de transporte" },
+    { value: "Examen Medico Ocupacional", label: "Examen Medico Ocupacional" },
   ],
   PERMISO_JUSTIFICADO: [
     { value: "Colaborador tiene cita médica -muestra evidencias ", label: "Cita médica con evidencia" },
@@ -187,153 +188,153 @@ export default function NuevaJustificacion() {
     return new Date(year, month - 1, day) // <- evita problema de zona horaria
   }
   return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-6"
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Nueva Justificación</h1>
-          <p className="text-slate-600 dark:text-slate-400">Registra una nueva justificación para un asesor</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
+      <div>
+        <h1 className="text-3xl font-bold text-[#001529] dark:text-white mb-2">Nueva Justificación</h1>
+        <p className="text-slate-600 dark:text-slate-400">Registra una nueva justificación para un asesor</p>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Formulario de Justificación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Asesor */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2 relative">
-                  <Label htmlFor="asesor">Asesor</Label>
-                  <AutoComplete
-                    employees={colaboradores}
-                    onSelect={setasesor}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.fecha ? format(parseLocalDate(formData.fecha), "PPP", { locale: es }) : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.fecha ? parseLocalDate(formData.fecha) : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            setFormData((prev) => ({ ...prev, fecha: format(date, "yyyy-MM-dd") }))
-                          }
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                {formData.nivel1 === "PERMISO" && (
-                  <div className="space-y-2">
-                    <Label>Minutos de Permiso</Label>
-                    <Input
-                      type="number"
-                      value={formData.hora}
-                      min={0}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, hora: Number(e.target.value) }))}
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Nivel 1 */}
-                <div className="space-y-2">
-                  <Label>Tipo (Nivel 1)</Label>
-                  <Select
-                    value={formData.nivel1}
-                    onValueChange={handleNivel1Change}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {nivel1Options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Nivel 2 */}
-                <div className="space-y-2">
-                  <Label>Subtipo (Nivel 2)</Label>
-                  <Select
-                    value={formData.nivel2}
-                    onValueChange={handleNivel2Change}
-                    disabled={!formData.nivel1}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar subtipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formData.nivel1 &&
-                        nivel2Options[formData.nivel1 as keyof typeof nivel2Options]?.map(
-                          (option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          )
-                        )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Nivel 3 */}
-                <div className="space-y-2">
-                  <Label>Detalle (Nivel 3)</Label>
-                  <Select
-                    value={formData.nivel3}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, nivel3: value }))
-                    }
-                    disabled={!formData.nivel2}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar detalle" />
-                    </SelectTrigger>
-                    <SelectContent className="w-full overflow-hidden">
-                      {formData.nivel2 &&
-                        nivel3Options[formData.nivel2 as keyof typeof nivel3Options]?.map(
-                          (option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          )
-                        )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {/* Observación */}
-              <div className="space-y-2">
-                <Label htmlFor="observacion">Observación</Label>
-                <Textarea
-                  id="observacion"
-                  placeholder="Ingrese los detalles de la justificación..."
-                  value={formData.observacion}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, observacion: e.target.value }))}
-                  className="min-h-[100px]"
+      <Card>
+        <CardHeader>
+          <CardTitle>Formulario de Justificación</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Asesor */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2 relative">
+                <Label htmlFor="asesor">Asesor</Label>
+                <AutoComplete
+                  employees={colaboradores}
+                  onSelect={setasesor}
                 />
               </div>
-              <div className="w-full flex justify-center">
-                <Button
-                  type="submit"
-                  disabled={!asesor || !formData.fecha || !formData.nivel1 || !formData.nivel2 || !formData.nivel3 || !formData.observacion}
-                  className={`
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.fecha ? format(parseLocalDate(formData.fecha), "PPP", { locale: es }) : "Seleccionar fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.fecha ? parseLocalDate(formData.fecha) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setFormData((prev) => ({ ...prev, fecha: format(date, "yyyy-MM-dd") }))
+                        }
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {formData.nivel1 === "PERMISO" && (
+                <div className="space-y-2">
+                  <Label>Minutos de Permiso</Label>
+                  <Input
+                    type="number"
+                    value={formData.hora}
+                    min={0}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, hora: Number(e.target.value) }))}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Nivel 1 */}
+              <div className="space-y-2">
+                <Label>Tipo (Nivel 1)</Label>
+                <Select
+                  value={formData.nivel1}
+                  onValueChange={handleNivel1Change}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nivel1Options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Nivel 2 */}
+              <div className="space-y-2">
+                <Label>Subtipo (Nivel 2)</Label>
+                <Select
+                  value={formData.nivel2}
+                  onValueChange={handleNivel2Change}
+                  disabled={!formData.nivel1}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar subtipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formData.nivel1 &&
+                      nivel2Options[formData.nivel1 as keyof typeof nivel2Options]?.map(
+                        (option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        )
+                      )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Nivel 3 */}
+              <div className="space-y-2">
+                <Label>Detalle (Nivel 3)</Label>
+                <Select
+                  value={formData.nivel3}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, nivel3: value }))
+                  }
+                  disabled={!formData.nivel2}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar detalle" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full overflow-hidden">
+                    {formData.nivel2 &&
+                      nivel3Options[formData.nivel2 as keyof typeof nivel3Options]?.map(
+                        (option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        )
+                      )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Observación */}
+            <div className="space-y-2">
+              <Label htmlFor="observacion">Observación</Label>
+              <Textarea
+                id="observacion"
+                placeholder="Ingrese los detalles de la justificación..."
+                value={formData.observacion}
+                onChange={(e) => setFormData((prev) => ({ ...prev, observacion: e.target.value }))}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="w-full flex justify-center">
+              <Button
+                type="submit"
+                disabled={!asesor || !formData.fecha || !formData.nivel1 || !formData.nivel2 || !formData.nivel3 || !formData.observacion}
+                className={`
                               w-2/3 
                               bg-[#1d3246] 
                               hover:bg-[#0e2031] 
@@ -352,14 +353,14 @@ export default function NuevaJustificacion() {
                               active:scale-95 
                               hover:shadow-xl
                             `}>
-                  Enviar Justificación
-                </Button>
+                Enviar Justificación
+              </Button>
 
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        <ConfirmationModal
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+      <ConfirmationModal
         isOpen={showConfirmation}
         onClose={() => setShowConfirmation(false)}
         onConfirm={confirmSubmit}
@@ -367,6 +368,6 @@ export default function NuevaJustificacion() {
         message="¿Estás seguro de que deseas enviar esta justificación?"
       />
       <LoadingModal isOpen={showLoading} message="Procesando justificación..." />
-      </motion.div>
+    </motion.div>
   )
 }
