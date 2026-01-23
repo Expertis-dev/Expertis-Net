@@ -32,6 +32,7 @@ export interface SpeechReclamo {
   fecha?: string | null
   horaInicio?: string | null
   tiempoHablado?: string | null
+  asesor?: string | null
   agencia?: string | null
   supervisor?: string | null
   grupo?: string | null

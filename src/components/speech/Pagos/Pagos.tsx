@@ -16,6 +16,7 @@ import {
   Eraser,
   Loader2,
   MessageSquare,
+  PlayCircle,
   Search,
   Star,
   User2,
@@ -50,7 +51,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
-type ModalTipo = "transcripcion" | "resumen" | "observacion" | ""
+type ModalTipo = "transcripcion" | "observacion" | ""
 
 interface ColumnDefinition {
   id: keyof SpeechPago | "acciones"
@@ -68,9 +69,11 @@ const columnas: ColumnDefinition[] = [
   { id: "fecha", label: "Fecha", ordenable: true },
   { id: "horaInicio", label: "Hora Inicio", ordenable: true },
   { id: "tiempoHablado", label: "Duración", ordenable: true },
+  { id: "asesor", label: "Asesor", filtrable: true, ordenable: true },
   { id: "agencia", label: "Agencia", filtrable: true, ordenable: true },
   { id: "supervisor", label: "Supervisor", filtrable: true, ordenable: true },
   { id: "calificacion", label: "Calificación", ordenable: true },
+  { id: "grabacion", label: "Grabación" },
   { id: "acciones", label: "Acciones" },
 ]
 
@@ -133,6 +136,39 @@ const calificacionBadgeStyles = (calificacion: SpeechPago["calificacion"]) => {
   return "border-rose-200 bg-rose-100 text-rose-800"
 }
 
+const NIVEL_OBSERVACION = new Set(["alta", "media", "baja"])
+
+const parseObservacion = (value?: string | null) => {
+  const raw = (value ?? "").trim()
+  if (!raw) return null
+  const [summaryPart, flagsPart] = raw.split("|").map((part) => part.trim())
+  let nivel: string | null = null
+  let resumen = summaryPart
+  const match = summaryPart.match(/^([A-Za-zÁÉÍÓÚÜÑ]+)\.\s*(.+)$/)
+  if (match && NIVEL_OBSERVACION.has(match[1].toLowerCase())) {
+    nivel = match[1]
+    resumen = match[2]
+  }
+
+  const flags = (flagsPart ?? "")
+    .split(";")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [rawKey, rawValue] = item.split(":").map((part) => part.trim())
+      return {
+        key: rawKey ?? "",
+        value: (rawValue ?? "").toUpperCase(),
+      }
+    })
+    .filter((item) => item.key.length > 0 && item.value.length > 0)
+
+  const positivos = flags.filter((item) => item.value === "SI")
+  const negativos = flags.filter((item) => item.value === "NO")
+
+  return { nivel, resumen, positivos, negativos }
+}
+
 const EstadoCard = ({
   icon: Icon,
   title,
@@ -162,6 +198,7 @@ const Pagos = () => {
   const [botonActivo, setBotonActivo] = useState<"prometedoras" | "mejorables">("prometedoras")
   const [agenciaSeleccionada, setAgenciaSeleccionada] = useState("")
   const [supervisorSeleccionado, setSupervisorSeleccionado] = useState("")
+  const [asesorSeleccionado, setAsesorSeleccionado] = useState("")
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [modalTipo, setModalTipo] = useState<ModalTipo>("")
@@ -326,12 +363,29 @@ const Pagos = () => {
     return [...new Set(supervisores)].sort()
   }, [datosActivos, agenciaSeleccionada])
 
+  const asesoresUnicos = useMemo(() => {
+    const asesores = datosActivos
+      .filter((item) => (agenciaSeleccionada ? item.agencia === agenciaSeleccionada : true))
+      .filter((item) => (supervisorSeleccionado ? item.supervisor === supervisorSeleccionado : true))
+      .map((item) => item.asesor)
+      .filter((asesor): asesor is string => isNonEmptyString(asesor))
+    return [...new Set(asesores)].sort()
+  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado])
+
   useEffect(() => {
     if (!puedeUsarFiltrosAvanzados) {
       return
     }
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
   }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados])
+
+  useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
+    setAsesorSeleccionado("")
+  }, [supervisorSeleccionado, puedeUsarFiltrosAvanzados])
 
   useEffect(() => {
     if (puedeUsarFiltrosAvanzados) {
@@ -339,6 +393,7 @@ const Pagos = () => {
     }
     setAgenciaSeleccionada("EXPERTIS")
     setSupervisorSeleccionado(aliasActual ?? "")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setMenuFiltroAbierto(null)
   }, [puedeUsarFiltrosAvanzados, aliasActual])
@@ -351,6 +406,9 @@ const Pagos = () => {
     if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
     }
+    if (puedeUsarFiltrosAvanzados && asesorSeleccionado) {
+      datos = datos.filter((item) => item.asesor === asesorSeleccionado)
+    }
     if (puedeUsarFiltrosAvanzados) {
       Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
         if (valores && valores.length > 0) {
@@ -359,7 +417,7 @@ const Pagos = () => {
       })
     }
     return datos
-  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, filtrosColumnas, puedeUsarFiltrosAvanzados])
+  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, filtrosColumnas, puedeUsarFiltrosAvanzados])
 
   const datosOrdenados = useMemo(() => {
     if (!ordenColumna.columna) return datosFiltrados
@@ -412,7 +470,7 @@ const Pagos = () => {
 
   useEffect(() => {
     setPaginaActual(1)
-  }, [botonActivo, agenciaSeleccionada, supervisorSeleccionado, fechaGestion, filtrosColumnas, filasPorPaginaActivas])
+  }, [botonActivo, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, fechaGestion, filtrosColumnas, filasPorPaginaActivas])
 
   useEffect(() => {
     setPaginaActual((prev) => Math.min(prev, totalPaginas))
@@ -420,7 +478,12 @@ const Pagos = () => {
 
   const filtrosInteractivosActivos =
     puedeUsarFiltrosAvanzados &&
-    (Boolean(agenciaSeleccionada) || Boolean(supervisorSeleccionado) || Object.keys(filtrosColumnas).length > 0)
+    (
+      Boolean(agenciaSeleccionada) ||
+      Boolean(supervisorSeleccionado) ||
+      Boolean(asesorSeleccionado) ||
+      Object.keys(filtrosColumnas).length > 0
+    )
 
   const hayFiltrosActivos = Boolean(fechaGestion || fechaGestionTemp) || filtrosInteractivosActivos
 
@@ -437,6 +500,7 @@ const Pagos = () => {
     setFechaGestionTemp("")
     setAgenciaSeleccionada("")
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setMenuFiltroAbierto(null)
     setOrdenColumna({ columna: "", direccion: "asc" })
@@ -446,6 +510,7 @@ const Pagos = () => {
     setBotonActivo(tipo)
     setAgenciaSeleccionada("")
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setOrdenColumna({ columna: "", direccion: "asc" })
   }
@@ -534,6 +599,8 @@ const Pagos = () => {
       Fecha: item.fecha ?? "",
       "Hora Inicio": item.horaInicio ?? "",
       Duración: item.tiempoHablado ?? "",
+      Grabación: item.grabacion ?? "",
+      Asesor: item.asesor ?? "",
       Agencia: item.agencia ?? "",
       Supervisor: item.supervisor ?? "",
       Calificación: item.calificacion ?? "",
@@ -562,11 +629,45 @@ const Pagos = () => {
     if (modalTipo === "transcripcion") {
       return detallePago.transcripcion || "No disponible"
     }
-    if (modalTipo === "resumen") {
-      return detallePago.resumen || "No disponible"
-    }
     if (modalTipo === "observacion") {
-      return detallePago.observacion || "No disponible"
+      const parsed = parseObservacion(detallePago.observacion)
+      if (!parsed) return "No disponible"
+      return (
+        <div className="space-y-4">
+          {parsed.nivel && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "w-fit uppercase",
+                parsed.nivel.toLowerCase() === "alta"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : parsed.nivel.toLowerCase() === "media"
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700",
+              )}
+            >
+              {parsed.nivel}
+            </Badge>
+          )}
+
+          <p className="text-sm text-foreground">{parsed.resumen}</p>
+
+          <div className="space-y-2">
+            <p className="text-xs uppercase text-muted-foreground">Señales detectadas</p>
+            <div className="flex flex-wrap gap-2">
+              {parsed.positivos.map((item) => (
+                <Badge
+                  key={item.key}
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                >
+                  {item.key}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
     }
     return "No disponible"
   }
@@ -649,6 +750,32 @@ const Pagos = () => {
                   {supervisoresUnicos.map((supervisor) => (
                     <SelectItem key={supervisor} value={supervisor}>
                       {supervisor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>
+                <span className="flex items-center gap-2">
+                  <User2 className="h-4 w-4 text-primary" />
+                  Asesor
+                </span>
+              </Label>
+              <Select
+                value={asesorSeleccionado || "all"}
+                onValueChange={(value) => setAsesorSeleccionado(value === "all" ? "" : value)}
+                disabled={!puedeUsarFiltrosAvanzados || !supervisorSeleccionado || asesoresUnicos.length === 0}
+              >
+                <SelectTrigger id="asesor" className="w-[210px]">
+                  <SelectValue placeholder="Todos los asesores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los asesores</SelectItem>
+                  {asesoresUnicos.map((asesor) => (
+                    <SelectItem key={asesor} value={asesor}>
+                      {asesor}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -841,6 +968,7 @@ const Pagos = () => {
                           <TableCell>{fila.fecha}</TableCell>
                           <TableCell>{fila.horaInicio}</TableCell>
                           <TableCell>{fila.tiempoHablado}</TableCell>
+                          <TableCell>{fila.asesor}</TableCell>
                           <TableCell>{fila.agencia}</TableCell>
                           <TableCell>{fila.supervisor}</TableCell>
                           <TableCell>
@@ -852,6 +980,18 @@ const Pagos = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            {fila.grabacion ? (
+                              <Button variant="outline" size="sm" asChild className="gap-2">
+                                <a href={fila.grabacion} target="_blank" rel="noopener noreferrer">
+                                  <PlayCircle className="h-4 w-4" />
+                                  Escuchar
+                                </a>
+                              </Button>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No disponible</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
@@ -860,14 +1000,6 @@ const Pagos = () => {
                                 onClick={() => abrirModal(fila, "transcripcion")}
                               >
                                 <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                title="Ver resumen"
-                                onClick={() => abrirModal(fila, "resumen")}
-                              >
-                                <ClipboardList className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -923,9 +1055,7 @@ const Pagos = () => {
             <DialogTitle>
               {modalTipo === "transcripcion"
                 ? "Transcripción"
-                : modalTipo === "resumen"
-                  ? "Resumen"
-                  : modalTipo === "observacion"
+                : modalTipo === "observacion"
                     ? "Observación"
                     : "Detalle"}
             </DialogTitle>
