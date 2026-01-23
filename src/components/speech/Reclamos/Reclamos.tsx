@@ -525,6 +525,7 @@ const Reclamos = () => {
       Supervisor: item.supervisor ?? "",
       "Tipo Reclamo": item.tipoReclamo ?? "",
       Motivo: item.tipificacion ?? "",
+      Grabación: item.grabacion ?? "",
       Observacion: item.observacion ?? "",
     }))
     const ws = XLSX.utils.json_to_sheet(datosExcel)
