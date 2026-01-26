@@ -210,7 +210,13 @@ const MENU_CONFIG: MenuItem[] = [
         href: "/dashboard/asistencia/mi-asistencia",
         modulo: "Asistencia",
         // permiso: "MiAsistencia-ver",
-      }
+      },
+      {
+        title: "Equipo",
+        href: "/dashboard/asistencia/equipo",
+        modulo: "Asistencia",
+        // permiso: "Equipo-ver",
+      },
 
     ],
   },
