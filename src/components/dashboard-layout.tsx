@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -104,6 +104,59 @@ const MENU_CONFIG: MenuItem[] = [
     subItems: [],
   },
   {
+    id: "admin",
+    title: "Admin",
+    icon: UserPlus,
+    href: "#",
+    subItems: [
+      {
+        title: "Crear nuevo empleado",
+        href: "/dashboard/admin/crear-empleado",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+      {
+        title: "Eliminar Empleado",
+        href: "/dashboard/admin/eliminar-empleado",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+      {
+        title: "Carga Masiva Empleados",
+        href: "/dashboard/admin/carga-masiva",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+      {
+        title: "Monitoreo",
+        href: "/dashboard/admin/monitoreo",
+        modulo: "Admin",
+        permiso: "AdminUsuarios-ver",
+      },
+    ],
+  },
+  {
+    id: "asistencia",
+    title: "Asistencia",
+    icon: ClipboardCheck,
+    href: "#",
+    subItems: [
+      {
+        title: "Mi Asistencia",
+        href: "/dashboard/asistencia/mi-asistencia",
+        modulo: "Asistencia",
+        // permiso: "MiAsistencia-ver",
+      },
+      {
+        title: "Equipo",
+        href: "/dashboard/asistencia/equipo",
+        modulo: "Asistencia",
+        // permiso: "Equipo-ver",
+      },
+
+    ],
+  },
+  {
     id: "bases",
     title: "Bases",
     icon: BookCheck,
@@ -141,6 +194,49 @@ const MENU_CONFIG: MenuItem[] = [
         modulo: "Justificaciones",
         permiso: "Justificacion-ver",
       }
+    ],
+  },
+  {
+    id: "speech",
+    title: "Speech Analytics",
+    icon: AudioLines,
+    href: "/dashboard/speech/tablero",
+    subItems: [
+      {
+        title: "Reporte",
+        href: "/dashboard/speech/tablero",
+        speechPermisos: ["PERMISO_Tablero-ver"],
+      },
+      {
+        title: "Pagos",
+        href: "/dashboard/speech/pagos",
+        speechPermisos: [
+          "PERMISO_PagosInterno-ver",
+          "PERMISO_PagosExterno-ver",
+          "PERMISO_PagosJudicial-ver",
+          "PERMISO_PagosBPO-ver"
+        ],
+      },
+      {
+        title: "Calidad",
+        href: "/dashboard/speech/calidad",
+        speechPermisos: [
+          "PERMISO_CalidadInterno-ver",
+          "PERMISO_CalidadExterno-ver",
+          "PERMISO_CalidadJudicial-ver",
+          "PERMISO_CalidadBPO-ver"
+        ],
+      },
+      {
+        title: "Reclamos",
+        href: "/dashboard/speech/reclamos",
+        speechPermisos: [
+          "PERMISO_ReclamosInterno-ver",
+          "PERMISO_ReclamosExterno-ver",
+          "PERMISO_ReclamosJudicial-ver",
+          "PERMISO_ReclamosBPO-ver"
+        ],
+      },
     ],
   },
   {
@@ -199,27 +295,6 @@ const MENU_CONFIG: MenuItem[] = [
       },
     ],
   },
-  {
-    id: "asistencia",
-    title: "Asistencia",
-    icon: Calendar,
-    href: "#",
-    subItems: [
-      {
-        title: "Mi Asistencia",
-        href: "/dashboard/asistencia/mi-asistencia",
-        modulo: "Asistencia",
-        // permiso: "MiAsistencia-ver",
-      },
-      {
-        title: "Equipo",
-        href: "/dashboard/asistencia/equipo",
-        modulo: "Asistencia",
-        // permiso: "Equipo-ver",
-      },
-
-    ],
-  },
   /*{
     id: "mcp",
     title: "Consultas Expertito",
@@ -227,81 +302,6 @@ const MENU_CONFIG: MenuItem[] = [
     href: "/dashboard/consultas",
     subItems: [], // sin permiso → acceso libre
   },*/
-  {
-    id: "speech",
-    title: "Speech Analytics",
-    icon: AudioLines,
-    href: "/dashboard/speech/tablero",
-    subItems: [
-      {
-        title: "Reporte",
-        href: "/dashboard/speech/tablero",
-        speechPermisos: ["PERMISO_Tablero-ver"],
-      },
-      {
-        title: "Pagos",
-        href: "/dashboard/speech/pagos",
-        speechPermisos: [
-          "PERMISO_PagosInterno-ver",
-          "PERMISO_PagosExterno-ver",
-          "PERMISO_PagosJudicial-ver",
-          "PERMISO_PagosBPO-ver"
-        ],
-      },
-      {
-        title: "Calidad",
-        href: "/dashboard/speech/calidad",
-        speechPermisos: [
-          "PERMISO_CalidadInterno-ver",
-          "PERMISO_CalidadExterno-ver",
-          "PERMISO_CalidadJudicial-ver",
-          "PERMISO_CalidadBPO-ver"
-        ],
-      },
-      {
-        title: "Reclamos",
-        href: "/dashboard/speech/reclamos",
-        speechPermisos: [
-          "PERMISO_ReclamosInterno-ver",
-          "PERMISO_ReclamosExterno-ver",
-          "PERMISO_ReclamosJudicial-ver",
-          "PERMISO_ReclamosBPO-ver"
-        ],
-      },
-    ],
-  },
-  {
-    id: "admin",
-    title: "Admin",
-    icon: UserPlus,
-    href: "#",
-    subItems: [
-      {
-        title: "Crear nuevo empleado",
-        href: "/dashboard/admin/crear-empleado",
-        modulo: "Admin",
-        permiso: "AdminUsuarios-ver",
-      },
-      {
-        title: "Eliminar Empleado",
-        href: "/dashboard/admin/eliminar-empleado",
-        modulo: "Admin",
-        permiso: "AdminUsuarios-ver",
-      },
-      {
-        title: "Carga Masiva Empleados",
-        href: "/dashboard/admin/carga-masiva",
-        modulo: "Admin",
-        permiso: "AdminUsuarios-ver",
-      },
-      {
-        title: "Monitoreo",
-        href: "/dashboard/admin/monitoreo",
-        modulo: "Admin",
-        permiso: "AdminUsuarios-ver",
-      },
-    ],
-  },
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================

@@ -16,28 +16,29 @@ const SUPERVISORES_INTERNOS = [
     "JORGE VASQUEZ"
 ];
 
+import { useColaboradores } from "@/hooks/useColaboradores";
+import { Loader2 } from "lucide-react";
+
 export default function Page() {
     const { user } = useUser();
+    const { colaboradores, loading } = useColaboradores();
 
     // Determinar si es administrador/staff
     const isStaff =
         user?.id_grupo === 1 ||
-        user?.id_grupo === 16 ||
-        SUPERVISORES_INTERNOS.includes(user?.usuario?.toUpperCase() || "");
+        user?.id_grupo === 16;
 
-    useEffect(() => {
-        if (user) {
-            console.log(`--- VISTA EQUIPO: Entrando como ${isStaff ? "STAFF" : "GRUPO"} ---`);
-        }
-    }, [isStaff, user]);
 
-    if (!user) {
+    if (!user || loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+            <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+                <Loader2 className="h-10 w-10 text-cyan-600 animate-spin" />
+                <p className="text-slate-500 font-medium animate-pulse">Cargando equipo...</p>
             </div>
         );
     }
 
-    return isStaff ? <ReporteStaff /> : <ReporteGrupal />;
+
+
+    return isStaff ? <ReporteStaff colaboradores={colaboradores} /> : <ReporteGrupal colaboradores={colaboradores} />;
 }

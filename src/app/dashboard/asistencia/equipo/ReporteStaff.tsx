@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useColaboradores } from "@/hooks/useColaboradores";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
+import { getSolicitudesAprobadas } from "@/services/vacaciones";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import {
@@ -43,14 +44,37 @@ const SUPERVISORES_ESP = [
     "MAYRA LLIMPE"
 ];
 
-const ReporteStaff = () => {
-    const { colaboradores, loading: loadingColab } = useColaboradores();
+// --- HELPER: Expandir rango de vacaciones ---
+const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
+    try {
+        const [y1, m1, d1] = fecInicial.split(/-|T/).map(Number);
+        const [y2, m2, d2] = fecFinal.split(/-|T/).map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+        const end = new Date(y2, m2 - 1, d2);
+        const days = eachDayOfInterval({ start, end });
+        return days
+            .filter(day => isSameMonth(day, referenceDate))
+            .map(day => format(day, 'yyyy-MM-dd'));
+    } catch (error) {
+        return [];
+    }
+};
+
+// Interface props
+interface ReporteProps {
+    colaboradores: any[];
+}
+
+const ReporteStaff = ({ colaboradores }: ReporteProps) => {
+    // const { colaboradores, loading: loadingColab } = useColaboradores();
+    const loadingColab = false; // Vienen de props
     const [searchTerm, setSearchTerm] = useState("");
     const [asistenciaData, setAsistenciaData] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
-    const [colabIdMap, setColabIdMap] = useState<Record<string, number>>({});
+    const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
+    const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
 
     // 1. Generar la lista de todos los días del mes para las cabeceras de la tabla
@@ -78,6 +102,91 @@ const ReporteStaff = () => {
         setError(null);
 
         try {
+            // PASO 0: Obtener Vacaciones Masivas (OPTIMIZADO)
+            const vMap: Record<string, string[]> = {};
+            const idsParaVacaciones = colaboradores.map(c => c.idEmpleado).filter(Boolean);
+
+            console.log("[STAFF] IDs para Vacaciones:", idsParaVacaciones);
+
+            try {
+                const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerVacacionesPorEmpleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: idsParaVacaciones })
+                });
+
+                console.log("[STAFF] Respuesta Vacaciones - Status:", resp.status, resp.ok);
+
+                if (resp.ok) {
+                    const json = await resp.json();
+                    const listVac = json.data || [];
+
+                    console.log("Vacaciones staff:", listVac);
+
+                    listVac.forEach((vac: any) => {
+                        const estadoVacaciones = vac.estadoVacaciones?.trim().toUpperCase();
+
+                        if (estadoVacaciones === "APROBADO") {
+                            // Buscar colaborador dueño de esa vacación
+                            const colabOwner = colaboradores.find(c => c.idEmpleado === vac.idEmpleado);
+
+                            if (colabOwner) {
+                                const currentAlias = ((colabOwner as any).alias || colabOwner.usuario || "").toString().trim().toUpperCase();
+                                if (currentAlias) {
+                                    console.log(`✅ Vacación APROBADA para ${currentAlias}: ${vac.fecInicial} a ${vac.fecFinal}`);
+                                    const dias = expandirRangoVacaciones(vac.fecInicial, vac.fecFinal, currentDate);
+                                    if (!vMap[currentAlias]) vMap[currentAlias] = [];
+                                    vMap[currentAlias] = [...new Set([...vMap[currentAlias], ...dias])];
+                                }
+                            } else {
+                                console.warn(`⚠️ Vacación aprobada para ID ${vac.idEmpleado} pero no se encontró en la lista de colaboradores.`);
+                            }
+                        } else {
+                            // Opcional: ver qué se descarta
+                            // console.log(`❌ Descartado: ID ${vac.idEmpleado} Estado: ${estadoVacaciones}`);
+                        }
+                    });
+                } else {
+                    console.error("[STAFF] Error en respuesta de vacaciones. Status:", resp.status);
+                }
+            } catch (errorVac) {
+                console.error("[STAFF] Error obteniendo vacaciones masivas:", errorVac);
+            }
+
+            setVacacionesMap(vMap);
+
+            // PASO 0.5: Obtener Descansos Médicos Masivos
+            const idsParaDM = colaboradores.map(c => c.idEmpleado).filter(Boolean);
+            console.log("[STAFF] IDs para Descansos Médicos:", idsParaDM);
+
+            try {
+                const respDM = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: idsParaDM })
+                });
+                if (respDM.ok) {
+                    const jsonDM = await respDM.json();
+                    const listDM = jsonDM.data || [];
+                    const dMap: Record<string, string[]> = {};
+
+                    listDM.forEach((dm: any) => {
+                        const colabOwner = colaboradores.find(c => c.idEmpleado === dm.idEmpleado);
+                        if (colabOwner) {
+                            const aliasOwner = (colabOwner as any).alias || colabOwner.usuario;
+                            const aliasKey = aliasOwner.toString().trim().toUpperCase();
+
+                            const dias = expandirRangoVacaciones(dm.fecha_inicio, dm.fecha_fin, currentDate);
+                            if (!dMap[aliasKey]) dMap[aliasKey] = [];
+                            dMap[aliasKey] = [...new Set([...dMap[aliasKey], ...dias])];
+                        }
+                    });
+                    setDescansosMap(dMap);
+                }
+            } catch (errorDM) {
+                console.error("Error obteniendo DM Staff:", errorDM);
+            }
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaStaffGrupal`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -98,8 +207,9 @@ const ReporteStaff = () => {
     }, [colaboradores]);
 
     useEffect(() => {
-        fetchAsistenciaStaff();
-    }, [fetchAsistenciaStaff]);
+        if (!colaboradores || colaboradores.length === 0) return;
+        fetchAsistenciaStaff(); // Assuming fetchAsistenciaWait was a typo and meant fetchAsistenciaStaff
+    }, [colaboradores, fetchAsistenciaStaff]);
 
     /**
      * PROCESAMIENTO DE LA MATRIZ STAFF
@@ -142,6 +252,26 @@ const ReporteStaff = () => {
                 const holidayName = getFeriado(dayStr);
                 const weekend = isWeekend(day);
                 const isPast = dayStr < todayStr;
+
+                // --- 0. VERIFICAR VACACIONES ---
+                const vcs = vacacionesMap[currentAlias.toUpperCase()] || [];
+                if (vcs.includes(dayStr)) {
+                    matrix[currentAlias].asistencias[dayStr] = {
+                        type: 'vacaciones',
+                        label: 'VACACIONES'
+                    };
+                    return;
+                }
+
+                // --- 0.5 VERIFICAR DESCANSOS MÉDICOS ---
+                const dms = descansosMap[currentAlias.toUpperCase()] || [];
+                if (dms.includes(dayStr)) {
+                    matrix[currentAlias].asistencias[dayStr] = {
+                        type: 'dm', // Usaremos un tipo nuevo para renderizarlo
+                        label: 'DM'
+                    };
+                    return;
+                }
 
                 const record = marcaciones.find((m: any) => {
                     const fRaw = m.fecha || m.asistencia?.fecha || "";
@@ -309,6 +439,16 @@ const ReporteStaff = () => {
                                                                     <Umbrella className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                                                                     <span className="text-[8px] font-bold text-blue-600 dark:text-blue-400">FER</span>
                                                                 </div>
+                                                            ) : record?.type === 'vacaciones' ? (
+                                                                <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/40 w-full h-full justify-center border-x border-blue-100 dark:border-blue-900">
+                                                                    <Umbrella className="h-3 w-3 text-blue-500 dark:text-blue-400 mb-0.5" />
+                                                                    <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 tracking-tighter">VAC</span>
+                                                                </div>
+                                                            ) : record?.type === 'dm' ? (
+                                                                <div className="flex flex-col items-center bg-indigo-50 dark:bg-indigo-900/40 w-full h-full justify-center border-x border-indigo-100 dark:border-indigo-900">
+                                                                    <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">DM ó</span>
+                                                                    <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">LIC</span>
+                                                                </div>
                                                             ) : record?.type === 'falta' ? (
                                                                 <div className="flex flex-col items-center bg-rose-50/50 dark:bg-rose-900/20 w-full h-full justify-center">
                                                                     <XCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 mb-0.5" />
@@ -352,13 +492,19 @@ const ReporteStaff = () => {
                     </div>
                     <span className="opacity-80">Feriado</span>
                 </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-100 rounded-md border border-blue-300 flex items-center justify-center">
+                        <Umbrella className="h-2 w-2 text-blue-500" />
+                    </div>
+                    <span className="opacity-80">Vacaciones</span>
+                </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
                     <span className="font-bold text-white/70">Horarios:</span>
                     <span>• Supervisores: 7:00 AM (10min)</span>
                     <span>• Staff Gral: 9:00 AM (10min)</span>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

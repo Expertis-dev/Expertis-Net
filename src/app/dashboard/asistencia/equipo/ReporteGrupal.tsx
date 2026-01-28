@@ -1,8 +1,10 @@
 "use client"
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useUser } from "@/Provider/UserProvider";
 import { useColaboradores } from "@/hooks/useColaboradores";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, parseISO, isSameMonth } from "date-fns";
+import { getSolicitudesAprobadas } from "@/services/vacaciones";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import {
@@ -41,25 +43,102 @@ const HORARIOS_CONFIG: Record<string, HorarioConfig> = {
     "9:00": { entrada: "09:00", tolerancia: 10 },
 };
 
+// --- EXCEPCIONES GRUPALES (Eventos especiales por Supervisor/Fecha) ---
+const EXCEPCIONES_GRUPALES = [
+    {
+        lider: "MELINA AYRE",
+        fecha: "2026-01-19",
+        tipo: "excepcion",
+        sigla: "EM",
+        clases: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+    },
+    {
+        lider: "SANDY LOPEZ",
+        fecha: "2026-01-19",
+        tipo: "excepcion",
+        sigla: "EM",
+        clases: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+    },
+    {
+        lider: "JORGE PALOMINO",
+        fecha: "2026-01-20",
+        tipo: "excepcion",
+        sigla: "EM",
+        clases: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+    }, {
+        lider: "KENNETH CUBA",
+        fecha: "2026-01-20",
+        tipo: "excepcion",
+        sigla: "EM",
+        clases: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+    },
+    {
+        lider: "JOHAN MAYA",
+        fecha: "2026-01-21",
+        tipo: "excepcion",
+        sigla: "EM",
+        clases: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+    }
+];
+
 /**
  * Función provisional para asignar horarios base según el alias del usuario.
  * @todo En producción, estos valores deben recuperarse desde el perfil del empleado en la DB.
  */
-const determinarHorarioBase = (usuario: string): string => {
+const determinarHorarioBase = (usuario: string): { entrada: string; tolerancia: number } => {
     const u = usuario.toUpperCase();
-    if (u.includes("MAYA") || u.includes("AYRE")) return "7:10";
-    if (u.includes("VASQUEZ") || u.includes("CUBA")) return "9:00";
-    return "7:00";
+
+    if (u.includes("MAYA") || u.includes("AYRE")) {
+        return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM
+    }
+
+    // Colaboradores con horario base 8:00 AM
+    if (
+        u.includes("VELASQUEZ") ||
+        u.includes("AGUANAR") ||
+        u.includes("AGAMA") ||
+        u.includes("DAVILA") ||
+        u.includes("SUYO")
+    ) {
+        return { entrada: "8:00", tolerancia: 10 }; // 8:10 AM
+    }
+
+    return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM por defecto
 };
 
-const ReporteGrupal = () => {
-    const { colaboradores, loading: loadingColab } = useColaboradores();
+// --- HELPER: Expandir rango de vacaciones ---
+const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
+    try {
+        const [y1, m1, d1] = fecInicial.split(/-|T/).map(Number);
+        const [y2, m2, d2] = fecFinal.split(/-|T/).map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+        const end = new Date(y2, m2 - 1, d2);
+        const days = eachDayOfInterval({ start, end });
+        return days
+            .filter(day => isSameMonth(day, referenceDate))
+            .map(day => format(day, 'yyyy-MM-dd'));
+    } catch (error) {
+        return [];
+    }
+};
+
+// Interface para las props
+interface ReporteProps {
+    colaboradores: any[]; // Usar el tipo correcto si está importado, o any[]
+}
+
+const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
+    const { user } = useUser();
+    // const { colaboradores, loading: loadingColab } = useColaboradores(); // ELIMINADO
+    const loadingColab = false; // Ya vienen cargados
     const [searchTerm, setSearchTerm] = useState("");
     const [asistenciaData, setAsistenciaData] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
     const [colabIdMap, setColabIdMap] = useState<Record<string, number>>({});
+    const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
+    const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
 
     // 1. Generar la lista de todos los días del mes para las cabeceras de la tabla
@@ -86,6 +165,79 @@ const ReporteGrupal = () => {
         setError(null);
 
         try {
+
+
+            // PASO 0: Obtener Vacaciones de cada colaborador (OPTIMIZADO: Por lotes para no saturar)
+            const vMap: Record<string, string[]> = {};
+
+            // Función auxiliar para procesar un solo colaborador
+            const fetchVacacionesColab = async (c: any) => {
+                if (!c.idEmpleado) return;
+                try {
+                    const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudes/${c.idEmpleado}`);
+                    if (!resp.ok) return;
+                    const json = await resp.json();
+                    const solicitudes = json.data || [];
+
+                    const diasSet = new Set<string>();
+                    solicitudes.forEach((sol: any) => {
+                        const estado = sol.estadoVacaciones?.trim().toUpperCase();
+                        if (estado === "APROBADO" || estado === "I") {
+                            const dias = expandirRangoVacaciones(sol.fecInicial, sol.fecFinal, currentDate);
+                            dias.forEach(d => diasSet.add(d));
+                        }
+                    });
+
+                    if (diasSet.size > 0) {
+                        vMap[c.usuario] = Array.from(diasSet);
+                    }
+                } catch (e) {
+                    console.error(`Error al obtener vacaciones para ${c.usuario}:`, e);
+                }
+            };
+
+            // Procesar en lotes de 3 en 3 (Concurrency control)
+            const CHUNK_SIZE = 3;
+            for (let i = 0; i < colaboradores.length; i += CHUNK_SIZE) {
+                const chunk = colaboradores.slice(i, i + CHUNK_SIZE);
+                await Promise.all(chunk.map(c => fetchVacacionesColab(c)));
+            }
+
+            setVacacionesMap(vMap);
+
+            setVacacionesMap(vMap);
+
+            // PASO 0.5: Obtener Descansos Médicos Masivos
+            const idsParaDM = colaboradores.map(c => c.idEmpleado).filter(Boolean);
+            console.log("IDs para Descansos Médicos:", idsParaDM);
+
+            try {
+                const respDM = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: idsParaDM })
+                });
+                if (respDM.ok) {
+                    const jsonDM = await respDM.json();
+                    const listDM = jsonDM.data || [];
+                    const dMap: Record<string, string[]> = {};
+
+                    listDM.forEach((dm: any) => {
+                        // Buscar usuario dueño del DM
+                        const colabOwner = colaboradores.find(c => c.idEmpleado === dm.idEmpleado);
+                        if (colabOwner) {
+                            // Usamos fecha_inicio y fecha_fin que es lo que devuelve tu endpoint
+                            const dias = expandirRangoVacaciones(dm.fecha_inicio, dm.fecha_fin, currentDate);
+                            if (!dMap[colabOwner.usuario]) dMap[colabOwner.usuario] = [];
+                            dMap[colabOwner.usuario] = [...new Set([...dMap[colabOwner.usuario], ...dias])];
+                        }
+                    });
+                    setDescansosMap(dMap);
+                }
+            } catch (errorDM) {
+                console.error("Error obteniendo DM:", errorDM);
+            }
+
             // PASO 1: Traducir alias a idMovEmpleado (en paralelo para velocidad)
             const idMovPromises = colaboradores.map(async (c) => {
                 const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdMovimientoPorAlias`, {
@@ -131,8 +283,9 @@ const ReporteGrupal = () => {
     }, [colaboradores]);
 
     useEffect(() => {
+        if (!colaboradores || colaboradores.length === 0) return;
         fetchAsistenciaGrupal();
-    }, [fetchAsistenciaGrupal]);
+    }, [colaboradores, fetchAsistenciaGrupal]);
 
     /**
      * PROCESAMIENTO DE LA MATRIZ DE ASISTENCIA
@@ -143,12 +296,11 @@ const ReporteGrupal = () => {
         const todayStr = format(new Date(), 'yyyy-MM-dd');
 
         colaboradores.forEach(colab => {
-            const hBaseKey = determinarHorarioBase(colab.usuario);
-            const config = HORARIOS_CONFIG[hBaseKey];
+            const config = determinarHorarioBase(colab.usuario);
             const currentIdMov = colabIdMap[colab.usuario];
 
             matrix[colab.usuario] = {
-                horarioBase: hBaseKey,
+                horarioBase: config.entrada,
                 asistencias: {}
             };
 
@@ -162,6 +314,43 @@ const ReporteGrupal = () => {
                 const weekend = isWeekend(day);
                 const isPast = dayStr < todayStr;
                 const isToday = dayStr === todayStr;
+
+                // --- 0. VERIFICAR VACACIONES ---
+                const vcs = vacacionesMap[colab.usuario] || [];
+                if (vcs.includes(dayStr)) {
+                    matrix[colab.usuario].asistencias[dayStr] = {
+                        type: 'vacaciones',
+                        label: 'VACACIONES'
+                    };
+                    return;
+                }
+
+                // --- 0.2 VERIFICAR DESCANSOS MÉDICOS ---
+                const dms = descansosMap[colab.usuario] || [];
+                if (dms.includes(dayStr)) {
+                    matrix[colab.usuario].asistencias[dayStr] = {
+                        type: 'excepcion',
+                        sigla: 'DM',
+                        clases: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300',
+                        label: 'DESC. MÉDICO'
+                    };
+                    return;
+                }
+
+                // --- 1. VERIFICAR EXCEPCIÓN GRUPAL ---
+                const exc = EXCEPCIONES_GRUPALES.find(e =>
+                    e.lider.toUpperCase() === user?.usuario?.toUpperCase() &&
+                    e.fecha === dayStr
+                );
+
+                if (exc) {
+                    matrix[colab.usuario].asistencias[dayStr] = {
+                        type: 'excepcion',
+                        sigla: exc.sigla,
+                        clases: exc.clases
+                    };
+                    return;
+                }
 
                 // Buscamos el registro para este día
                 const record = marcaciones.find((m: any) => {
@@ -343,6 +532,16 @@ const ReporteGrupal = () => {
                                                                     }`}>
                                                                     {record.hora}
                                                                 </span>
+                                                            ) : record?.type === 'excepcion' ? (
+                                                                <div className={`w-full h-full flex flex-col items-center justify-center border-x border-b-0 ${record.clases}`}>
+                                                                    <span className="text-[10px] font-black leading-none">{record.sigla}</span>
+                                                                    <span className="text-[6px] font-bold uppercase mt-0.5">{record.label}</span>
+                                                                </div>
+                                                            ) : record?.type === 'vacaciones' ? (
+                                                                <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/40 w-full h-full justify-center border-x border-blue-100 dark:border-blue-900">
+                                                                    <Umbrella className="h-4 w-4 text-blue-500 dark:text-blue-400 mb-0.5" />
+                                                                    <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 tracking-tighter">VAC</span>
+                                                                </div>
                                                             ) : record?.type === 'feriado' ? (
                                                                 <div className="flex flex-col items-center opacity-60">
                                                                     <Umbrella className="h-3 w-3 text-blue-500 dark:text-blue-400" />
@@ -390,6 +589,18 @@ const ReporteGrupal = () => {
                         <Umbrella className="h-2 w-2 text-white" />
                     </div>
                     <span className="opacity-80">Feriado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-md border border-white/20 flex items-center justify-center">
+                        <span className="text-[7px] font-bold">EM</span>
+                    </div>
+                    <span className="opacity-80">Excepciones</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-100 rounded-md border border-blue-300 flex items-center justify-center">
+                        <Umbrella className="h-2 w-2 text-blue-500" />
+                    </div>
+                    <span className="opacity-80">Vacaciones</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
                     <span>• Tolerancia 7:00 (10min)</span>
