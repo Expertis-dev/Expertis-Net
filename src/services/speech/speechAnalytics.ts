@@ -29,24 +29,26 @@ const toISODate = (value: DateInput): string => {
 }
 
 export const speechAnalyticsService = {
-  async getPagos(fechaGestion: string): Promise<SpeechPago[]> {
-    if (!fechaGestion) return []
+  async getPagos(fechaInicio: string, fechaFin: string): Promise<SpeechPago[]> {
+    if (!fechaInicio || !fechaFin) return []
     const response = await speechAnalyticsApi.get<SpeechPago[]>(`/pagos`, {
-      params: { fecha: fechaGestion },
+      params: { fechaInicio, fechaFin },
     })
     return response.data ?? []
   },
 
   async getPagoDetalle({
-    fechaGestion,
+    fechaInicio,
+    fechaFin,
     idGestion,
   }: {
-    fechaGestion: string
+    fechaInicio: string
+    fechaFin: string
     idGestion: string | number
   }): Promise<SpeechPagoDetalle | null> {
-    if (!fechaGestion || !idGestion) return null
+    if (!fechaInicio || !fechaFin || !idGestion) return null
     const response = await speechAnalyticsApi.get<SpeechPagoDetalle>(`/pagos/${idGestion}`, {
-      params: { fecha: fechaGestion },
+      params: { fechaInicio, fechaFin },
     })
     return response.data ?? null
   },

@@ -11,22 +11,27 @@ import type {
   SpeechReclamo,
 } from "@/types/speech/analytics"
 
-export const usePagos = (fechaGestion: string) =>
+export const usePagos = (params: { fechaInicio: string; fechaFin: string }) =>
   useQuery<SpeechPago[]>({
-    queryKey: ["speech", "pagos", fechaGestion],
-    queryFn: () => speechAnalyticsService.getPagos(fechaGestion),
-    enabled: Boolean(fechaGestion),
+    queryKey: ["speech", "pagos", params.fechaInicio, params.fechaFin],
+    queryFn: () => speechAnalyticsService.getPagos(params.fechaInicio, params.fechaFin),
+    enabled: Boolean(params.fechaInicio && params.fechaFin),
   })
 
-export const usePagoDetalle = (params: { fechaGestion: string; idGestion?: string | number | null }) =>
+export const usePagoDetalle = (params: {
+  fechaInicio: string
+  fechaFin: string
+  idGestion?: string | number | null
+}) =>
   useQuery<SpeechPagoDetalle | null>({
-    queryKey: ["speech", "pagos", "detalle", params.fechaGestion, params.idGestion],
+    queryKey: ["speech", "pagos", "detalle", params.fechaInicio, params.fechaFin, params.idGestion],
     queryFn: () =>
       speechAnalyticsService.getPagoDetalle({
-        fechaGestion: params.fechaGestion,
+        fechaInicio: params.fechaInicio,
+        fechaFin: params.fechaFin,
         idGestion: params.idGestion as string | number,
       }),
-    enabled: Boolean(params.fechaGestion && params.idGestion),
+    enabled: Boolean(params.fechaInicio && params.fechaFin && params.idGestion),
     staleTime: 5 * 60 * 1000,
   })
 
