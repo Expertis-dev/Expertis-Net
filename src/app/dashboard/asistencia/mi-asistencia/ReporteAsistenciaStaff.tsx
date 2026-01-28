@@ -78,6 +78,19 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string): string[]
     }
 };
 
+// Lista de supervisores internos con horario especial (07:00 AM)
+const SUPERVISORES_INTERNOS = [
+    "JORDAN MAYA",
+    "JOHAN MAYA",
+    "MELINA AYRE",
+    "KENNETH CUBA",
+    "JORGE PALOMINO",
+    "SANDY LOPEZ",
+    "LEONOR NAVARRO",
+    "JORGE VASQUEZ",
+    "MAYRA LLIMPE"
+];
+
 const ReporteAsistenciaStaff = () => {
     const { user } = useUser();
     const [loading, setLoading] = useState(false);
@@ -152,6 +165,20 @@ const ReporteAsistenciaStaff = () => {
         fetchStaffAttendance();
     }, [user?.usuario]);
 
+    // Determinar si el usuario actual es supervisor interno
+    const esSupervisorInterno = useMemo(() => {
+        if (!user?.usuario) return false;
+        return SUPERVISORES_INTERNOS.includes(user.usuario.toUpperCase());
+    }, [user?.usuario]);
+
+    // Horario base según tipo de usuario
+    const horarioConfig = useMemo(() => {
+        if (esSupervisorInterno) {
+            return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM
+        }
+        return { entrada: "09:00", tolerancia: 10 }; // 09:10 AM
+    }, [esSupervisorInterno]);
+
     // Procesar datos: Filtrar por Lunes a Viernes (incluyendo feriados) y ordenar
     const processedRegistros = useMemo(() => {
         if (!staffData?.registros) return [];
@@ -163,12 +190,26 @@ const ReporteAsistenciaStaff = () => {
                 // Normalizar la fecha del registro para comparación (YYYY-MM-DD)
                 const dateKey = reg.fecha.split('T')[0];
 
+<<<<<<< HEAD
                 // Cálculo de tardanza si es supervisor interno (Límite 7:10 AM)
                 let esTardanza = false;
                 if (isInterno && reg.horaIngreso) {
                     const [h, m] = reg.horaIngreso.split(':').map(Number);
                     // Tardanza si es después de las 7:10 AM
                     esTardanza = h > 7 || (h === 7 && m > 10);
+=======
+                // Calcular si hay tardanza
+                let esTardanza = false;
+                if (reg.horaIngreso) {
+                    const horaMatch = reg.horaIngreso.match(/(\d{2}:\d{2})/);
+                    if (horaMatch) {
+                        const [h, m] = horaMatch[1].split(':').map(Number);
+                        const [baseH, baseM] = horarioConfig.entrada.split(':').map(Number);
+                        const minsIngreso = h * 60 + m;
+                        const minsLimite = baseH * 60 + baseM + horarioConfig.tolerancia;
+                        esTardanza = minsIngreso > minsLimite;
+                    }
+>>>>>>> asistencia
                 }
 
                 return {
@@ -184,7 +225,11 @@ const ReporteAsistenciaStaff = () => {
                 return day >= 1 && day <= 5; // Mon-Fri
             })
             .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+<<<<<<< HEAD
     }, [staffData, diasVacaciones, user?.usuario]);
+=======
+    }, [staffData, diasVacaciones, horarioConfig]);
+>>>>>>> asistencia
 
     const stats = useMemo(() => {
         const total = processedRegistros.length;
@@ -219,6 +264,16 @@ const ReporteAsistenciaStaff = () => {
                         Bienvenido, <span className="font-semibold text-cyan-600">{staffData?.nombre || user?.usuario}</span>
                         {staffData?.area && <span className="text-xs ml-2 px-2 py-0.5 bg-muted rounded-full">{staffData.area}</span>}
                     </p>
+                    <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-mono">
+                            Horario Base: {horarioConfig.entrada} (Tolerancia: +{horarioConfig.tolerancia} min)
+                        </Badge>
+                        {esSupervisorInterno && (
+                            <Badge className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
+                                Supervisor Interno
+                            </Badge>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -349,7 +404,15 @@ const ReporteAsistenciaStaff = () => {
                                                         </span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className={isFalta ? "text-red-400 italic" : "text-foreground"}>
+                                                <TableCell className={
+                                                    isFalta
+                                                        ? "text-red-400 italic"
+                                                        : row.esTardanza
+                                                            ? "text-amber-600 font-semibold"
+                                                            : row.horaIngreso
+                                                                ? "text-emerald-600 font-semibold"
+                                                                : "text-foreground"
+                                                }>
                                                     {row.horaIngreso || (isFeriado || isVacaciones ? "--:--" : "No Marcó")}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
@@ -367,7 +430,11 @@ const ReporteAsistenciaStaff = () => {
                                                                         ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
                                                                         : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
                                                     }>
+<<<<<<< HEAD
                                                         {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Asistió"}
+=======
+                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Puntual"}
+>>>>>>> asistencia
                                                     </Badge>
                                                 </TableCell>
                                             </TableRow>
