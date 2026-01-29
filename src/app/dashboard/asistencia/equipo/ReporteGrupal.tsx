@@ -2,9 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useUser } from "@/Provider/UserProvider";
-import { useColaboradores } from "@/hooks/useColaboradores";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, parseISO, isSameMonth } from "date-fns";
-import { getSolicitudesAprobadas } from "@/services/vacaciones";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import {
@@ -37,11 +35,6 @@ interface HorarioConfig {
     tolerancia: number; // Minutos adicionales permitidos
 }
 
-const HORARIOS_CONFIG: Record<string, HorarioConfig> = {
-    "7:00": { entrada: "07:00", tolerancia: 10 },
-    "7:10": { entrada: "07:10", tolerancia: 5 },
-    "9:00": { entrada: "09:00", tolerancia: 10 },
-};
 
 // --- EXCEPCIONES GRUPALES (Eventos especiales por Supervisor/Fecha) ---
 const EXCEPCIONES_GRUPALES = [
@@ -367,7 +360,6 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 const holidayName = getFeriado(dayStr);
                 const weekend = isWeekend(day);
                 const isPast = dayStr < todayStr;
-                const isToday = dayStr === todayStr;
 
                 // --- 0. VERIFICAR VACACIONES ---
                 const vcs = vacacionesMap[colab.usuario] || [];
