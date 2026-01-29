@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/table";
 
 // --- CONFIGURACIÓN DE HORARIOS ---
-const HORARIO_STAFF_ESTANDAR = { entrada: "09:00", tolerancia: 10 };
-const HORARIO_STAFF_SUPERVISOR = { entrada: "07:00", tolerancia: 10 };
+const HORARIO_STAFF_ESTANDAR = { entrada: "09:00", tolerancia: 0 };
+const HORARIO_STAFF_SUPERVISOR = { entrada: "07:00", tolerancia: 0 };
 
 const SUPERVISORES_ESP = [
     "JORDAN MAYA",
@@ -39,7 +39,8 @@ const SUPERVISORES_ESP = [
     "SANDY LOPEZ",
     "LEONOR NAVARRO",
     "JORGE VASQUEZ",
-    "MAYRA LLIMPE"
+    "MAYRA LLIMPE",
+    "ROBERTO INZUA"
 ];
 
 // --- TIPOS ---
@@ -553,9 +554,9 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     <span className="opacity-80">Vacaciones</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
-                    <span className="font-bold text-white/70">Horarios:</span>
-                    <span>• Supervisores: 7:00 AM (10min)</span>
-                    <span>• Staff Gral: 9:00 AM (10min)</span>
+                    <span className="font-bold text-white/70">Horarios (0 min tolerancia):</span>
+                    <span>• Supervisores / Roberto: 7:00 AM</span>
+                    <span>• Staff Gral: 9:00 AM</span>
                 </div>
             </div>
         </div >
