@@ -113,6 +113,54 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
     return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM por defecto
 };
 
+// --- TIPOS ---
+interface Colaborador {
+    Id: number;
+    usuario: string;
+    idEmpleado: number | null;
+    dni: string;
+    alias?: string;
+}
+
+interface Marcacion {
+    asistencia?: {
+        fecha?: string;
+        ingreso?: string;
+    };
+    fecha?: string;
+    ingreso?: string;
+    horaIngreso?: string;
+}
+
+interface AsistenciaRegistro {
+    idMovEmpleado: number;
+    asistencia: Marcacion[];
+}
+
+interface MatrixItem {
+    horarioBase: string;
+    asistencias: Record<string, {
+        type: string;
+        label?: string;
+        hora?: string;
+        esTardanza?: boolean;
+        sigla?: string;
+        clases?: string;
+    }>;
+}
+
+interface VacacionInfo {
+    estadoVacaciones: string;
+    fecInicial: string;
+    fecFinal: string;
+}
+
+interface DMInfo {
+    idEmpleado: number;
+    fecha_inicio: string;
+    fecha_fin: string;
+}
+
 // --- HELPER: Expandir rango de vacaciones ---
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -125,13 +173,14 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
             .filter(day => isSameMonth(day, referenceDate))
             .map(day => format(day, 'yyyy-MM-dd'));
     } catch (error) {
+        console.error("Error al expandir rango de vacaciones:", error);
         return [];
     }
 };
 
 // Interface para las props
 interface ReporteProps {
-    colaboradores: any[]; // Usar el tipo correcto si está importado, o any[]
+    colaboradores: Colaborador[];
 }
 
 const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
@@ -139,7 +188,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     // const { colaboradores, loading: loadingColab } = useColaboradores(); // ELIMINADO
     const loadingColab = false; // Ya vienen cargados
     const [searchTerm, setSearchTerm] = useState("");
-    const [asistenciaData, setAsistenciaData] = useState<any[]>([]);
+    const [asistenciaData, setAsistenciaData] = useState<AsistenciaRegistro[]>([]);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
@@ -178,7 +227,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
             const vMap: Record<string, string[]> = {};
 
             // Función auxiliar para procesar un solo colaborador
-            const fetchVacacionesColab = async (c: any) => {
+            const fetchVacacionesColab = async (c: Colaborador) => {
                 if (!c.idEmpleado) return;
                 try {
                     const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerSolicitudes/${c.idEmpleado}`);
@@ -187,7 +236,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     const solicitudes = json.data || [];
 
                     const diasSet = new Set<string>();
-                    solicitudes.forEach((sol: any) => {
+                    solicitudes.forEach((sol: VacacionInfo) => {
                         const estado = sol.estadoVacaciones?.trim().toUpperCase();
                         if (estado === "APROBADO" || estado === "I") {
                             const dias = expandirRangoVacaciones(sol.fecInicial, sol.fecFinal, currentDate);
@@ -212,8 +261,6 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
 
             setVacacionesMap(vMap);
 
-            setVacacionesMap(vMap);
-
             // PASO 0.5: Obtener Descansos Médicos Masivos
             const idsParaDM = colaboradores.map(c => c.idEmpleado).filter(Boolean);
             console.log("IDs para Descansos Médicos:", idsParaDM);
@@ -229,7 +276,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     const listDM = jsonDM.data || [];
                     const dMap: Record<string, string[]> = {};
 
-                    listDM.forEach((dm: any) => {
+                    listDM.forEach((dm: DMInfo) => {
                         // Buscar usuario dueño del DM
                         const colabOwner = colaboradores.find(c => c.idEmpleado === dm.idEmpleado);
                         if (colabOwner) {
@@ -287,7 +334,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         } finally {
             setLoadingData(false);
         }
-    }, [colaboradores]);
+    }, [colaboradores, currentDate]);
 
     useEffect(() => {
         if (!colaboradores || colaboradores.length === 0) return;
@@ -299,7 +346,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
      * Cruza la data plana del backend con los días del calendario.
      */
     const enrichedMatrix = useMemo(() => {
-        const matrix: Record<string, any> = {};
+        const matrix: Record<string, MatrixItem> = {};
         const todayStr = format(new Date(), 'yyyy-MM-dd');
 
         colaboradores.forEach(colab => {
@@ -360,7 +407,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 }
 
                 // Buscamos el registro para este día
-                const record = marcaciones.find((m: any) => {
+                const record = marcaciones.find((m: Marcacion) => {
                     const fRaw = m.asistencia?.fecha || m.fecha || "";
                     if (!fRaw) return false;
                     const datePart = fRaw.split('T')[0].split(' ')[0];
@@ -413,7 +460,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap]);
+    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, user?.usuario, user?.id_grupo]);
 
     // 4. Filtrado por búsqueda
     const filteredColabs = useMemo(() => {

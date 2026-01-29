@@ -42,6 +42,56 @@ const SUPERVISORES_ESP = [
     "MAYRA LLIMPE"
 ];
 
+// --- TIPOS ---
+interface Colaborador {
+    Id: number;
+    usuario: string;
+    idEmpleado: number | null;
+    dni: string;
+    alias?: string;
+}
+
+interface Marcacion {
+    fecha?: string;
+    horaIngreso?: string;
+    ingreso?: string;
+    asistencia?: {
+        fecha?: string;
+        ingreso?: string;
+    };
+}
+
+interface AsistenciaStaffRegistro {
+    nombre?: string;
+    alias?: string;
+    usuario?: string;
+    asistencia?: Marcacion[];
+    registros?: Marcacion[];
+}
+
+interface MatrixItem {
+    horarioBase: string;
+    asistencias: Record<string, {
+        type: string;
+        label?: string;
+        hora?: string;
+        esTardanza?: boolean;
+    }>;
+}
+
+interface VacacionItem {
+    idEmpleado: number;
+    estadoVacaciones: string;
+    fecInicial: string;
+    fecFinal: string;
+}
+
+interface DMItem {
+    idEmpleado: number;
+    fecha_inicio: string;
+    fecha_fin: string;
+}
+
 // --- HELPER: Expandir rango de vacaciones ---
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -53,22 +103,20 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
         return days
             .filter(day => isSameMonth(day, referenceDate))
             .map(day => format(day, 'yyyy-MM-dd'));
-    } catch (error) {
-        console.error("Error al expandir rango de vacaciones:", error);
+    } catch (e) {
+        console.error("Error al expandir rango de vacaciones:", e);
         return [];
     }
 };
 
-// Interface props
 interface ReporteProps {
-    colaboradores: any[];
+    colaboradores: Colaborador[];
 }
 
 const ReporteStaff = ({ colaboradores }: ReporteProps) => {
-    // const { colaboradores, loading: loadingColab } = useColaboradores();
     const loadingColab = false; // Vienen de props
     const [searchTerm, setSearchTerm] = useState("");
-    const [asistenciaData, setAsistenciaData] = useState<any[]>([]);
+    const [asistenciaData, setAsistenciaData] = useState<AsistenciaStaffRegistro[]>([]);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
@@ -91,7 +139,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         if (!colaboradores || colaboradores.length === 0) return;
 
         // Extraemos los alias. Si el campo 'alias' existe lo usamos, de lo contrario usamos 'usuario'.
-        const aliasList = colaboradores.map(c => (c as any).alias || c.usuario);
+        const aliasList = colaboradores.map(c => c.alias || c.usuario);
         const currentAliasesHash = JSON.stringify(aliasList.sort());
 
         if (!force && currentAliasesHash === lastFetchedIds.current) return;
@@ -122,7 +170,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
 
                     console.log("Vacaciones staff:", listVac);
 
-                    listVac.forEach((vac: any) => {
+                    listVac.forEach((vac: VacacionItem) => {
                         const estadoVacaciones = vac.estadoVacaciones?.trim().toUpperCase();
 
                         if (estadoVacaciones === "APROBADO") {
@@ -130,7 +178,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                             const colabOwner = colaboradores.find(c => c.idEmpleado === vac.idEmpleado);
 
                             if (colabOwner) {
-                                const currentAlias = ((colabOwner as any).alias || colabOwner.usuario || "").toString().trim().toUpperCase();
+                                const currentAlias = (colabOwner.alias || colabOwner.usuario || "").toString().trim().toUpperCase();
                                 if (currentAlias) {
                                     console.log(`✅ Vacación APROBADA para ${currentAlias}: ${vac.fecInicial} a ${vac.fecFinal}`);
                                     const dias = expandirRangoVacaciones(vac.fecInicial, vac.fecFinal, currentDate);
@@ -169,11 +217,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     const listDM = jsonDM.data || [];
                     const dMap: Record<string, string[]> = {};
 
-                    listDM.forEach((dm: any) => {
+                    listDM.forEach((dm: DMItem) => {
                         const colabOwner = colaboradores.find(c => c.idEmpleado === dm.idEmpleado);
                         if (colabOwner) {
-                            const aliasOwner = (colabOwner as any).alias || colabOwner.usuario;
-                            const aliasKey = aliasOwner.toString().trim().toUpperCase();
+                            const aliasOwner = colabOwner.alias || colabOwner.usuario;
+                            const aliasKey = (aliasOwner || "").toString().trim().toUpperCase();
 
                             const dias = expandirRangoVacaciones(dm.fecha_inicio, dm.fecha_fin, currentDate);
                             if (!dMap[aliasKey]) dMap[aliasKey] = [];
@@ -203,7 +251,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         } finally {
             setLoadingData(false);
         }
-    }, [colaboradores]);
+    }, [colaboradores, currentDate]);
 
     useEffect(() => {
         if (!colaboradores || colaboradores.length === 0) return;
@@ -215,11 +263,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
      * Cruza la data con la hora base fija de 9:00 AM.
      */
     const enrichedMatrix = useMemo(() => {
-        const matrix: Record<string, any> = {};
+        const matrix: Record<string, MatrixItem> = {};
         const todayStr = format(new Date(), 'yyyy-MM-dd');
 
         colaboradores.forEach(colab => {
-            const currentAlias = ((colab as any).alias || colab.usuario || "").toString().trim();
+            const currentAlias = (colab.alias || colab.usuario || "").toString().trim();
             const isSupEsp = SUPERVISORES_ESP.includes(currentAlias.toUpperCase());
             const config = isSupEsp ? HORARIO_STAFF_SUPERVISOR : HORARIO_STAFF_ESTANDAR;
 
@@ -272,7 +320,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     return;
                 }
 
-                const record = marcaciones.find((m: any) => {
+                const record = marcaciones.find((m: Marcacion) => {
                     const fRaw = m.fecha || m.asistencia?.fecha || "";
                     if (!fRaw) return false;
                     // El servidor manda "2026-01-02", tomamos solo la fecha
@@ -312,11 +360,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth]);
+    }, [colaboradores, asistenciaData, daysInMonth, vacacionesMap, descansosMap]);
 
     const filteredColabs = useMemo(() => {
         return colaboradores.filter(c => {
-            const name = (c as any).alias || c.usuario;
+            const name = c.alias || c.usuario;
             return name.toLowerCase().includes(searchTerm.toLowerCase());
         });
     }, [colaboradores, searchTerm]);
@@ -362,6 +410,13 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                 </div>
             </div>
 
+            {error && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 rounded-xl flex items-center gap-3">
+                    <XCircle className="h-5 w-5" />
+                    {error}
+                </div>
+            )}
+
             {/* Matrix Card */}
             <Card className="shadow-xl border-none overflow-hidden bg-white dark:bg-slate-900">
                 <CardHeader className="bg-slate-50/80 dark:bg-slate-800/50 border-b dark:border-slate-800 flex flex-row items-center justify-between py-4 px-6">
@@ -396,7 +451,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                             </TableHeader>
                             <TableBody>
                                 {filteredColabs.map((colab) => {
-                                    const currentAlias = (colab as any).alias || colab.usuario;
+                                    const currentAlias = colab.alias || colab.usuario;
                                     const meta = enrichedMatrix[currentAlias];
 
                                     return (
