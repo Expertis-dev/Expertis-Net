@@ -30,10 +30,7 @@ import {
 
 // --- CONFIGURACIÓN DE HORARIOS Y TOLERANCIAS ---
 // Representa la hora de entrada y los minutos de gracia antes de marcar como tardanza.
-interface HorarioConfig {
-    entrada: string; // Formato HH:mm
-    tolerancia: number; // Minutos adicionales permitidos
-}
+
 
 
 // --- EXCEPCIONES GRUPALES (Eventos especiales por Supervisor/Fecha) ---
