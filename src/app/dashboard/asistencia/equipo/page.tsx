@@ -1,21 +1,7 @@
 "use client"
-
-import React, { useEffect } from "react";
 import { useUser } from "@/Provider/UserProvider";
 import ReporteGrupal from "./ReporteGrupal";
 import ReporteStaff from "./ReporteStaff";
-
-const SUPERVISORES_INTERNOS = [
-    "JORDAN MAYA",
-    "JOHAN MAYA",
-    "MELINA AYRE",
-    "KENNETH CUBA",
-    "JORGE PALOMINO",
-    "SANDY LOPEZ",
-    "LEONOR NAVARRO",
-    "JORGE VASQUEZ"
-];
-
 import { useColaboradores } from "@/hooks/useColaboradores";
 import { Loader2 } from "lucide-react";
 

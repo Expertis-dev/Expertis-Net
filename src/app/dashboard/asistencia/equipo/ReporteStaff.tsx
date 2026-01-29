@@ -1,9 +1,7 @@
 "use client"
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useColaboradores } from "@/hooks/useColaboradores";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
-import { getSolicitudesAprobadas } from "@/services/vacaciones";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import {
@@ -56,6 +54,7 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
             .filter(day => isSameMonth(day, referenceDate))
             .map(day => format(day, 'yyyy-MM-dd'));
     } catch (error) {
+        console.error("Error al expandir rango de vacaciones:", error);
         return [];
     }
 };

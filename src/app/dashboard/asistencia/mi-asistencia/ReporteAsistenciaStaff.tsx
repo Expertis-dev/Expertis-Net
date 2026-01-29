@@ -176,7 +176,7 @@ const ReporteAsistenciaStaff = () => {
     const processedRegistros = useMemo(() => {
         if (!staffData?.registros) return [];
 
-        const isInterno = SUPERVISORES_INTERNOS.includes(user?.usuario?.toUpperCase() || "");
+
 
         return staffData.registros
             .map(reg => {
