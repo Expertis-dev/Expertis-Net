@@ -25,6 +25,7 @@ import {
   LineChart,
   List,
   Loader2,
+  PlayCircle,
   PhoneCall,
   Search,
   Star,
@@ -319,6 +320,8 @@ export const Calidad = () => {
   const [feedbackCompromiso, setFeedbackCompromiso] = useState('');
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
+  const [modalTranscripcionAbierto, setModalTranscripcionAbierto] = useState(false);
+  const [contenidoTranscripcion, setContenidoTranscripcion] = useState('');
   const logoDataUrlRef = useRef<string | ArrayBuffer | null>(null);
   const loadLogo = useCallback(async (): Promise<string | ArrayBuffer | null> => {
     if (logoDataUrlRef.current) {
@@ -996,6 +999,9 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
           Apertura: detalle.apertura ?? '',
           Desarrollo: detalle.desarrollo ?? '',
           Cierre: detalle.cierre ?? '',
+          Grabación: detalle.grabacion ?? '',
+          Resumen: detalle.resumen ?? '',
+          Observación: detalle.observacionCalidad ?? '',
         };
       }
       const general = item as CalidadAsesorAgrupado;
@@ -1045,6 +1051,16 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     setFeedbackSugerencia('');
     setFeedbackCompromiso('');
     setGenerandoPdf(false);
+  };
+
+  const abrirTranscripcion = (contenido?: string | null) => {
+    setContenidoTranscripcion(contenido || 'No disponible');
+    setModalTranscripcionAbierto(true);
+  };
+
+  const cerrarTranscripcion = () => {
+    setModalTranscripcionAbierto(false);
+    setContenidoTranscripcion('');
   };
 
   const handleActitudChange = (actitud: string) => {
@@ -1166,7 +1182,8 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     { id: 'actitud', label: 'Actitud', filtrable: false },
     { id: 'apertura', label: 'Apertura', filtrable: false },
     { id: 'desarrollo', label: 'Desarrollo', filtrable: false },
-    { id: 'cierre', label: 'Cierre', filtrable: false }
+    { id: 'cierre', label: 'Cierre', filtrable: false },
+    { id: 'acciones', label: 'Acciones', filtrable: false }
   ];
 
   const columnasGeneral = [
@@ -1630,6 +1647,28 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
                             <TableCell>{detalle.apertura}</TableCell>
                             <TableCell>{detalle.desarrollo}</TableCell>
                             <TableCell>{detalle.cierre}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-2">
+                                {detalle.grabacion ? (
+                                  <Button variant="outline" size="sm" asChild className="gap-2">
+                                    <a href={detalle.grabacion} target="_blank" rel="noopener noreferrer">
+                                      <PlayCircle className="h-4 w-4" />
+                                      Escuchar
+                                    </a>
+                                  </Button>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">Audio no disponible</span>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  title="Ver transcripción"
+                                  onClick={() => abrirTranscripcion(detalle.transcripcion)}
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         )
                       }
@@ -1819,6 +1858,25 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
             >
               {generandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
               {generandoPdf ? "Generando..." : "Generar PDF"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={modalTranscripcionAbierto}
+        onOpenChange={(open) => (open ? setModalTranscripcionAbierto(true) : cerrarTranscripcion())}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Transcripción</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm text-muted-foreground">
+            {contenidoTranscripcion || 'No disponible'}
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={cerrarTranscripcion}>
+              Cerrar
             </Button>
           </div>
         </DialogContent>

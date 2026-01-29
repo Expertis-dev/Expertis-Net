@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ElementType } from "react"
+import { useEffect, useMemo, useRef, useState, type ElementType } from "react"
 import { saveAs } from "file-saver"
 import * as XLSX from "xlsx"
 import {
@@ -16,6 +16,7 @@ import {
   Eraser,
   Loader2,
   MessageSquare,
+  PlayCircle,
   Search,
   Star,
   User2,
@@ -50,7 +51,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
-type ModalTipo = "transcripcion" | "resumen" | "observacion" | ""
+type ModalTipo = "transcripcion" | "observacion" | ""
 
 interface ColumnDefinition {
   id: keyof SpeechPago | "acciones"
@@ -68,9 +69,11 @@ const columnas: ColumnDefinition[] = [
   { id: "fecha", label: "Fecha", ordenable: true },
   { id: "horaInicio", label: "Hora Inicio", ordenable: true },
   { id: "tiempoHablado", label: "Duración", ordenable: true },
+  { id: "asesor", label: "Asesor", filtrable: true, ordenable: true },
   { id: "agencia", label: "Agencia", filtrable: true, ordenable: true },
   { id: "supervisor", label: "Supervisor", filtrable: true, ordenable: true },
   { id: "calificacion", label: "Calificación", ordenable: true },
+  { id: "grabacion", label: "Grabación" },
   { id: "acciones", label: "Acciones" },
 ]
 
@@ -133,6 +136,39 @@ const calificacionBadgeStyles = (calificacion: SpeechPago["calificacion"]) => {
   return "border-rose-200 bg-rose-100 text-rose-800"
 }
 
+const NIVEL_OBSERVACION = new Set(["alta", "media", "baja"])
+
+const parseObservacion = (value?: string | null) => {
+  const raw = (value ?? "").trim()
+  if (!raw) return null
+  const [summaryPart, flagsPart] = raw.split("|").map((part) => part.trim())
+  let nivel: string | null = null
+  let resumen = summaryPart
+  const match = summaryPart.match(/^([A-Za-zÁÉÍÓÚÜÑ]+)\.\s*(.+)$/)
+  if (match && NIVEL_OBSERVACION.has(match[1].toLowerCase())) {
+    nivel = match[1]
+    resumen = match[2]
+  }
+
+  const flags = (flagsPart ?? "")
+    .split(";")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [rawKey, rawValue] = item.split(":").map((part) => part.trim())
+      return {
+        key: rawKey ?? "",
+        value: (rawValue ?? "").toUpperCase(),
+      }
+    })
+    .filter((item) => item.key.length > 0 && item.value.length > 0)
+
+  const positivos = flags.filter((item) => item.value === "SI")
+  const negativos = flags.filter((item) => item.value === "NO")
+
+  return { nivel, resumen, positivos, negativos }
+}
+
 const EstadoCard = ({
   icon: Icon,
   title,
@@ -157,11 +193,14 @@ const Pagos = () => {
   const { hasPermiso } = useSpeechPermissions()
   const { alias: aliasActual, canUseFilters: puedeUsarFiltrosAvanzados } = useSpeechAccess()
 
-  const [fechaGestion, setFechaGestion] = useState("")
-  const [fechaGestionTemp, setFechaGestionTemp] = useState("")
+  const [fechaInicio, setFechaInicio] = useState("")
+  const [fechaFin, setFechaFin] = useState("")
+  const [fechaInicioTemp, setFechaInicioTemp] = useState("")
+  const [fechaFinTemp, setFechaFinTemp] = useState("")
   const [botonActivo, setBotonActivo] = useState<"prometedoras" | "mejorables">("prometedoras")
   const [agenciaSeleccionada, setAgenciaSeleccionada] = useState("")
   const [supervisorSeleccionado, setSupervisorSeleccionado] = useState("")
+  const [asesorSeleccionado, setAsesorSeleccionado] = useState("")
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [modalTipo, setModalTipo] = useState<ModalTipo>("")
@@ -175,20 +214,67 @@ const Pagos = () => {
   const [filasPorPagina, setFilasPorPagina] = useState(7)
   const [paginaActual, setPaginaActual] = useState(1)
 
+  const maxDate = useMemo(() => new Date().toISOString().split("T")[0], [])
+  const sessionLimit = 3
+  const sessionCountKey = "speech_pagos_sp_count_session"
+  const browserCountKey = "speech_pagos_sp_count_browser"
+  const [sessionCount, setSessionCount] = useState(0)
+  const [browserCount, setBrowserCount] = useState(0)
+  const pendingExecutionKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const storedSession = Number(sessionStorage.getItem(sessionCountKey) || "0")
+    const storedBrowser = Number(localStorage.getItem(browserCountKey) || "0")
+    setSessionCount(Number.isFinite(storedSession) ? storedSession : 0)
+    setBrowserCount(Number.isFinite(storedBrowser) ? storedBrowser : 0)
+  }, [])
+
+  const registrarEjecucionExitosa = () => {
+    if (typeof window === "undefined") return
+    setSessionCount((prev) => {
+      const next = prev + 1
+      sessionStorage.setItem(sessionCountKey, String(next))
+      return next
+    })
+    setBrowserCount((prev) => {
+      const next = prev + 1
+      localStorage.setItem(browserCountKey, String(next))
+      return next
+    })
+  }
+
+  const puedeEjecutarSp = sessionCount < sessionLimit
+
+  const buildExecutionKey = (inicio: string, fin: string) => `${inicio}|${fin}`
+
   const {
-    data: dataPagos = [],
+    data: dataPagos = [] as SpeechPago[],
     isLoading,
     error,
-  } = usePagos(fechaGestion)
+  } = usePagos({
+    fechaInicio,
+    fechaFin,
+  })
 
   const {
     data: detallePagoRaw,
     isFetching: isDetalleCargando,
     error: errorDetalle,
   } = usePagoDetalle({
-    fechaGestion,
+    fechaInicio,
+    fechaFin,
     idGestion: detalleIdGestion,
   })
+
+  useEffect(() => {
+    if (isLoading || error || !fechaInicio || !fechaFin) return
+    const currentKey = buildExecutionKey(fechaInicio, fechaFin)
+    if (pendingExecutionKeyRef.current === currentKey) {
+      registrarEjecucionExitosa()
+      pendingExecutionKeyRef.current = null
+    }
+  }, [dataPagos, isLoading, error, fechaInicio, fechaFin])
 
   const detallePago = useMemo(() => {
     if (!detallePagoRaw) return null
@@ -291,7 +377,7 @@ const Pagos = () => {
       })
   }, [dataPagos, tienePermisoInterno, tienePermisoExterno, tienePermisoJudicial, tienePermisoBpo])
 
-  const datosPrometedoras = useMemo(
+  const datosPrometedoras = useMemo<SpeechPagoNormalizado[]>(
     () =>
       datosCompletos.filter((item) => {
         const calificacion = Number(item.calificacion) || 0
@@ -300,7 +386,7 @@ const Pagos = () => {
     [datosCompletos],
   )
 
-  const datosMejorables = useMemo(
+  const datosMejorables = useMemo<SpeechPagoNormalizado[]>(
     () =>
       datosCompletos.filter((item) => {
         const calificacion = Number(item.calificacion) || 0
@@ -309,7 +395,8 @@ const Pagos = () => {
     [datosCompletos],
   )
 
-  const datosActivos = botonActivo === "prometedoras" ? datosPrometedoras : datosMejorables
+  const datosActivos: SpeechPagoNormalizado[] =
+    botonActivo === "prometedoras" ? datosPrometedoras : datosMejorables
 
   const agenciasUnicas = useMemo(() => {
     const agencias = datosActivos
@@ -326,12 +413,29 @@ const Pagos = () => {
     return [...new Set(supervisores)].sort()
   }, [datosActivos, agenciaSeleccionada])
 
+  const asesoresUnicos = useMemo(() => {
+    const asesores = datosActivos
+      .filter((item) => (agenciaSeleccionada ? item.agencia === agenciaSeleccionada : true))
+      .filter((item) => (supervisorSeleccionado ? item.supervisor === supervisorSeleccionado : true))
+      .map((item) => item.asesor)
+      .filter((asesor): asesor is string => isNonEmptyString(asesor))
+    return [...new Set(asesores)].sort()
+  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado])
+
   useEffect(() => {
     if (!puedeUsarFiltrosAvanzados) {
       return
     }
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
   }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados])
+
+  useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
+    setAsesorSeleccionado("")
+  }, [supervisorSeleccionado, puedeUsarFiltrosAvanzados])
 
   useEffect(() => {
     if (puedeUsarFiltrosAvanzados) {
@@ -339,17 +443,21 @@ const Pagos = () => {
     }
     setAgenciaSeleccionada("EXPERTIS")
     setSupervisorSeleccionado(aliasActual ?? "")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setMenuFiltroAbierto(null)
   }, [puedeUsarFiltrosAvanzados, aliasActual])
 
-  const datosFiltrados = useMemo(() => {
+  const datosFiltrados = useMemo<SpeechPagoNormalizado[]>(() => {
     let datos = [...datosActivos]
     if (puedeUsarFiltrosAvanzados && agenciaSeleccionada) {
       datos = datos.filter((item) => item.agencia === agenciaSeleccionada)
     }
     if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
+    }
+    if (puedeUsarFiltrosAvanzados && asesorSeleccionado) {
+      datos = datos.filter((item) => item.asesor === asesorSeleccionado)
     }
     if (puedeUsarFiltrosAvanzados) {
       Object.entries(filtrosColumnas).forEach(([columna, valores]) => {
@@ -359,9 +467,9 @@ const Pagos = () => {
       })
     }
     return datos
-  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, filtrosColumnas, puedeUsarFiltrosAvanzados])
+  }, [datosActivos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, filtrosColumnas, puedeUsarFiltrosAvanzados])
 
-  const datosOrdenados = useMemo(() => {
+  const datosOrdenados = useMemo<SpeechPagoNormalizado[]>(() => {
     if (!ordenColumna.columna) return datosFiltrados
     return [...datosFiltrados].sort((a, b) => {
       const valorA = (a as Record<string, unknown>)[ordenColumna.columna]
@@ -375,7 +483,7 @@ const Pagos = () => {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (!fechaGestion || datosOrdenados.length === 0) {
+    if (!fechaInicio || !fechaFin || datosOrdenados.length === 0) {
       setFilasPorPagina((prev) => (prev === 7 ? prev : 7))
       return
     }
@@ -400,19 +508,19 @@ const Pagos = () => {
       window.cancelAnimationFrame(rafId)
       window.removeEventListener("resize", calcularFilas)
     }
-  }, [fechaGestion, datosOrdenados.length, botonActivo])
+  }, [fechaInicio, fechaFin, datosOrdenados.length, botonActivo])
 
   const filasPorPaginaActivas = Math.max(1, filasPorPagina)
   const totalPaginas = Math.max(1, Math.ceil(datosOrdenados.length / filasPorPaginaActivas))
 
-  const datosPaginados = useMemo(() => {
+  const datosPaginados = useMemo<SpeechPagoNormalizado[]>(() => {
     const inicio = (paginaActual - 1) * filasPorPaginaActivas
     return datosOrdenados.slice(inicio, inicio + filasPorPaginaActivas)
   }, [datosOrdenados, paginaActual, filasPorPaginaActivas])
 
   useEffect(() => {
     setPaginaActual(1)
-  }, [botonActivo, agenciaSeleccionada, supervisorSeleccionado, fechaGestion, filtrosColumnas, filasPorPaginaActivas])
+  }, [botonActivo, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, fechaInicio, fechaFin, filtrosColumnas, filasPorPaginaActivas])
 
   useEffect(() => {
     setPaginaActual((prev) => Math.min(prev, totalPaginas))
@@ -420,23 +528,50 @@ const Pagos = () => {
 
   const filtrosInteractivosActivos =
     puedeUsarFiltrosAvanzados &&
-    (Boolean(agenciaSeleccionada) || Boolean(supervisorSeleccionado) || Object.keys(filtrosColumnas).length > 0)
+    (
+      Boolean(agenciaSeleccionada) ||
+      Boolean(supervisorSeleccionado) ||
+      Boolean(asesorSeleccionado) ||
+      Object.keys(filtrosColumnas).length > 0
+    )
 
-  const hayFiltrosActivos = Boolean(fechaGestion || fechaGestionTemp) || filtrosInteractivosActivos
+  const hayFiltrosActivos =
+    Boolean(fechaInicio || fechaFin || fechaInicioTemp || fechaFinTemp) || filtrosInteractivosActivos
+
+  const esMismoMes = (inicio: string, fin: string) =>
+    Boolean(inicio && fin && inicio.slice(0, 7) === fin.slice(0, 7))
 
   const handleBuscar = () => {
-    if (!fechaGestionTemp) {
-      toast.error("Por favor, selecciona una fecha de gestión")
+    if (!puedeEjecutarSp) {
+      toast.error("Has alcanzado el l?mite de ejecuciones permitidas en esta sesi?n.")
       return
     }
-    setFechaGestion(fechaGestionTemp)
+    if (!fechaInicioTemp || !fechaFinTemp) {
+      toast.error("Por favor, selecciona ambas fechas")
+      return
+    }
+    if (new Date(fechaInicioTemp) > new Date(fechaFinTemp)) {
+      toast.error("La fecha inicio no puede ser mayor que la fecha fin")
+      return
+    }
+    if (!esMismoMes(fechaInicioTemp, fechaFinTemp)) {
+      toast.error("Solo se permiten rangos dentro de un mismo mes")
+      return
+    }
+    setFechaInicio(fechaInicioTemp)
+    setFechaFin(fechaFinTemp)
+    pendingExecutionKeyRef.current = buildExecutionKey(fechaInicioTemp, fechaFinTemp)
   }
 
   const handleLimpiarFiltros = () => {
-    setFechaGestion("")
-    setFechaGestionTemp("")
+    setFechaInicio("")
+    setFechaFin("")
+    setFechaInicioTemp("")
+    setFechaFinTemp("")
+    pendingExecutionKeyRef.current = null
     setAgenciaSeleccionada("")
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setMenuFiltroAbierto(null)
     setOrdenColumna({ columna: "", direccion: "asc" })
@@ -446,6 +581,7 @@ const Pagos = () => {
     setBotonActivo(tipo)
     setAgenciaSeleccionada("")
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setOrdenColumna({ columna: "", direccion: "asc" })
   }
@@ -534,6 +670,8 @@ const Pagos = () => {
       Fecha: item.fecha ?? "",
       "Hora Inicio": item.horaInicio ?? "",
       Duración: item.tiempoHablado ?? "",
+      Grabación: item.grabacion ?? "",
+      Asesor: item.asesor ?? "",
       Agencia: item.agencia ?? "",
       Supervisor: item.supervisor ?? "",
       Calificación: item.calificacion ?? "",
@@ -543,7 +681,7 @@ const Pagos = () => {
     const ws = XLSX.utils.json_to_sheet(datosExcel)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Pagos")
-    const nombreArchivo = `Pagos_${botonActivo}_${fechaGestion || "todos"}.xlsx`
+    const nombreArchivo = `Pagos_${botonActivo}_${fechaInicio || "todos"}_${fechaFin || "todos"}.xlsx`
     const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" })
     const blob = new Blob([wbout], { type: "application/octet-stream" })
     saveAs(blob, nombreArchivo)
@@ -562,11 +700,45 @@ const Pagos = () => {
     if (modalTipo === "transcripcion") {
       return detallePago.transcripcion || "No disponible"
     }
-    if (modalTipo === "resumen") {
-      return detallePago.resumen || "No disponible"
-    }
     if (modalTipo === "observacion") {
-      return detallePago.observacion || "No disponible"
+      const parsed = parseObservacion(detallePago.observacion)
+      if (!parsed) return "No disponible"
+      return (
+        <div className="space-y-4">
+          {parsed.nivel && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "w-fit uppercase",
+                parsed.nivel.toLowerCase() === "alta"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : parsed.nivel.toLowerCase() === "media"
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700",
+              )}
+            >
+              {parsed.nivel}
+            </Badge>
+          )}
+
+          <p className="text-sm text-foreground">{parsed.resumen}</p>
+
+          <div className="space-y-2">
+            <p className="text-xs uppercase text-muted-foreground">Señales detectadas</p>
+            <div className="flex flex-wrap gap-2">
+              {parsed.positivos.map((item) => (
+                <Badge
+                  key={item.key}
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                >
+                  {item.key}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
     }
     return "No disponible"
   }
@@ -587,18 +759,37 @@ const Pagos = () => {
       <Card>
         <CardContent className="space-y-4" data-pagos-filtros>
           <div className="flex items-end gap-3 overflow-x-auto pb-2">
-            <div className="space-y-2 mr-6">
-              <Label htmlFor="fecha">
+            <div className="space-y-2">
+              <Label htmlFor="fechaInicio">
                 <span className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 text-primary" />
-                  Fecha de gestión
+                  Fecha inicio
                 </span>
               </Label>
               <Input
-                id="fecha"
+                id="fechaInicio"
                 type="date"
-                value={fechaGestionTemp}
-                onChange={(event) => setFechaGestionTemp(event.target.value)}
+                value={fechaInicioTemp}
+                onChange={(event) => setFechaInicioTemp(event.target.value)}
+                max={maxDate}
+                className="w-[150px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fechaFin">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  Fecha fin
+                </span>
+              </Label>
+              <Input
+                id="fechaFin"
+                type="date"
+                value={fechaFinTemp}
+                onChange={(event) => setFechaFinTemp(event.target.value)}
+                max={maxDate}
+                min={fechaInicioTemp || undefined}
                 className="w-[150px]"
               />
             </div>
@@ -655,10 +846,36 @@ const Pagos = () => {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>
+                <span className="flex items-center gap-2">
+                  <User2 className="h-4 w-4 text-primary" />
+                  Asesor
+                </span>
+              </Label>
+              <Select
+                value={asesorSeleccionado || "all"}
+                onValueChange={(value) => setAsesorSeleccionado(value === "all" ? "" : value)}
+                disabled={!puedeUsarFiltrosAvanzados || !supervisorSeleccionado || asesoresUnicos.length === 0}
+              >
+                <SelectTrigger id="asesor" className="w-[210px]">
+                  <SelectValue placeholder="Todos los asesores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los asesores</SelectItem>
+                  {asesoresUnicos.map((asesor) => (
+                    <SelectItem key={asesor} value={asesor}>
+                      {asesor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="ml-auto flex items-center gap-2" data-pagos-acciones>
               <Button
                 onClick={handleBuscar}
-                disabled={!fechaGestionTemp || isLoading}
+                disabled={!fechaInicioTemp || !fechaFinTemp || isLoading || !puedeEjecutarSp}
                 className="w-full sm:w-auto"
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
@@ -684,6 +901,10 @@ const Pagos = () => {
                 <Download className="mr-2 h-4 w-4" />
                 Exportar
               </Button>
+
+              <span className="text-xs text-muted-foreground">
+                Sesión: {sessionCount}/{sessionLimit} · Navegador: {browserCount}
+              </span>
             </div>
           </div>
         </CardContent>
@@ -735,11 +956,11 @@ const Pagos = () => {
               />
             ) : error ? (
               <EstadoCard icon={AlertTriangle} title="Error al cargar" description={errorMessage} />
-            ) : !fechaGestion ? (
+            ) : !fechaInicio || !fechaFin ? (
               <EstadoCard
                 icon={CalendarDays}
-                title="Selecciona una fecha"
-                description="Elige una fecha y presiona buscar para mostrar los registros."
+                title="Selecciona un rango"
+                description="Elige fecha inicio y fin en el mismo mes y presiona buscar para mostrar los registros."
               />
             ) : datosOrdenados.length === 0 ? (
               <EstadoCard
@@ -841,6 +1062,7 @@ const Pagos = () => {
                           <TableCell>{fila.fecha}</TableCell>
                           <TableCell>{fila.horaInicio}</TableCell>
                           <TableCell>{fila.tiempoHablado}</TableCell>
+                          <TableCell>{fila.asesor}</TableCell>
                           <TableCell>{fila.agencia}</TableCell>
                           <TableCell>{fila.supervisor}</TableCell>
                           <TableCell>
@@ -852,6 +1074,18 @@ const Pagos = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            {fila.grabacion ? (
+                              <Button variant="outline" size="sm" asChild className="gap-2">
+                                <a href={fila.grabacion} target="_blank" rel="noopener noreferrer">
+                                  <PlayCircle className="h-4 w-4" />
+                                  Escuchar
+                                </a>
+                              </Button>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No disponible</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
@@ -860,14 +1094,6 @@ const Pagos = () => {
                                 onClick={() => abrirModal(fila, "transcripcion")}
                               >
                                 <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                title="Ver resumen"
-                                onClick={() => abrirModal(fila, "resumen")}
-                              >
-                                <ClipboardList className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -923,9 +1149,7 @@ const Pagos = () => {
             <DialogTitle>
               {modalTipo === "transcripcion"
                 ? "Transcripción"
-                : modalTipo === "resumen"
-                  ? "Resumen"
-                  : modalTipo === "observacion"
+                : modalTipo === "observacion"
                     ? "Observación"
                     : "Detalle"}
             </DialogTitle>

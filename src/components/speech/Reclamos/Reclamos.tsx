@@ -26,6 +26,7 @@ import { useSpeechAccess } from "@/hooks/speech/useSpeechAccess"
 import { useSpeechPermissions } from "@/hooks/speech/useSpeechPermissions"
 import type { SpeechReclamo } from "@/types/speech/analytics"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -59,11 +60,12 @@ const columnas: ColumnDefinition[] = [
   { id: "fecha", label: "Fecha", filtrable: false, ordenable: true },
   { id: "horaInicio", label: "Hora Inicio", filtrable: false, ordenable: true },
   { id: "duracion", label: "Duración", filtrable: false, ordenable: true },
+  { id: "asesor", label: "Asesor", filtrable: true, ordenable: true },
   { id: "agencia", label: "Agencia", filtrable: true, ordenable: true },
   { id: "supervisor", label: "Supervisor", filtrable: true, ordenable: true },
   { id: "tipoReclamo", label: "Tipo Reclamo", filtrable: true, ordenable: true },
   { id: "motivo", label: "Motivo", filtrable: true, ordenable: true },
-  { id: "grabacion", label: "Grabaci+n", filtrable: false, ordenable: false },
+  { id: "grabacion", label: "Grabación", filtrable: false, ordenable: false },
   { id: "acciones", label: "Acciones", filtrable: false, ordenable: false },
 ]
 
@@ -104,6 +106,28 @@ const toCamelCase = (key: string) => {
   return camel.replace(/^[A-Z]/, (chr) => chr.toLowerCase())
 }
 
+type ObservacionFlag = { label: string; value: string; detail?: string }
+
+const parseObservacion = (value?: string | null) => {
+  const raw = (value ?? "").trim()
+  if (!raw) return null
+  const regex = /([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+):\s*(SÍ|SI|NO)(?:\s*-\s*([^]*?))?(?=(?:\s{2,}|$))/g
+  const flags: ObservacionFlag[] = []
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(raw)) !== null) {
+    const label = match[1]?.trim() ?? ""
+    const valueMatch = match[2]?.trim() ?? ""
+    const detail = match[3]?.trim()
+    if (!label) continue
+    flags.push({
+      label,
+      value: valueMatch.toUpperCase(),
+      detail: detail || undefined,
+    })
+  }
+  return flags.length ? flags : null
+}
+
 const normalizeRecord = (record: Record<string, unknown>) => {
   const normalized: Record<string, unknown> = {}
   Object.entries(record).forEach(([key, value]) => {
@@ -131,6 +155,7 @@ const Reclamos = () => {
   const [fechaTemporal, setFechaTemporal] = useState("")
   const [agenciaSeleccionada, setAgenciaSeleccionada] = useState("")
   const [supervisorSeleccionado, setSupervisorSeleccionado] = useState("")
+  const [asesorSeleccionado, setAsesorSeleccionado] = useState("")
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modalTipo, setModalTipo] = useState<"transcripcion" | "observacion" | "">("")
   const [contenidoModal, setContenidoModal] = useState("")
@@ -165,6 +190,7 @@ const Reclamos = () => {
           toOptionalString(source.horaInicio ?? source.hora ?? source.horaInicioGestion) ?? (item.horaInicio ?? undefined)
         const tiempoHablado =
           toOptionalString(source.tiempoHablado ?? source.duracion ?? source.tiempo) ?? (item.tiempoHablado ?? undefined)
+        const asesor = toOptionalString(source.asesor ?? source.alias ?? source.asesorNombre) ?? (item.asesor ?? undefined)
         const agencia = toOptionalString(source.agencia ?? source.agenciaNombre ?? source.aliasAgencia) ?? (item.agencia ?? undefined)
         const supervisor =
           toOptionalString(
@@ -194,6 +220,7 @@ const Reclamos = () => {
           fecha,
           horaInicio,
           tiempoHablado,
+          asesor,
           agencia,
           supervisor,
           tipoReclamo,
@@ -239,12 +266,34 @@ const Reclamos = () => {
     return [...new Set(supervisores)].sort()
   }, [datosCompletos, agenciaSeleccionada])
 
+  const asesoresUnicos = useMemo(() => {
+    let datos = datosCompletos
+    if (agenciaSeleccionada) {
+      datos = datos.filter((item) => item.agencia === agenciaSeleccionada)
+    }
+    if (supervisorSeleccionado) {
+      datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
+    }
+    const asesores = datos
+      .map((item) => item.asesor)
+      .filter((asesor): asesor is string => isNonEmptyString(asesor))
+    return [...new Set(asesores)].sort()
+  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado])
+
   useEffect(() => {
     if (!puedeUsarFiltrosAvanzados) {
       return
     }
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
   }, [agenciaSeleccionada, puedeUsarFiltrosAvanzados])
+
+  useEffect(() => {
+    if (!puedeUsarFiltrosAvanzados) {
+      return
+    }
+    setAsesorSeleccionado("")
+  }, [supervisorSeleccionado, puedeUsarFiltrosAvanzados])
 
   useEffect(() => {
     if (puedeUsarFiltrosAvanzados) {
@@ -252,6 +301,7 @@ const Reclamos = () => {
     }
     setAgenciaSeleccionada("EXPERTIS")
     setSupervisorSeleccionado(aliasActual ?? "")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setBusquedaFiltro({})
     setMenuFiltroAbierto(null)
@@ -265,8 +315,11 @@ const Reclamos = () => {
     if (puedeUsarFiltrosAvanzados && supervisorSeleccionado) {
       datos = datos.filter((item) => item.supervisor === supervisorSeleccionado)
     }
+    if (puedeUsarFiltrosAvanzados && asesorSeleccionado) {
+      datos = datos.filter((item) => item.asesor === asesorSeleccionado)
+    }
     return datos
-  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, puedeUsarFiltrosAvanzados])
+  }, [datosCompletos, agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, puedeUsarFiltrosAvanzados])
 
   const datosFiltrados = useMemo(() => {
     let datos = [...datosFiltradosPrincipales]
@@ -332,7 +385,7 @@ const Reclamos = () => {
 
   useEffect(() => {
     setPaginaActual(1)
-  }, [agenciaSeleccionada, supervisorSeleccionado, fechaSeleccionada, filtrosColumnasKey])
+  }, [agenciaSeleccionada, supervisorSeleccionado, asesorSeleccionado, fechaSeleccionada, filtrosColumnasKey])
 
   useEffect(() => {
     setPaginaActual((prev) => Math.min(prev, totalPaginas))
@@ -340,7 +393,12 @@ const Reclamos = () => {
 
   const filtrosInteractivosActivos =
     puedeUsarFiltrosAvanzados &&
-    (Boolean(agenciaSeleccionada) || Boolean(supervisorSeleccionado) || Object.keys(filtrosColumnas).length > 0)
+    (
+      Boolean(agenciaSeleccionada) ||
+      Boolean(supervisorSeleccionado) ||
+      Boolean(asesorSeleccionado) ||
+      Object.keys(filtrosColumnas).length > 0
+    )
 
   const hayFiltrosActivos = Boolean(fechaSeleccionada || fechaTemporal) || filtrosInteractivosActivos
 
@@ -357,6 +415,7 @@ const Reclamos = () => {
     setFechaSeleccionada("")
     setAgenciaSeleccionada("")
     setSupervisorSeleccionado("")
+    setAsesorSeleccionado("")
     setFiltrosColumnas({})
     setBusquedaFiltro({})
     setMenuFiltroAbierto(null)
@@ -461,10 +520,12 @@ const Reclamos = () => {
       Fecha: item.fecha ?? "",
       "Hora Inicio": item.horaInicio ?? "",
       Duracion: item.tiempoHablado ?? "",
+      Asesor: item.asesor ?? "",
       Agencia: item.agencia ?? "",
       Supervisor: item.supervisor ?? "",
       "Tipo Reclamo": item.tipoReclamo ?? "",
       Motivo: item.tipificacion ?? "",
+      Grabación: item.grabacion ?? "",
       Observacion: item.observacion ?? "",
     }))
     const ws = XLSX.utils.json_to_sheet(datosExcel)
@@ -568,6 +629,34 @@ const Reclamos = () => {
                   {supervisoresUnicos.map((supervisor) => (
                     <SelectItem key={supervisor} value={supervisor}>
                       {supervisor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>
+                <span className="flex items-center gap-2">
+                  <User2 className="h-4 w-4 text-primary" />
+                  Asesor
+                </span>
+              </Label>
+              <Select
+                value={asesorSeleccionado || "all"}
+                onValueChange={(value) => setAsesorSeleccionado(value === "all" ? "" : value)}
+                disabled={
+                  !puedeUsarFiltrosAvanzados || !supervisorSeleccionado || asesoresUnicos.length === 0
+                }
+              >
+                <SelectTrigger id="asesor" className="w-[210px]">
+                  <SelectValue placeholder="Todos los asesores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los asesores</SelectItem>
+                  {asesoresUnicos.map((asesor) => (
+                    <SelectItem key={asesor} value={asesor}>
+                      {asesor}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -741,6 +830,7 @@ const Reclamos = () => {
                         <TableCell>{fila.fecha}</TableCell>
                         <TableCell>{fila.horaInicio}</TableCell>
                         <TableCell>{fila.tiempoHablado}</TableCell>
+                        <TableCell>{fila.asesor}</TableCell>
                         <TableCell>{fila.agencia}</TableCell>
                         <TableCell>{fila.supervisor}</TableCell>
                         <TableCell>{fila.tipoReclamo}</TableCell>
@@ -825,7 +915,50 @@ const Reclamos = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md bg-muted/40 p-4 text-sm text-muted-foreground">
-            {contenidoModal || "No disponible"}
+            {modalTipo === "observacion" && contenidoModal ? (
+              (() => {
+                const flags = parseObservacion(contenidoModal)
+                if (!flags) {
+                  return <p>{contenidoModal}</p>
+                }
+                const positivos = flags.filter((flag) => flag.value === "SÍ" || flag.value === "SI")
+                const negativos = flags.filter((flag) => flag.value === "NO")
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {positivos.map((flag) => (
+                        <Badge
+                          key={flag.label}
+                          variant="outline"
+                          className="border-rose-200 bg-rose-50 text-rose-700"
+                        >
+                          {flag.label}
+                        </Badge>
+                      ))}
+                      {negativos.map((flag) => (
+                        <Badge
+                          key={flag.label}
+                          variant="outline"
+                          className="border-muted bg-muted/40 text-muted-foreground"
+                        >
+                          {flag.label}
+                        </Badge>
+                      ))}
+                    </div>
+                    {positivos.map((flag) =>
+                      flag.detail ? (
+                        <div key={`${flag.label}-detail`} className="space-y-1">
+                          <p className="text-xs uppercase text-muted-foreground">{flag.label}</p>
+                          <p className="text-sm text-foreground">{flag.detail}</p>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                )
+              })()
+            ) : (
+              contenidoModal || "No disponible"
+            )}
           </div>
           <div className="flex justify-end">
             <Button variant="outline" onClick={cerrarModal}>
