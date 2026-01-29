@@ -49,9 +49,9 @@ const parseAsLocal = (dateString: string) => {
  * Clasifica si una marcación de entrada es tardanza o puntual según el grupo del usuario
  */
 const calcularEsTardanza = (horas: number, minutos: number, id_grupo?: number): boolean => {
-    // Grupo 14: Entrada 8:00 AM (con 10 min de tolerancia)
+    // Grupo 14: Entrada 8:00 AM (Sin tolerancia)
     if (id_grupo === 14) {
-        return horas > 8 || (horas === 8 && minutos > 10);
+        return horas > 8 || (horas === 8 && minutos > 0);
     }
     // Default: Entrada 7:00 AM (con 10 min de tolerancia)
     return horas > 7 || (horas === 7 && minutos > 10);
@@ -142,7 +142,6 @@ export default function ReporteMensual() {
         const end = parseAsLocal(endDate);
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
-
         // 1. Filtrar días laborables en el rango
         const filtradosLab = diasLaborales.filter(lab => {
             const date = parseAsLocal(lab.fecha);

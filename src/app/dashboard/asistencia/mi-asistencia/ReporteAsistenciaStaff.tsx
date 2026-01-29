@@ -41,16 +41,6 @@ interface Vacacion {
     codMes: string;
 }
 
-const SUPERVISORES_INTERNOS = [
-    "JORDAN MAYA",
-    "JOHAN MAYA",
-    "MELINA AYRE",
-    "KENNETH CUBA",
-    "JORGE PALOMINO",
-    "SANDY LOPEZ",
-    "LEONOR NAVARRO",
-    "JORGE VASQUEZ"
-];
 
 // Función solicitada: Devuelve un array con todas las fechas (YYYY-MM-DD) entre fecinicial y fecFinal
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string): string[] => {
@@ -173,11 +163,14 @@ const ReporteAsistenciaStaff = () => {
 
     // Horario base según tipo de usuario
     const horarioConfig = useMemo(() => {
+        if (user?.id_grupo === 14) {
+            return { entrada: "08:00", tolerancia: 0 }; // 08:00 AM (Sin tolerancia)
+        }
         if (esSupervisorInterno) {
             return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM
         }
         return { entrada: "09:00", tolerancia: 10 }; // 09:10 AM
-    }, [esSupervisorInterno]);
+    }, [esSupervisorInterno, user?.id_grupo]);
 
     // Procesar datos: Filtrar por Lunes a Viernes (incluyendo feriados) y ordenar
     const processedRegistros = useMemo(() => {
@@ -190,14 +183,7 @@ const ReporteAsistenciaStaff = () => {
                 // Normalizar la fecha del registro para comparación (YYYY-MM-DD)
                 const dateKey = reg.fecha.split('T')[0];
 
-<<<<<<< HEAD
-                // Cálculo de tardanza si es supervisor interno (Límite 7:10 AM)
-                let esTardanza = false;
-                if (isInterno && reg.horaIngreso) {
-                    const [h, m] = reg.horaIngreso.split(':').map(Number);
-                    // Tardanza si es después de las 7:10 AM
-                    esTardanza = h > 7 || (h === 7 && m > 10);
-=======
+
                 // Calcular si hay tardanza
                 let esTardanza = false;
                 if (reg.horaIngreso) {
@@ -209,7 +195,7 @@ const ReporteAsistenciaStaff = () => {
                         const minsLimite = baseH * 60 + baseM + horarioConfig.tolerancia;
                         esTardanza = minsIngreso > minsLimite;
                     }
->>>>>>> asistencia
+
                 }
 
                 return {
@@ -225,11 +211,9 @@ const ReporteAsistenciaStaff = () => {
                 return day >= 1 && day <= 5; // Mon-Fri
             })
             .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-<<<<<<< HEAD
-    }, [staffData, diasVacaciones, user?.usuario]);
-=======
+
     }, [staffData, diasVacaciones, horarioConfig]);
->>>>>>> asistencia
+
 
     const stats = useMemo(() => {
         const total = processedRegistros.length;
@@ -430,14 +414,12 @@ const ReporteAsistenciaStaff = () => {
                                                                         ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
                                                                         : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
                                                     }>
-<<<<<<< HEAD
-                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Asistió"}
-=======
+
                                                         {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Puntual"}
->>>>>>> asistencia
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
+
+                                                    </Badge >
+                                                </TableCell >
+                                            </TableRow >
                                         );
                                     })
                                 ) : (
@@ -447,12 +429,12 @@ const ReporteAsistenciaStaff = () => {
                                         </TableCell>
                                     </TableRow>
                                 )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+                            </TableBody >
+                        </Table >
+                    </div >
+                </CardContent >
+            </Card >
+        </div >
     );
 };
 

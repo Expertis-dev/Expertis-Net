@@ -83,9 +83,16 @@ const EXCEPCIONES_GRUPALES = [
 
 /**
  * Función provisional para asignar horarios base según el alias del usuario.
+ * @param usuario - Alias del colaborador
+ * @param idGrupoSupervisor - ID del grupo del supervisor logueado (opcional)
  * @todo En producción, estos valores deben recuperarse desde el perfil del empleado en la DB.
  */
-const determinarHorarioBase = (usuario: string): { entrada: string; tolerancia: number } => {
+const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { entrada: string; tolerancia: number } => {
+    // Si el supervisor es del grupo 14 (BPO), todos sus colaboradores tienen horario 8:00 AM (Sin tolerancia)
+    if (idGrupoSupervisor === 14) {
+        return { entrada: "8:00", tolerancia: 0 };
+    }
+
     const u = usuario.toUpperCase();
 
     if (u.includes("MAYA") || u.includes("AYRE")) {
@@ -296,7 +303,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         const todayStr = format(new Date(), 'yyyy-MM-dd');
 
         colaboradores.forEach(colab => {
-            const config = determinarHorarioBase(colab.usuario);
+            const config = determinarHorarioBase(colab.usuario, user?.id_grupo);
             const currentIdMov = colabIdMap[colab.usuario];
 
             matrix[colab.usuario] = {

@@ -325,7 +325,7 @@ export const handleLogout = () => {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const parser = new UAParser.UAParser(navigator.userAgent);
+  const parser = new UAParser.UAParser("navigator.userAgent");
   const browser = parser.getBrowser(); // {name, version}
   const os = parser.getOS();           // {name, version}
   const { user } = useUser()
