@@ -430,6 +430,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           }
 
           const filteredSubItems = menu.subItems.filter((sub) => {
+            // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
+            if (sub.title === "Reporte Staff" && user?.usuario !== "CAROLINA PICHILINGUE") {
+              return false
+            }
+
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
             }
