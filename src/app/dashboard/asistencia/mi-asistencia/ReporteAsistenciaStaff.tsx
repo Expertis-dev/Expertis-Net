@@ -372,7 +372,6 @@ const ReporteAsistenciaStaff = () => {
                                         const isFeriado = !!row.esFeriado;
                                         const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones;
                                         const fechaObj = parseISO(row.fecha);
-
                                         return (
                                             <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
                                                 <TableCell className="capitalize py-4 font-medium">

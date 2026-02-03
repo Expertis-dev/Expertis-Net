@@ -30,6 +30,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmpleadoStaff } from '@/types/Empleado';
 
 // --- CONFIGURACIÓN DE GRUPOS ---
 const GRUPOS_HORARIO = [
@@ -95,11 +96,20 @@ interface VacacionItem {
     estadoVacaciones: string;
     fecInicial: string;
     fecFinal: string;
+    usrInsert: string;
+}
+
+interface DMItem {
+    idEmpleado: number;
+    fecha_inicio: string;
+    fecha_fin: string;
 }
 
 interface ReporteProps {
     colaboradores: PersonalGlobal[];
 }
+
+
 
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -116,6 +126,15 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
     }
 };
 
+function quitarTildes(texto: string) {
+    if (typeof texto !== 'string') {
+        throw new TypeError('El argumento debe ser una cadena de texto');
+    }
+    return texto
+        .normalize("NFD") // Descompone caracteres con tildes en base + marca
+        .replace(/[\u0300-\u036f]/g, ""); // Elimina las marcas diacríticas
+}
+
 const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedGroup, setSelectedGroup] = useState(GRUPOS_HORARIO[3].id); // Default 9-6
@@ -124,6 +143,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
+    const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
 
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentDate);
@@ -139,6 +159,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     // Filtrar colaboradores que pertenecen al grupo actual según el archivo estático
     const colaboradoresDelGrupo = useMemo(() => {
         // Filtrar primero los que no tienen área y los que no tienen NINGÚN registro en todo el mes
+
+
         const conRegistrosYArea = colaboradores.filter(c => {
             const tieneArea = c.Area && c.Area.trim() !== "";
             // Verificamos si tiene al menos un marcado de ingreso válido en cualquier día del mes
@@ -170,28 +192,90 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         if (!colaboradores || colaboradores.length === 0) return;
 
         try {
-            const idsParaVacaciones = colaboradores.map(c => c.id).filter(Boolean);
-            const respVac = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerVacacionesPorEmpleados`, {
+            
+            //// Traer ids de usuario mediante nombre del empleado usando endpoint DONE
+            const nombreEmpleado = colaboradores
+            .map(c => c.Nombre)
+            
+            const idsEmpleados = await Promise.all(nombreEmpleado.map(async (c): Promise<number | undefined | string> => {
+                try {
+                    const id = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ asesor: c.trim() })
+                    })
+                    .then(res => res.json())
+                    .then(id => id.data[0].idEmpleado)
+                    return id !== undefined ? id : c
+                } catch (error) {
+                    return c;
+                }
+            }))
+            const respVacaciones = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerVacacionesPorEmpleados`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idEmpleados: idsParaVacaciones })
+                body: JSON.stringify({ idEmpleados: idsEmpleados })
             });
 
-            if (respVac.ok) {
-                const json = await respVac.json();
+            const empleadosStaffResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerEmpleadosStaff`)
+            const empleadosStaffData: EmpleadoStaff[] = (await empleadosStaffResponse.json()).data;
+            // TODO traer info de usuarios con id
+
+            
+            //// Verificar que se muestren los datos de vacaciones en la tabla
+
+            if (respVacaciones.ok) {
+                const json = await respVacaciones.json();
+                // console.log("Respuesta endpoint /obtenerVacacionesPorEmpleados", json)
                 const vMap: Record<string, string[]> = {};
                 (json.data || []).forEach((vac: VacacionItem) => {
                     if (vac.estadoVacaciones?.trim().toUpperCase() === "APROBADO") {
-                        const colabOwner = colaboradores.find((c: PersonalGlobal) => c.id === vac.idEmpleado);
+                        //// FIXED: Nombre y usrInsert no deberian estar relacionados
+                        const colabOwner = empleadosStaffData.find((c) => c.idEmpleado[0] === vac.idEmpleado);
                         if (colabOwner) {
-                            const key = colabOwner.Nombre.toUpperCase();
+                            const key = colabOwner.EMPLEADO.toUpperCase();
                             const dias = expandirRangoVacaciones(vac.fecInicial, vac.fecFinal, currentDate);
                             vMap[key] = [...new Set([...(vMap[key] || []), ...dias])];
                         }
                     }
                 });
                 setVacacionesMap(vMap);
+                console.log(vMap)
             }
+
+
+
+            // TODO traer descansos medicos
+            
+            try {
+                const respDM = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`,{
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: idsEmpleados })
+                })
+                const descansosMedicosData = await respDM.json()
+                const listDM: [] = descansosMedicosData.data || [];
+                const RecordDescansosMedicos: Record<string, string[]> = {};
+                listDM.forEach((dm: DMItem) => {
+                    
+                    const colabOwner = empleadosStaffData.find(c => c.idEmpleado[0] === dm.idEmpleado);
+                    if (colabOwner){
+                        const aliasOwner = colabOwner.EMPLEADO || colabOwner.EMPLEADO;
+                        const aliasKey = (aliasOwner || "").toString().trim().toUpperCase();
+
+                        const dias = expandirRangoVacaciones(dm.fecha_inicio, dm.fecha_fin, currentDate);
+                        if (!RecordDescansosMedicos[aliasKey]) RecordDescansosMedicos[aliasKey] = [];
+                        
+                        RecordDescansosMedicos[aliasKey] = [...new Set([...RecordDescansosMedicos[aliasKey], ...dias])];
+                    }
+                })
+
+                setDescansosMap(RecordDescansosMedicos)
+            } catch (error) {
+                console.log("Fallo al traer los datos de Descansos médicos")
+            }
+
+
         } catch (e) {
             console.error("Error fetching vacations:", e);
         }
@@ -206,7 +290,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         const matrix: Record<string, MatrixItem> = {};
         const todayStr = format(new Date(), 'yyyy-MM-dd');
         const config = GRUPOS_HORARIO.find((g: any) => g.id === selectedGroup)!;
-
         colaboradoresDelGrupo.forEach((colab: PersonalGlobal) => {
             const nombreKey = colab.Nombre;
             matrix[nombreKey] = { horarioConfig: config, asistencias: {} };
@@ -222,6 +305,16 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 // Vacaciones
                 if ((vacacionesMap[colab.Nombre.toUpperCase()] || []).includes(dayStr)) {
                     matrix[nombreKey].asistencias[dayStr] = { type: 'vacaciones', label: 'VAC' };
+                    // return;
+                }
+
+                const descansosMedicos: string[] = descansosMap[nombreKey] || [];
+                
+                if (descansosMedicos.includes(dayStr)){
+                    matrix[nombreKey].asistencias[dayStr] = {
+                        type: "dm",
+                        label: 'DM'
+                    };
                     return;
                 }
 
@@ -253,7 +346,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 }
             });
         });
-
+        // console.log("MATRIX", matrix)
         return matrix;
     }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, selectedGroup]);
 
@@ -520,7 +613,12 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                             </div>
                                                         ) : record?.type === 'falta' ? (
                                                             <div className="h-full w-full bg-slate-200 dark:bg-slate-800/60" />
-                                                        ) : !weekend && (
+                                                        ) : record?.type === "dm" ? (
+                                                            <div className="flex flex-col items-center bg-indigo-50 dark:bg-indigo-900/40 w-full h-full justify-center border-x border-indigo-100 dark:border-indigo-900">
+                                                                <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">DM ó</span>
+                                                                <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">LIC</span>
+                                                            </div>
+                                                        ): !weekend && (
                                                             <div className="h-1 w-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
                                                         )}
                                                     </TableCell>
