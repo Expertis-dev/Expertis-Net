@@ -153,6 +153,12 @@ const MENU_CONFIG: MenuItem[] = [
         modulo: "Asistencia",
         // permiso: "Equipo-ver",
       },
+      {
+        title: "Reporte Staff",
+        href: "/dashboard/asistencia/ReporteAsistencia",
+        modulo: "Asistencia",
+        // permiso: "ReporteStaff-ver",
+      },
 
     ],
   },
