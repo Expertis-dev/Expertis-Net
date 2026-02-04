@@ -40,7 +40,8 @@ const SUPERVISORES_ESP = [
     "LEONOR NAVARRO",
     "JORGE VASQUEZ",
     "MAYRA LLIMPE",
-    "ROBERTO INZUA"
+    "ROBERTO INZUA",
+    "ANTHONY TORRES"
 ];
 
 // --- TIPOS ---

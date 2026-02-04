@@ -78,7 +78,8 @@ const SUPERVISORES_INTERNOS = [
     "SANDY LOPEZ",
     "LEONOR NAVARRO",
     "JORGE VASQUEZ",
-    "MAYRA LLIMPE"
+    "MAYRA LLIMPE",
+    "ANTHONY TORRES"
 ];
 
 const ReporteAsistenciaStaff = () => {
