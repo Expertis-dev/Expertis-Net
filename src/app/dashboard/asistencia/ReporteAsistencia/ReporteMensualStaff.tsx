@@ -14,7 +14,9 @@ import {
     Umbrella,
     Clock,
     CalendarDays,
-    LayoutGrid
+    LayoutGrid,
+    TimerIcon,
+    HomeIcon
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmpleadoStaff } from '@/types/Empleado';
+import { HomeOfficeFormModal } from '@/components/asistencia/reporteAsistencia/homeOfficeModal';
+import { HomeOfficeResponse } from '@/types/HomeOffice';
 
 // --- CONFIGURACIÓN DE GRUPOS ---
 const GRUPOS_HORARIO = [
@@ -133,6 +137,13 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [currentDate] = useState(new Date());
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
+    // HomeOffice: key => NOMBRE_UPPER, value => array of tiempos normalizados { fecha: 'yyyy-MM-dd', horaIngreso, horaSalida }
+    const [homeOffice, setHomeOffice] = useState<Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]>>({})
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+    const [empleado, setEmpleado] = useState<PersonalGlobal>()
 
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentDate);
@@ -160,8 +171,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const nombreUpper = (c.Nombre || "").toString().trim().toUpperCase();
             const enVacaciones = (vacacionesMap[nombreUpper] || []).length > 0;
             const enDescansoMedico = (descansosMap[nombreUpper] || []).length > 0;
+            const enHomeOffice = (homeOffice[nombreUpper] || []).length > 0;
 
-            return tieneArea && (tieneMarcadoPositivo || enVacaciones || enDescansoMedico);
+            return tieneArea && (tieneMarcadoPositivo || enVacaciones || enDescansoMedico || enHomeOffice);
         });
 
         if (selectedGroup === '9-6') {
@@ -180,7 +192,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const nombre = c.Nombre.toUpperCase();
             return nombresEnGrupo.some((name: string) => nombre.includes(name.toUpperCase()));
         });
-    }, [colaboradores, selectedGroup, vacacionesMap, descansosMap]);
+    }, [colaboradores, selectedGroup, vacacionesMap, descansosMap, homeOffice]);
 
     const fetchVacaciones = useCallback(async () => {
         if (!colaboradores || colaboradores.length === 0) return;
@@ -196,7 +208,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                     const id = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ asesor: c.trim() })
+                        body: JSON.stringify({ asesor: c.trim() }),
                     })
                         .then(res => res.json())
                         .then(id => id.data[0].idEmpleado)
@@ -261,21 +273,65 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                         RecordDescansosMedicos[aliasKey] = [...new Set([...RecordDescansosMedicos[aliasKey], ...dias])];
                     }
                 })
-
                 setDescansosMap(RecordDescansosMedicos)
             } catch {
                 console.log("Fallo al traer los datos de Descansos médicos")
             }
-
+            
 
         } catch (e) {
             console.error("Error fetching vacations:", e);
         }
     }, [colaboradores, currentDate]);
 
+    const fetchHomeOffice = useCallback(async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice`)
+            const json: HomeOfficeResponse = await res.json()
+            const data = json.data
+            const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {}
+            data.forEach((em) => {
+                const alias = (em.nombre || "").toString().trim().toUpperCase();
+                if (!RecordHomeOffice[alias]) RecordHomeOffice[alias] = [];
+
+                const normalized = (em.tiempos || []).map(t => {
+                    // Extraer fecha directamente del string o parsear sin asumir UTC
+                    // Si t.fecha es "2026-02-04" o "2026-02-04T...", extraer la parte yyyy-MM-dd
+                    const fechaStr = t.fecha.split('T')[0]; // Obtiene "2026-02-04"
+                    // Parsear en zona horaria local sin UTC
+                    const [y, m, d] = fechaStr.split('-').map(Number);
+                    const dateLocal = new Date(y, m - 1, d); // Crea fecha en zona local
+                    return {
+                        fecha: format(dateLocal, 'yyyy-MM-dd'),
+                        horaIngreso: t.horaIngreso || null,
+                        horaSalida: t.horaSalida || null,
+                    };
+                });
+
+                // Merge unique by fecha
+                const merged = [...(RecordHomeOffice[alias] || []), ...normalized];
+                const uniqueByFecha: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }> = {};
+                merged.forEach(m => uniqueByFecha[m.fecha] = m);
+                RecordHomeOffice[alias] = Object.values(uniqueByFecha);
+            })
+
+            setHomeOffice(RecordHomeOffice)
+        } catch (error) {
+            console.log("Fallo al traer los datos de HomeOffice", error)
+        }
+    }, [])
+
     useEffect(() => {
-        fetchVacaciones();
-    }, [fetchVacaciones]);
+        // Solo ejecutar cuando el modal se cierra (pasamos de true a false)
+        if (!isModalOpen) {
+            setIsLoading(true);
+            Promise.all([fetchHomeOffice(), fetchVacaciones()]).then(() => {
+                setIsLoading(false);
+            }).catch(() => {
+                setIsLoading(false);
+            });
+        }
+    }, [fetchVacaciones, fetchHomeOffice, isModalOpen]);
 
 
     const enrichedMatrix = useMemo(() => {
@@ -311,6 +367,18 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                     return;
                 }
 
+                // HomeOffice: si hay registro de HO para el día, mostrar como asistencia con horas
+                const hoList = homeOffice[nombreUpper] || [];
+                const hoForDay = hoList.find(h => h.fecha === dayStr);
+                if (hoForDay) {
+                    matrix[nombreKey].asistencias[dayStr] = {
+                        type: "homeoffice",
+                        horaI: hoForDay.horaIngreso || undefined,
+                        horaS: hoForDay.horaSalida || undefined
+                    };
+                    return;
+                }
+
                 const record = colab.tiempos[keyTiempos];
                 const hI = record?.horaIngreso || "";
                 const hS = record?.horaSalida || "";
@@ -340,7 +408,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             });
         });
         return matrix;
-    }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, descansosMap, selectedGroup]);
+    }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, descansosMap, homeOffice, selectedGroup]);
 
     const handleExportExcel = () => {
         const allValidColabs = colaboradores.filter(c => {
@@ -376,6 +444,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
                 const holiday = getFeriado(dayStr);
                 const vacs = vacacionesMap[colab.Nombre.toUpperCase()] || [];
+                const hos = homeOffice[colab.Nombre.toUpperCase()] || [];
+                const hoForDay = hos.find(h => h.fecha === dayStr);
 
                 let ingreso = "-";
                 let salida = "-";
@@ -383,6 +453,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 if (vacs.includes(dayStr)) {
                     ingreso = "VAC";
                     salida = "VAC";
+                } else if (hoForDay) {
+                    ingreso = hoForDay.horaIngreso || "HOME";
+                    salida = hoForDay.horaSalida || "HOME";
                 } else if (holiday) {
                     ingreso = "FERIADO";
                     salida = "FERIADO";
@@ -439,6 +512,10 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         });
     }, [colaboradoresDelGrupo, searchTerm, selectedArea]);
 
+    const onCLickTimerButton = (colab: PersonalGlobal) => {
+        setIsModalOpen(true)
+        setEmpleado(colab)
+    }
 
     return (
         <div className="p-4 space-y-6 bg-slate-50/50 dark:bg-slate-950/50 min-h-screen">
@@ -523,6 +600,12 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             </div>
 
             {/* Matriz Reporte */}
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                    <RefreshCw className="h-10 w-10 text-blue-900 animate-spin" />
+                    <p className="text-slate-500 font-medium">Sincronizando registros mensuales...</p>
+                </div>
+            ) : (
             <Card className="rounded-none border-none shadow-2xl overflow-hidden bg-white dark:bg-slate-900">
                 <div className="p-0">
                     <div className="relative overflow-auto max-h-[70vh] scrollbar-thin dark:scrollbar-thumb-slate-800">
@@ -555,10 +638,13 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                     return (
                                         <TableRow key={colab.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                             <TableCell className="sticky left-0 z-30 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r dark:border-slate-800 py-4 shadow-[10px_0_15px_-5px_rgba(0,0,0,0.02)] transition-colors">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight">
-                                                        {personalName}
-                                                    </span>
+                                                <div className="flex flex-col ">
+                                                    <div className='flex justify-between '>
+                                                        <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight">
+                                                            {personalName}
+                                                        </span>
+                                                        <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' onClick={() => onCLickTimerButton(colab)}><TimerIcon /></Button>
+                                                    </div>
                                                     <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{colab.Area}</span>
                                                 </div>
                                             </TableCell>
@@ -591,6 +677,16 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                     <span className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase">Vac</span>
                                                                 </div>
                                                             </div>
+                                                        ) : record?.type === 'homeoffice' ? (
+                                                            <div className="flex flex-col items-center justify-center gap-1 h-full px-1">
+                                                                <HomeIcon color='purple'/>
+                                                                <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-lg bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-transparent dark:border-transparent dark:text-purple-400`}>
+                                                                    {record.horaI || 'S/MARCADO'}
+                                                                </span>
+                                                                <span className="text-[10px] font-black text-slate-600 dark:text-slate-400">
+                                                                    {record.horaS || ''}
+                                                                </span>
+                                                            </div>
                                                         ) : record?.type === 'feriado' ? (
                                                             <div className="flex flex-col items-center justify-center opacity-40 grayscale h-full">
                                                                 <span className="text-[8px] font-black text-orange-600 dark:text-orange-400">FERIADO</span>
@@ -622,7 +718,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                     </div>
                 </div>
             </Card>
-
+            )}
+            <HomeOfficeFormModal isOpen={isModalOpen} onClose={ () => setIsModalOpen(false)} colab={empleado!}/>
         </div>
     );
 };
