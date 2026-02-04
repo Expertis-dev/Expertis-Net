@@ -167,7 +167,12 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const tieneMarcadoPositivo = Object.values(c.tiempos).some(t =>
                 t && t.horaIngreso && t.horaIngreso.trim() !== "" && t.horaIngreso !== "No marcó Ingreso"
             );
-            return tieneArea && tieneMarcadoPositivo;
+
+            const nombreUpper = (c.Nombre || "").toString().trim().toUpperCase();
+            const enVacaciones = (vacacionesMap[nombreUpper] || []).length > 0;
+            const enDescansoMedico = (descansosMap[nombreUpper] || []).length > 0;
+
+            return tieneArea && (tieneMarcadoPositivo || enVacaciones || enDescansoMedico);
         });
 
         if (selectedGroup === '9-6') {
@@ -186,7 +191,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const nombre = c.Nombre.toUpperCase();
             return nombresEnGrupo.some((name: string) => nombre.includes(name.toUpperCase()));
         });
-    }, [colaboradores, selectedGroup]);
+    }, [colaboradores, selectedGroup, vacacionesMap, descansosMap]);
 
     const fetchVacaciones = useCallback(async () => {
         if (!colaboradores || colaboradores.length === 0) return;
@@ -226,7 +231,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
             if (respVacaciones.ok) {
                 const json = await respVacaciones.json();
-                // console.log("Respuesta endpoint /obtenerVacacionesPorEmpleados", json)
                 const vMap: Record<string, string[]> = {};
                 (json.data || []).forEach((vac: VacacionItem) => {
                     if (vac.estadoVacaciones?.trim().toUpperCase() === "APROBADO") {
@@ -240,7 +244,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                     }
                 });
                 setVacacionesMap(vMap);
-                console.log(vMap)
             }
 
 
@@ -292,6 +295,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         const config = GRUPOS_HORARIO.find((g: any) => g.id === selectedGroup)!;
         colaboradoresDelGrupo.forEach((colab: PersonalGlobal) => {
             const nombreKey = colab.Nombre;
+            const nombreUpper = (nombreKey || "").toString().trim().toUpperCase();
             matrix[nombreKey] = { horarioConfig: config, asistencias: {} };
 
             daysInMonth.forEach(day => {
@@ -303,12 +307,12 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 const weekend = isWeekend(day);
 
                 // Vacaciones
-                if ((vacacionesMap[colab.Nombre.toUpperCase()] || []).includes(dayStr)) {
+                if ((vacacionesMap[nombreUpper] || []).includes(dayStr)) {
                     matrix[nombreKey].asistencias[dayStr] = { type: 'vacaciones', label: 'VAC' };
                     // return;
                 }
 
-                const descansosMedicos: string[] = descansosMap[nombreKey] || [];
+                const descansosMedicos: string[] = descansosMap[nombreUpper] || [];
                 
                 if (descansosMedicos.includes(dayStr)){
                     matrix[nombreKey].asistencias[dayStr] = {
@@ -346,9 +350,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 }
             });
         });
-        // console.log("MATRIX", matrix)
         return matrix;
-    }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, selectedGroup]);
+    }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, descansosMap, selectedGroup]);
 
     const handleExportExcel = () => {
         const allValidColabs = colaboradores.filter(c => {
