@@ -10,7 +10,6 @@ import {
 
     Search,
     Download,
-    Loader2,
     RefreshCw,
     Umbrella,
     Clock,
@@ -129,7 +128,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedGroup, setSelectedGroup] = useState(GRUPOS_HORARIO[3].id); // Default 9-6
     const [selectedArea, setSelectedArea] = useState<string>("TODAS");
-    const [loadingData, setLoadingData] = useState(false);
+
 
     const [currentDate] = useState(new Date());
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
@@ -168,7 +167,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         if (selectedGroup === '9-6') {
             const nombresAsignados = Object.entries(CONFIG_EMPLEADOS_ESTATICA)
                 .filter(([id]) => id !== '9-6')
-                .flatMap(([_, names]) => names.map(n => n.toUpperCase()));
+                .flatMap(([, names]) => names.map(n => n.toUpperCase()));
 
             return conRegistrosYArea.filter((c: PersonalGlobal) => {
                 const nombre = c.Nombre.toUpperCase();
@@ -282,7 +281,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const enrichedMatrix = useMemo(() => {
         const matrix: Record<string, MatrixItem> = {};
         const todayStr = format(new Date(), 'yyyy-MM-dd');
-        const config = GRUPOS_HORARIO.find((g: any) => g.id === selectedGroup)!;
+        const config = GRUPOS_HORARIO.find((g) => g.id === selectedGroup)!;
         colaboradoresDelGrupo.forEach((colab: PersonalGlobal) => {
             const nombreKey = colab.Nombre;
             const nombreUpper = (nombreKey || "").toString().trim().toUpperCase();
@@ -440,14 +439,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         });
     }, [colaboradoresDelGrupo, searchTerm, selectedArea]);
 
-    if (loadingData && colaboradores.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <Loader2 className="h-10 w-10 text-blue-900 animate-spin" />
-                <p className="text-slate-500 font-medium">Sincronizando registros mensuales...</p>
-            </div>
-        );
-    }
 
     return (
         <div className="p-4 space-y-6 bg-slate-50/50 dark:bg-slate-950/50 min-h-screen">
@@ -501,7 +492,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                         className="rounded-2xl h-11 w-11 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-900 dark:border-slate-800"
                         onClick={() => window.location.reload()}
                     >
-                        <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4`} />
                     </Button>
                     <Button
                         onClick={handleExportExcel}
