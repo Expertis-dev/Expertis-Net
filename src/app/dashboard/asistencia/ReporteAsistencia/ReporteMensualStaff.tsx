@@ -640,10 +640,10 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                             <TableCell className="sticky left-0 z-30 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r dark:border-slate-800 py-4 shadow-[10px_0_15px_-5px_rgba(0,0,0,0.02)] transition-colors">
                                                 <div className="flex flex-col ">
                                                     <div className='flex justify-between '>
-                                                        <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight">
+                                                        <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight mr-4">
                                                             {personalName}
                                                         </span>
-                                                        <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' onClick={() => onCLickTimerButton(colab)}><TimerIcon /></Button>
+                                                        <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900' onClick={() => onCLickTimerButton(colab)}><TimerIcon className='stroke-current' /></Button>
                                                     </div>
                                                     <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{colab.Area}</span>
                                                 </div>

@@ -68,7 +68,7 @@ export const HomeOfficeFormModal = ({ isOpen, onClose, colab, onSuccess }: HomeO
                     >
                         <Card className="border-0 shadow-2xl overflow-hidden bg-white dark:bg-slate-900">
                             {/* Header con gradiente */}
-                            <div className="relative bg-gradient-to-r from-blue-900 to-blue-950 dark:from-blue-950 dark:to-blue-700 px-6 pt-6 pb-8">
+                            <div className="relative bg-gradient-to-r from-blue-900 to-blue-500 dark:from-blue-950 dark:to-slate-900 px-6 pt-6 pb-8">
                                 <button
                                     onClick={onClose}
                                     className="absolute right-4 top-4 text-white/70 hover:text-white transition-colors p-1"
