@@ -12,10 +12,8 @@ import {
     Download,
     Loader2,
     RefreshCw,
-    XCircle,
     Umbrella,
     Clock,
-    CheckCircle2,
     CalendarDays,
     LayoutGrid
 } from "lucide-react";
@@ -29,7 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmpleadoStaff } from '@/types/Empleado';
 
 // --- CONFIGURACIÓN DE GRUPOS ---
@@ -121,26 +119,18 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
         return days
             .filter(day => isSameMonth(day, referenceDate))
             .map(day => format(day, 'yyyy-MM-dd'));
-    } catch (e) {
+    } catch {
         return [];
     }
 };
 
-function quitarTildes(texto: string) {
-    if (typeof texto !== 'string') {
-        throw new TypeError('El argumento debe ser una cadena de texto');
-    }
-    return texto
-        .normalize("NFD") // Descompone caracteres con tildes en base + marca
-        .replace(/[\u0300-\u036f]/g, ""); // Elimina las marcas diacríticas
-}
 
 const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedGroup, setSelectedGroup] = useState(GRUPOS_HORARIO[3].id); // Default 9-6
     const [selectedArea, setSelectedArea] = useState<string>("TODAS");
     const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+
     const [currentDate] = useState(new Date());
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
@@ -197,11 +187,11 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         if (!colaboradores || colaboradores.length === 0) return;
 
         try {
-            
+
             //// Traer ids de usuario mediante nombre del empleado usando endpoint DONE
             const nombreEmpleado = colaboradores
-            .map(c => c.Nombre)
-            
+                .map(c => c.Nombre)
+
             const idsEmpleados = await Promise.all(nombreEmpleado.map(async (c): Promise<number | undefined | string> => {
                 try {
                     const id = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
@@ -209,10 +199,10 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ asesor: c.trim() })
                     })
-                    .then(res => res.json())
-                    .then(id => id.data[0].idEmpleado)
+                        .then(res => res.json())
+                        .then(id => id.data[0].idEmpleado)
                     return id !== undefined ? id : c
-                } catch (error) {
+                } catch {
                     return c;
                 }
             }))
@@ -226,7 +216,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const empleadosStaffData: EmpleadoStaff[] = (await empleadosStaffResponse.json()).data;
             // TODO traer info de usuarios con id
 
-            
+
             //// Verificar que se muestren los datos de vacaciones en la tabla
 
             if (respVacaciones.ok) {
@@ -249,9 +239,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
 
             // TODO traer descansos medicos
-            
+
             try {
-                const respDM = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`,{
+                const respDM = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idEmpleados: idsEmpleados })
@@ -260,21 +250,21 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 const listDM: [] = descansosMedicosData.data || [];
                 const RecordDescansosMedicos: Record<string, string[]> = {};
                 listDM.forEach((dm: DMItem) => {
-                    
+
                     const colabOwner = empleadosStaffData.find(c => c.idEmpleado[0] === dm.idEmpleado);
-                    if (colabOwner){
+                    if (colabOwner) {
                         const aliasOwner = colabOwner.EMPLEADO || colabOwner.EMPLEADO;
                         const aliasKey = (aliasOwner || "").toString().trim().toUpperCase();
 
                         const dias = expandirRangoVacaciones(dm.fecha_inicio, dm.fecha_fin, currentDate);
                         if (!RecordDescansosMedicos[aliasKey]) RecordDescansosMedicos[aliasKey] = [];
-                        
+
                         RecordDescansosMedicos[aliasKey] = [...new Set([...RecordDescansosMedicos[aliasKey], ...dias])];
                     }
                 })
 
                 setDescansosMap(RecordDescansosMedicos)
-            } catch (error) {
+            } catch {
                 console.log("Fallo al traer los datos de Descansos médicos")
             }
 
@@ -313,8 +303,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 }
 
                 const descansosMedicos: string[] = descansosMap[nombreUpper] || [];
-                
-                if (descansosMedicos.includes(dayStr)){
+
+                if (descansosMedicos.includes(dayStr)) {
                     matrix[nombreKey].asistencias[dayStr] = {
                         type: "dm",
                         label: 'DM'
@@ -621,7 +611,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                 <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">DM ó</span>
                                                                 <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 leading-none">LIC</span>
                                                             </div>
-                                                        ): !weekend && (
+                                                        ) : !weekend && (
                                                             <div className="h-1 w-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto" />
                                                         )}
                                                     </TableCell>
