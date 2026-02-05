@@ -205,22 +205,17 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
             //// Traer ids de usuario mediante nombre del empleado usando endpoint DONE
             const nombreEmpleado = colaboradores
-                .map(c => c.Nombre)
+                .map(c => c.Nombre.trim().toUpperCase())
+            console.log(nombreEmpleado)
+            const idsEmpleados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdsEmpleadosPorListaAlias`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({nombres: nombreEmpleado}),
+            })
+                .then(res => res.json())
+                .then(id => id.data)
 
-            const idsEmpleados = await Promise.all(nombreEmpleado.map(async (c): Promise<number | undefined | string> => {
-                try {
-                    const id = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdEmpleadoPorAlias`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ asesor: c.trim() }),
-                    })
-                        .then(res => res.json())
-                        .then(id => id.data[0].idEmpleado)
-                    return id !== undefined ? id : c
-                } catch {
-                    return c;
-                }
-            }))
+            console.log(idsEmpleados)
             const respVacaciones = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerVacacionesPorEmpleados`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
