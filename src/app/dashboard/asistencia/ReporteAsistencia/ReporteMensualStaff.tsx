@@ -62,10 +62,11 @@ const CONFIG_EMPLEADOS_ESTATICA: Record<string, string[]> = {
         "ROBERTO INZUA"
     ],
     '8-5': [
-        "JOHN PULACHE",
-        "ROBERT MAIGUIRI",
+        "ROBERT MANGUINURI",
         "MAURO ADAUTO",
         "FIORELLA DIAZ",
+        "JORDAN MAYA",
+        "JHON PULACHE"
     ],
     '9-6': [] // Se deja vacío ya que ahora es el grupo por defecto (fallback)
 };
@@ -206,7 +207,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             //// Traer ids de usuario mediante nombre del empleado usando endpoint DONE
             const nombreEmpleado = colaboradores
                 .map(c => c.Nombre.trim().toUpperCase())
-            console.log(nombreEmpleado)
             const idsEmpleados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdsEmpleadosPorListaAlias`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -215,7 +215,6 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 .then(res => res.json())
                 .then(id => id.data)
 
-            console.log(idsEmpleados)
             const respVacaciones = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerVacacionesPorEmpleados`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
