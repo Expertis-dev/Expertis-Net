@@ -10,27 +10,36 @@ export const HomeOfficeFormModal = ({ isOpen, onClose, colab, onSuccess }: HomeO
     type HOForm = {
         horaInicio: string;
         horaSalida: string;
+        fecha: string;
     }
 
     const {
         register,
         handleSubmit,
+        watch,
         formState: { errors }
     } = useForm<HOForm>({
-        mode: 'onSubmit'
+        mode: 'onSubmit',
+        defaultValues: { fecha: new Date().toISOString().split('T')[0] }
     })
+
+    const fechaValue = watch('fecha');
 
     const onClickButton = async (data: HOForm) => {
         // Enviar datos o procesarlos
         console.log('HomeOffice submit', data)
         try {
+            // Guardar fecha en formato aaaa/mm/dd
+            const fechaGuardar = data.fecha ? data.fecha.replace(/-/g, '/') : new Date().toISOString().split('T')[0].replace(/-/g, '/');
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subirAsistenciaHomeOffice`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     nombre: colab.Nombre,
                     horaIngreso: data.horaInicio,
-                    horaSalida: data.horaSalida
+                    horaSalida: data.horaSalida,
+                    fecha: fechaGuardar
                 })
             })
 
@@ -102,6 +111,23 @@ export const HomeOfficeFormModal = ({ isOpen, onClose, colab, onSuccess }: HomeO
                             </div>
 
                             <CardContent className="p-6 space-y-6">
+                                {/* Fecha (selector) */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        <Clock className="h-4 w-4 text-slate-500" />
+                                        Fecha
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            type="date"
+                                            aria-label="Seleccionar fecha"
+                                            className="w-full py-2.5 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            {...register('fecha', { required: 'La fecha es obligatoria' })}
+                                        />
+                                    </div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">Vista: {fechaValue ? fechaValue.split('-').reverse().join('/') : (new Date().toISOString().split('T')[0].split('-').reverse().join('/'))}</p>
+                                </div>
+
                                 {/* Hora de Ingreso */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
