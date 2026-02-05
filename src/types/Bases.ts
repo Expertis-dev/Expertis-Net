@@ -1,5 +1,7 @@
 // TIPOS BASE
 
+import { PersonalGlobal } from "@/services/empleadosService";
+
 export interface GestionDetallada {
   documento: string;
   cartera: string;
@@ -227,6 +229,13 @@ export interface DetailModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly detalle: DetalleAsesor | null;
+}
+
+export interface HomeOfficeModalProps {
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly colab: PersonalGlobal;
+  readonly onSuccess?: () => Promise<void>;
 }
 
 export interface GruposTableProps {
