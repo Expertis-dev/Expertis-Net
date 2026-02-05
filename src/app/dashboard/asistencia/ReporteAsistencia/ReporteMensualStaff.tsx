@@ -327,16 +327,19 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
     useEffect(() => {
         // Solo ejecutar cuando el modal se cierra (pasamos de true a false)
-        if (!isModalOpen) {
-            setIsLoading(true);
-            Promise.all([fetchHomeOffice(), fetchVacaciones()]).then(() => {
-                setIsLoading(false);
-            }).catch(() => {
-                setIsLoading(false);
-            });
-        }
-    }, [fetchVacaciones, fetchHomeOffice, isModalOpen]);
+        setIsLoading(true);
+        Promise.all([fetchHomeOffice(), fetchVacaciones()]).then(() => {
+            setIsLoading(false);
+        }).catch(() => {
+            setIsLoading(false);
+        });
+    }, [fetchVacaciones]);
 
+    useEffect(() => {
+        if (!isModalOpen) {
+            fetchHomeOffice()
+        }
+    }, [isModalOpen])
 
     const enrichedMatrix = useMemo(() => {
         const matrix: Record<string, MatrixItem> = {};
@@ -528,12 +531,12 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
     const handleConfirmDelete = async () => {
         if (!deleteTarget) return;
-        
+
         try {
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/eliminarAsistenciaHomeOffice`,{
+            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/eliminarAsistenciaHomeOffice`, {
                 method: "DELETE",
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre: deleteTarget.nombre.trim().toUpperCase(), fecha: deleteTarget.fecha})
+                body: JSON.stringify({ nombre: deleteTarget.nombre.trim().toUpperCase(), fecha: deleteTarget.fecha })
             })
             if (resp.ok) {
                 await fetchHomeOffice();
@@ -712,8 +715,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                 </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
-                                                                    <CircleX color='red' width={20} height={20} className='absolute top-1 right-1 cursor-pointer' onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)}/>
-                                                                    <HomeIcon color='purple' /> 
+                                                                    <CircleX color='red' width={20} height={20} className='absolute top-1 right-1 cursor-pointer' onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)} />
+                                                                    <HomeIcon color='purple' />
                                                                     <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-lg bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-transparent dark:border-transparent dark:text-purple-400`}>
                                                                         {record.horaI || 'S/MARCADO'}
                                                                     </span>
@@ -754,8 +757,8 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 </Card>
             )}
             <HomeOfficeFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} colab={empleado!} />
-            <ConfirmationModal 
-                isOpen={isDeleteModalOpen} 
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
                 onClose={handleCloseDeleteModal}
                 onConfirm={handleConfirmDelete}
                 title="Eliminar registro de HomeOffice"
