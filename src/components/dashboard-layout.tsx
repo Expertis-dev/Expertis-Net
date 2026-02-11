@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -301,6 +301,26 @@ const MENU_CONFIG: MenuItem[] = [
       },
     ],
   },
+  {
+    id: "encuesta",
+    title: "Encuesta",
+    icon: PencilIcon,
+    href: "/dashboards/encuesta",
+    subItems: [
+      {
+        title: "Ver mis encuestas",
+        href: "/dashboard/encuesta/misEncuestas",
+        modulo: "Encuesta",
+        permiso: "",
+      },
+      {
+        title: "Crear Encuesta",
+        href: "/dashboard/encuesta/encuestasCreadas",
+        modulo: "Encuesta",
+        permiso: "",
+      }
+    ]
+  }
   /*{
     id: "mcp",
     title: "Consultas Expertito",
@@ -490,10 +510,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                     </div>
                   </SheetTitle>
-                  <SheetDescription className="py-1">
-                    <div className="font-medium text-foreground">
-                      {user?.usuario}, {getRolFromStorage()}
-                    </div>
+                  <SheetDescription className="py-1 font-medium text-foreground">
+                    {user?.usuario}, {getRolFromStorage()}
                   </SheetDescription>
                 </SheetHeader>
 
