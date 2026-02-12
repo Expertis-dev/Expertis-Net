@@ -65,7 +65,7 @@ export const PieChart = ({
     title,
     description,
     height = 240,
-    showGrid: _showGrid = true,
+    // showGrid: _showGrid = true,
     className,
 }: Props) => {
     const valueKey = series[0]?.key ?? "value"

@@ -88,10 +88,9 @@ export default function CrearEncuestaFormClient() {
     const onDraftSubmit = async (data: EncuestaForm) => {
         setIsSubmitting(true)
         const sanitized = sanitizePayload(data)
-        const payload = { ...sanitized, state: "BORRADOR" }
+        // const payload = { ...sanitized, state: "BORRADOR" }
         const createdBy = user?.nombre.toUpperCase().trim() + " " + user?.apellido1.trim().toUpperCase()
         const surveyId = sanitized.category!.toUpperCase().split(" ").join("_") + "_" + user?.apellido1.trim().toUpperCase() + "_" + (Math.random() * 999 + 1).toFixed(0)
-        console.log("Guardar como borrador:", payload)
         const body = {
             createdBy,
             surveyId,

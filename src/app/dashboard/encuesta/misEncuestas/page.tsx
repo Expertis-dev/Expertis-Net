@@ -21,7 +21,6 @@ enum SurveyStates {
 
 const fetchEncuestas = async (): Promise<Encuestas[]> => {
     const token = localStorage.getItem('token');
-    console.log(token)
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/0/encuesta`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` || '' }

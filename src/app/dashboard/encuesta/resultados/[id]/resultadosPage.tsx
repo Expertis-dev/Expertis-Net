@@ -95,7 +95,7 @@ export const ResultadosPage = ({ id }: Props) => {
             {
                 (activeTab === "Ver respuestas" && isReady === true) ?
                     <ResponsesPage encuesta={encuesta!} responses={respuestas!} /> :
-                    <StatisticsPage preguntas={encuesta?.preguntas!} responses={respuestas!} />
+                    <StatisticsPage preguntas={encuesta!.preguntas!} responses={respuestas!} />
             }
         </>
     )

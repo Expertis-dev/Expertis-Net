@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { EyeIcon } from "lucide-react"
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useState } from "react"
 import { ResponseModal } from "./ResponseModal"
 import * as XLSX from 'xlsx'
 import { es } from "date-fns/locale"
