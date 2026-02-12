@@ -1,21 +1,22 @@
 export interface Encuesta {
-    _id:         string;
-    surveyId:    string;
-    title:       string;
+    _id: string;
+    surveyId: string;
+    title: string;
     description: string;
-    urlImage:    string;
-    category:   string;
-    createdAt:   Date;
-    preguntas:   Pregunta[];
+    urlImage: string;
+    category: string;
+    createdAt: Date;
+    availableFor: string;
+    preguntas: Pregunta[];
 }
 
 export interface Pregunta {
-    _id:          string;
-    id:           number;
-    content:      string;
-    mustAnswer:   boolean;
+    _id: string;
+    id: number;
+    content: string;
+    mustAnswer: boolean;
     responseType: responseType;
-    options?:     Option[];
+    options?: Option[];
 }
 
 export interface Option {
@@ -53,4 +54,11 @@ export const CATEGORIES = [
     "Encuesta de opinión",
     "Investigación",
     "Otros"
+]
+
+export const AGENCIA = [
+    'CALL_INTERNO',
+    'BPO_EXTERNO',
+    'STAFF',
+    'EMPLEADOS'
 ]

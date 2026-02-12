@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { EyeIcon } from "lucide-react"
-import { Fragment, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { ResponseModal } from "./ResponseModal"
-
+import * as XLSX from 'xlsx'
+import { es } from "date-fns/locale"
+import { saveAs } from "file-saver";
+import {format} from 'date-fns'
 interface Props {
   responses: RespuestasFetch[]
   encuesta: Encuesta
@@ -15,12 +18,47 @@ interface Props {
 export const ResponsesPage = ({ encuesta, responses }: Props) => {
   const [isOpen, setIsOpen] = useState(false)
   const [activeResponse, setActiveResponse] = useState<RespuestasFetch | null>(null)
+
+  const onDownloadExcel = () => {
+    // console.log("Descargando excel")
+    // console.log("Encuesta", encuesta)
+    // console.log("responses", responses)
+    const questionHeaders = encuesta.preguntas.map((p) => p.content)
+    const rows = responses.map((response) => {
+      const nombre = response.name
+      const fecha = new Date(response.createdAt).toLocaleString("es-PE", {timeZone: "America/Lima"})
+      const respuestas = Object.values(response.responses).map((a) => {
+        return Array.isArray(a) ? a.join(';') : a
+      })
+      return [nombre, fecha, ...respuestas]
+    });
+
+    console.log(rows)
+
+    const aoaData: string[][] = [
+      ["NOMBRE EMPLEADO", "FECHA", ...questionHeaders], // COLUMNAS
+      ...rows
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(aoaData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Repuestas");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(data, `Tabla_de_respuestas_${encuesta.title}_${format((new Date), 'yyyy-MM', { locale: es })}.xlsx`);
+  }
+  
   return (
-    <>
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>cantidad de respuestas: {responses !== undefined ? responses.length : 0}</CardTitle>
-        </CardHeader>
+    <div className="flex justify-center">
+      <Card className="mt-4 relative size-full w-[60%] max-w-250 min-w-150">
+        <div className="flex items-start justify-between gap-4 mb-2">
+          <CardHeader className="self-center">
+            <CardTitle className="w-55 min-w-55">
+              cantidad de respuestas: {(responses !== undefined) || (responses !== null) ? responses.length : 0}
+            </CardTitle>
+          </CardHeader>
+          <Button className="w-70 mr-[1.5%]" onClick={onDownloadExcel}>Exportar Excel</Button>
+        </div>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
@@ -69,6 +107,6 @@ export const ResponsesPage = ({ encuesta, responses }: Props) => {
           onClose={() => setIsOpen(false)}
         />
       )}
-    </>
+    </div>
   )
 }

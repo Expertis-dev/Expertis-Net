@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { Encuesta, CATEGORIES, RESPONSE_TYPES, responseType, Option } from '@/types/encuesta'
+import { Encuesta, CATEGORIES, RESPONSE_TYPES, responseType, Option, AGENCIA } from '@/types/encuesta'
 import { Plus, Trash2 } from 'lucide-react'
 import { SuccessModal } from '@/components/success-modal'
 import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
@@ -8,7 +8,7 @@ import { useUser } from '@/Provider/UserProvider'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-  encuesta: Encuesta
+    encuesta: Encuesta
 }
 
 type PreguntaForm = {
@@ -21,14 +21,15 @@ type PreguntaForm = {
 type OptionInput = Omit<Option, "_id">
 
 type EncuestaForm = {
-  title: string;
-  category: string;
-  description: string;
-  preguntas: PreguntaForm[];
+    title: string;
+    category: string;
+    description: string;
+    availableFor: string;
+    preguntas: PreguntaForm[];
 };
 
-export const EditarEncuestaFromClient = ({encuesta}: Props) => {
-  const router = useRouter()
+export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
+    const router = useRouter()
     const [successModalIsOpen, setSuccessModalIsOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { register, control, handleSubmit, watch, reset, formState: { errors } } = useForm({
@@ -36,6 +37,7 @@ export const EditarEncuestaFromClient = ({encuesta}: Props) => {
             title: encuesta.title,
             category: encuesta.category,
             description: encuesta.description,
+            availableFor: encuesta.availableFor,
             preguntas: encuesta.preguntas.map((p) => {
                 return {
                     content: p.content,
@@ -43,7 +45,7 @@ export const EditarEncuestaFromClient = ({encuesta}: Props) => {
                     mustAnswer: p.mustAnswer,
                     options: p.options || [{ label: "", value: "" }]
                 }
-              })
+            })
         }
     })
 
@@ -161,6 +163,22 @@ export const EditarEncuestaFromClient = ({encuesta}: Props) => {
                                 className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
                             />
                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
+                                ¿A que agencias está destinada esta encuesta? <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                {...register("availableFor", { required: "Los destinatarios son obligatorios" })}
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Selecciona una agencia</option>
+                                {AGENCIA.map((cat) => (
+                                    <option key={cat} value={cat}>{cat.split("_").join(" ")}</option>
+                                ))}
+                            </select>
+                            {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>}
                         </div>
                     </div>
 

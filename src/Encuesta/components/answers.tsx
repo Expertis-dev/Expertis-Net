@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { Option } from '@/types/encuesta'
 import React from 'react'
 
@@ -24,7 +24,7 @@ interface DateProps {
 
 interface BooleanProps {
     name?: string
-    value?: boolean
+    value?: boolean | null
     onChange?: (val: boolean) => void
 }
 
@@ -78,22 +78,24 @@ export const MultipleAnswers: React.FC<MultipleProps> = ({ options, name = 'opti
     )
 }
 
-export const BooleanAnswer: React.FC<BooleanProps> = ({ value = false, onChange }) => {
+export const BooleanAnswer: React.FC<BooleanProps> = ({ value = null, onChange }) => {
+    const isYes = value === true
+    const isNo = value === false
     return (
         <div className="inline-flex items-center gap-3">
             <button
                 type="button"
-                aria-pressed={value === true}
+                aria-pressed={isYes}
                 onClick={() => onChange?.(true)}
-                className={`px-3 py-1 rounded-md transition ${value ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}
+                className={`px-3 py-1 rounded-md transition ${isYes ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}
             >
                 Sí
             </button>
             <button
                 type="button"
-                aria-pressed={value === false}
+                aria-pressed={isNo}
                 onClick={() => onChange?.(false)}
-                className={`px-3 py-1 rounded-md transition ${value === false ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}
+                className={`px-3 py-1 rounded-md transition ${isNo ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}
             >
                 No
             </button>
@@ -135,3 +137,5 @@ export const SelectAnswer: React.FC<SelectProps> = ({ options, value = '', place
         </select>
     )
 }
+
+

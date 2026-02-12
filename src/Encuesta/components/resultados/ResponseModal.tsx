@@ -32,18 +32,18 @@ export const ResponseModal = ({ isOpen, onClose, response, encuesta }: Props) =>
                         onClick={(e) => e.stopPropagation()}
                         className="w-[70%]"
                     >
-                        <Card className="border-0 shadow-2xl overflow-hidden bg-white dark:bg-slate-900">
+                        <Card className="border-0 shadow-2xl overflow-hidden bg-white dark:bg-zinc-900">
 
                             {/* Employee Info */}
-                            <div className="px-6 py-4 bg-blue-50 dark:bg-slate-800/50 border-b border-blue-100 dark:border-slate-700">
+                            <div className="px-6 py-4 bg-blue-50 dark:bg-zinc-800/90 border-b border-blue-100 dark:border-slate-700">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wide">Encuestado</p>
+                                        <p className="text-sm text-blue-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">Encuestado</p>
                                         <p className="text-lg font-bold text-slate-900 dark:text-white">{response.name}</p>
                                         <p className="text-sm text-slate-600 dark:text-slate-400">{response.dni}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wide">Fecha</p>
+                                        <p className="text-sm text-blue-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">Fecha</p>
                                         <p className="text-lg font-bold text-slate-900 dark:text-white">{(new Date().toISOString().split('T')[0].split("-")).reverse().join("/")}</p>
                                     </div>
                                 </div>
@@ -66,8 +66,8 @@ export const ResponseModal = ({ isOpen, onClose, response, encuesta }: Props) =>
                                                 style={{ animationDelay: `${index * 100}ms` }}
                                             >
                                                 <TableCell className="w-0">{item.content}</TableCell>
-                                                <TableCell className="font-medium">
-                                                    <div className="mx-auto max-w-md break-words whitespace-pre-wrap text-justify">
+                                                <TableCell className="font-medium text-center align-middle">
+                                                    <div className="mx-auto max-w-md wrap-break-word whitespace-pre-wrap text-center">
                                                         {(() => {
                                                             const v = response.responses[index + 1];
                                                             if (typeof v === "boolean") return v ? "SI" : "NO";

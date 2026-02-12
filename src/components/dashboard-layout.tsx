@@ -308,8 +308,14 @@ const MENU_CONFIG: MenuItem[] = [
     href: "/dashboards/encuesta",
     subItems: [
       {
-        title: "Ver mis encuestas",
+        title: "Encuestas Activas",
         href: "/dashboard/encuesta/misEncuestas",
+        modulo: "Encuesta",
+        permiso: "",
+      },
+      {
+        title: "Encuestas Completadas",
+        href: "/dashboard/encuesta/encuestasCompletadas",
         modulo: "Encuesta",
         permiso: "",
       },

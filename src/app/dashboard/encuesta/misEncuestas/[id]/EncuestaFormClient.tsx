@@ -7,7 +7,7 @@ import { useUser } from "@/Provider/UserProvider"
 import { useRouter } from "next/navigation"
 import { SuccessModal } from "@/components/success-modal"
 
-type AnswerValue = string | boolean | string[]
+type AnswerValue = string | boolean | string[] | null
 
 export type Option = {
     _id: string;
@@ -45,8 +45,15 @@ export default function EncuestaFormClient({ encuesta }: Props) {
     const defaultValues = useMemo(() => {
         const dv: Record<string, AnswerValue> = {}
         encuesta.preguntas.forEach((p) => {
-            if (p.responseType === 'MULTIPLE_SELECT') dv[p.id] = []
-            else dv[p.id] = ''
+            if (p.responseType === 'MULTIPLE_SELECT') {
+                dv[p.id] = []
+                return
+            }
+            if (p.responseType === 'BOOLEAN') {
+                dv[p.id] = null
+                return
+            }
+            dv[p.id] = ''
         })
         return dv
     }, [encuesta])
@@ -56,6 +63,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
     const onSubmit = async (data: Record<string, AnswerValue>) => {
         const responses: Record<string, AnswerValue> = { ...data }
         const body = {
+            survey: encuesta._id,
             surveyId: encuesta.surveyId,
             dni: Number(user?.dni ?? -1) || -1,
             name: `${user?.nombre?.toUpperCase().trim() ?? ""} ${user?.apellido1?.trim().toUpperCase() ?? ""}`.trim(),
@@ -89,7 +97,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                         return (
                             <div key={pregunta.id} className="rounded-lg border border-gray-100 dark:border-slate-700 p-4">
                                 <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.2fr)] gap-3 md:gap-6 items-start">
-                                    <div className="flex-shrink-0">
+                                    <div className="shrink-0">
                                         <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 font-medium">{idx + 1}</div>
                                     </div>
                                     <div className="min-w-0">
@@ -105,7 +113,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <TextLineAnswer value={field.value.toString()} onChange={field.onChange} />
+                                                        <TextLineAnswer value={field.value!.toString()} onChange={field.onChange} />
                                                     )}
                                                 />
                                             )}
@@ -116,7 +124,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <TextAreaAnswer value={field.value.toString()} onChange={field.onChange} rows={4} />
+                                                        <TextAreaAnswer value={field.value!.toString()} onChange={field.onChange} rows={4} />
                                                     )}
                                                 />
                                             )}
@@ -127,7 +135,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <DateAnswer value={field.value.toString()} onChange={field.onChange} />
+                                                        <DateAnswer value={field.value!.toString()} onChange={field.onChange} />
                                                     )}
                                                 />
                                             )}
@@ -136,9 +144,21 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                 <Controller
                                                     control={control}
                                                     name={name}
-                                                    rules={{ required: pregunta.mustAnswer }}
+                                                    rules={{
+                                                        validate: (value) =>
+                                                            !pregunta.mustAnswer || value === true || value === false,
+                                                    }}
                                                     render={({ field }) => (
-                                                        <BooleanAnswer value={field.value === true} onChange={(v) => field.onChange(v)} />
+                                                        <BooleanAnswer
+                                                            value={
+                                                                field.value === true
+                                                                    ? true
+                                                                    : field.value === false
+                                                                        ? false
+                                                                        : null
+                                                            }
+                                                            onChange={(v) => field.onChange(v)}
+                                                        />
                                                     )}
                                                 />
                                             )}
@@ -149,7 +169,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <MultipleAnswers options={pregunta.options || []} name={name} value={field.value.toString()} onChange={(v) => field.onChange(v)} />
+                                                        <MultipleAnswers options={pregunta.options || []} name={name} value={field.value!.toString()} onChange={(v) => field.onChange(v)} />
                                                     )}
                                                 />
                                             )}
@@ -198,7 +218,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <SelectAnswer options={pregunta.options || []} value={field.value.toString()} onChange={(v) => field.onChange(v)} />
+                                                        <SelectAnswer options={pregunta.options || []} value={field.value!.toString()} onChange={(v) => field.onChange(v)} />
                                                     )}
                                                 />
                                             )}

@@ -6,7 +6,7 @@ import { Trash2, Plus } from "lucide-react"
 import { useUser } from "@/Provider/UserProvider"
 import { useRouter } from "next/navigation"
 import { SuccessModal } from "@/components/success-modal"
-import { CATEGORIES, RESPONSE_TYPES } from "@/types/encuesta"
+import { AGENCIA, CATEGORIES, RESPONSE_TYPES } from "@/types/encuesta"
 
 type PreguntaForm = {
     _id?: string
@@ -24,6 +24,7 @@ type EncuestaForm = {
     surveyId: string
     title: string;
     category: string;
+    availableFor: string,
     description: string;
     preguntas: PreguntaForm[];
 };
@@ -38,6 +39,7 @@ export default function CrearEncuestaFormClient() {
             title: "",
             category: "",
             description: "",
+            availableFor: "",
             preguntas: [
                 {
                     content: "",
@@ -141,14 +143,14 @@ export default function CrearEncuestaFormClient() {
         <main className="flex justify-center px-4 py-8 m-auto">
             <section className="w-full max-w-3xl">
                 {/* HEADER */}
-                <header className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-6 border border-gray-100 dark:border-slate-700">
+                <header className="bg-white dark:bg-zinc-800 rounded-xl shadow-md p-6 mb-6 border border-gray-100 dark:border-zinc-700">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Crear nueva encuesta</h1>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Completa los datos básicos y agrega tus preguntas</p>
                 </header>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     {/* CABECERA DE LA ENCUESTA */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 space-y-4">
+                    <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Datos de la encuesta</h2>
 
                         <div>
@@ -158,7 +160,7 @@ export default function CrearEncuestaFormClient() {
                             <input
                                 {...register("title", { required: "El título es obligatorio" })}
                                 placeholder="Ej: Encuesta de satisfacción del cliente"
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>}
                         </div>
@@ -169,7 +171,7 @@ export default function CrearEncuestaFormClient() {
                             </label>
                             <select
                                 {...register("category", { required: "La categoría es obligatoria" })}
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Selecciona una categoría</option>
                                 {CATEGORIES.map((cat) => (
@@ -187,9 +189,24 @@ export default function CrearEncuestaFormClient() {
                                 {...register("description", { required: "La descripción es obligatoria" })}
                                 rows={3}
                                 placeholder="Describe el propósito o contexto de esta encuesta"
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
                             />
                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
+                                ¿A que agencias está destinada esta encuesta? <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                {...register("availableFor", { required: "Los destinatarios son obligatorios" })}
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Selecciona una agencia</option>
+                                {AGENCIA.map((cat) => (
+                                    <option key={cat} value={cat}>{cat.split("_").join(" ")}</option>
+                                ))}
+                            </select>
+                            {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>}
                         </div>
                     </div>
 
@@ -202,7 +219,7 @@ export default function CrearEncuestaFormClient() {
                             const requiresOptions = ["UNIQUE_SELECT", "MULTIPLE_SELECT", "LIST"].includes(responseType)
 
                             return (
-                                <div key={field.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 space-y-4">
+                                <div key={field.id} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                                     <div className="flex items-start gap-3">
                                         <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 font-medium">
                                             {idx + 1}
@@ -216,7 +233,7 @@ export default function CrearEncuestaFormClient() {
                                                 <input
                                                     {...register(`preguntas.${idx}.content`, { required: "El enunciado es obligatorio" })}
                                                     placeholder="Escribe tu pregunta aquí"
-                                                    className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 />
                                             </div>
 
@@ -227,7 +244,7 @@ export default function CrearEncuestaFormClient() {
                                                     </label>
                                                     <select
                                                         {...register(`preguntas.${idx}.responseType`)}
-                                                        className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     >
                                                         {RESPONSE_TYPES.map((type) => (
                                                             <option key={type.value} value={type.value}>
@@ -263,7 +280,7 @@ export default function CrearEncuestaFormClient() {
 
                                     {/* OPCIONES */}
                                     {requiresOptions && (
-                                        <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+                                        <div className="border-t border-gray-200 dark:border-zinc-700 pt-4">
                                             <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-3">
                                                 Opciones de respuesta <span className="text-red-500">*</span>
                                             </label>
@@ -285,7 +302,7 @@ export default function CrearEncuestaFormClient() {
                                                                         field.onChange(newOptions)
                                                                     }}
                                                                     placeholder={`Opción ${optIdx + 1}`}
-                                                                    className="flex-1 px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    className="flex-1 px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                                 />
                                                                 {field.value!.length > 1 && (
                                                                     <button
@@ -338,7 +355,7 @@ export default function CrearEncuestaFormClient() {
                     </div>
 
                     {/* BOTONES DE ACCIÓN */}
-                    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+                    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-zinc-700">
                         <button
                             type="button"
                             onClick={() => reset()}
@@ -350,14 +367,14 @@ export default function CrearEncuestaFormClient() {
                             type="submit"
                             onClick={handleSubmit(onDraftSubmit)}
                             disabled={isSubmitting}
-                            className="px-4 py-2 rounded-4xl bg-white border-blue-400 border-2  text-black hover:bg-blue-400 hover:text-white cursor-pointer transition disabled:opacity-50"
+                            className="px-4 py-2 rounded-4xl bg-white border-blue-400 dark:bg-zinc-200 border-2 dar text-black hover:bg-blue-400 hover:text-white cursor-pointer transition disabled:opacity-50"
                         >
                             Guardar como Borrador
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-5 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
+                            className="px-5 py-2 rounded-2xl bg-blue-600 text-white dark:bg-black hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
                         >
                             Publicar encuesta
                         </button>

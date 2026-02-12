@@ -9,9 +9,9 @@ export default async function Resultados({
 }: {
     params: Promise<Props>;
 }) {
-
+    const {id} = await params
 
     return (
-        <ResultadosPage id={(await params).id} />
+        <ResultadosPage id={id} />
     );
 }

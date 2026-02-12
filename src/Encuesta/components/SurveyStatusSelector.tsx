@@ -23,7 +23,7 @@ export const SurveyStatusSelector = ({surveyState, _id}: Props) => {
     return (
         <select
             defaultValue={surveyState}
-            className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={(e) => onSelect(_id, e.target.value)}
         >
             <option value="BORRADOR">Borrador</option>
