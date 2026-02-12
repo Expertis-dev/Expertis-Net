@@ -17,7 +17,6 @@ const fetchEncuesta = async (id: string): Promise<Encuesta> => {
         console.log(error)
         notFound()
     }
-
 }
 
 

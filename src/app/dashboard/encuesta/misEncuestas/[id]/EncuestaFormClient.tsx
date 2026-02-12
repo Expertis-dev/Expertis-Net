@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { TextLineAnswer, TextAreaAnswer, DateAnswer, BooleanAnswer, MultipleAnswers, SelectAnswer } from '@/Encuesta/components/answers'
 import { useUser } from "@/Provider/UserProvider"
-import { useRouter } from "next/navigation"
+import { notFound, useRouter } from "next/navigation"
 import { SuccessModal } from "@/components/success-modal"
 
 type AnswerValue = string | boolean | string[] | null
@@ -73,10 +73,16 @@ export default function EncuestaFormClient({ encuesta }: Props) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
-        }).then(() => {
-            setSuccessModalIsOpen(true)
+        }).then(async (r) => {
+            const res: {success: boolean, message: string, error: string} = await r.json()
+            if (res.success === false){
+                console.log(res)
+                alert("Ya has respondiste esta encuesta")
+            }else{
+                setSuccessModalIsOpen(true)
+            }
         }).catch(() => {
-            alert("Hubo un error al subir el borrador")
+            alert("Hubo un error al subir la respuesta")
         })
         router.push("/dashboard/encuesta/misEncuestas")
     }
