@@ -42,7 +42,6 @@ export default function Page() {
     }
     useEffect(() => {
         if (user) {
-            console.log(user)
             fetchEncuestasCreadas(user.usuario.trim()).then(res => setEncuestas(res))
         }
     }, [user, refreshKey])

@@ -56,12 +56,13 @@ export const ResultadosPage = ({ id }: Props) => {
         const getSurvey = fetchEncuesta(id)
         Promise.all([getResp, getSurvey])
             .then((values) => {
-                setRespuestas(values[0])
-                setEncuesta(values[1])
+                const respuestasData = values[0]
+                const encuestaData = values[1]
+                setRespuestas(respuestasData)
+                setEncuesta(encuestaData)
                 setIsReady(true)
             }).catch((e) => {
                 console.log(e)
-                notFound()
             })
     }, [id])
     return (
@@ -80,7 +81,7 @@ export const ResultadosPage = ({ id }: Props) => {
                                     onClick={() => setActiveTab(o)}
                                     className={`w-full px-4 py-2.5 rounded-xl border transition duration-150 focus:outline-none focus:ring-2 focus:ring-brand
                                     
-                                    ${isActive ? "bg-brand text-black border-brand shadow-sm bg-blue-200 dark:bg-zinc-300"
+                                    ${isActive ? "bg-brand text-black border-brand shadow-sm bg-sky-200 dark:bg-zinc-300"
                                             : "bg-gray-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900"
                                         }
                                     `}
@@ -93,9 +94,23 @@ export const ResultadosPage = ({ id }: Props) => {
                 </ul>
             </div>
             {
-                (activeTab === "Ver respuestas" && isReady === true) ?
-                    <ResponsesPage encuesta={encuesta!} responses={respuestas!} /> :
-                    <StatisticsPage preguntas={encuesta!.preguntas!} responses={respuestas!} />
+                (respuestas?.length !== 0 || respuestas === undefined) ?
+                    ((activeTab === "Ver respuestas" && isReady === true) ?
+                        <ResponsesPage encuesta={encuesta!} responses={respuestas!} /> :
+                        <StatisticsPage preguntas={encuesta?.preguntas} responses={respuestas} />)
+                    :
+                    (
+                        <div className="flex justify-center items-center mt-[15%] bg-sky-600/20 rounded-4xl mx-[20%] h-50">
+                            <div className="text-center px-6 py-4">
+                                <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    Aún no hay respuestas
+                                </h1>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                                    Cuando alguien complete la encuesta, aquí verás las respuestas y estadísticas.
+                                </p>
+                            </div>
+                        </div>
+                    )
             }
         </>
     )

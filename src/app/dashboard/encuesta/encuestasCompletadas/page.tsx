@@ -11,7 +11,7 @@ export interface Encuestas {
     description: string;
     createdAt: Date;
     surveyState: SurveyStates;
-    myResponse?: {createdAt: Date}
+    myResponse?: {createdAt: Date}[]
 }
 
 enum SurveyStates {
@@ -58,7 +58,7 @@ export default function Page() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
                 {encuestas.map((v: Encuestas) => {
-                    const respuestaTime = v.myResponse!
+                    const respuestaTime = v.myResponse![0].createdAt
                     return (
                         <article key={v._id} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm dark:shadow-md border border-gray-200 dark:border-zinc-700 hover:shadow-lg dark:hover:shadow-lg dark:hover:shadow-slate-900/30 transform hover:-translate-y-1 transition flex flex-col">
                             <div>
@@ -100,7 +100,7 @@ export default function Page() {
                                         <dt className="text-gray-500 dark:text-gray-400">Fecha de envío</dt>
                                         <dd className="font-medium text-gray-700 dark:text-gray-200">
                                             {respuestaTime
-                                                ? new Date(respuestaTime.createdAt).toLocaleString("es-PE", {
+                                                ? new Date(respuestaTime).toLocaleString("es-PE", {
                                                       timeZone: "America/Lima",
                                                   })
                                                 : "Sin respuestas"}
