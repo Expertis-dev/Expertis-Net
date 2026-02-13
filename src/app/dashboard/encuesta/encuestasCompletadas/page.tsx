@@ -77,7 +77,28 @@ export default function Page() {
             <h1 className="text-3xl font-semibold">Mis encuestas completadas</h1>
 
             <InputSearch onSearch={handleSearch}/>
-
+            
+            {!isLoading && encuestas.length === 0 ? (
+                <div className="mt-6 rounded-2xl border border-slate-200/70 dark:border-zinc-700 bg-gradient-to-br from-slate-50 via-white to-sky-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-slate-900 p-8 shadow-sm">
+                    <div className="mx-auto flex max-w-lg flex-col items-center text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden="true">
+                                <path d="M7 3a2 2 0 0 0-2 2v2H4a1 1 0 1 0 0 2h1v2H4a1 1 0 1 0 0 2h1v2H4a1 1 0 1 0 0 2h1v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7Zm0 2h10v14H7V5Zm2 2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Zm0 4a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Zm0 4a1 1 0 1 0 0 2h4a1 1 0 1 0 0-2H9Z" />
+                            </svg>
+                        </div>
+                        <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+                            No hay encuestas para mostrar
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                            No haz respondido ninguna encuesta o ajusta los filtros para ver resultados.
+                        </p>
+                        <p className="mt-4 text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                            Sin resultados
+                        </p>
+                    </div>
+                </div>
+            ) :
+            (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
                 {encuestas.map((v: Encuestas) => {
                     const respuestaTime = v.myResponse![0].createdAt
@@ -134,6 +155,7 @@ export default function Page() {
                     );
                 })}
             </div>
+            )}
             <LoadingModal isOpen={isLoading} message="cargando..."/>
         </>
     )

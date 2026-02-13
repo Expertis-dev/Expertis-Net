@@ -145,19 +145,19 @@ const MENU_CONFIG: MenuItem[] = [
         title: "Mi Asistencia",
         href: "/dashboard/asistencia/mi-asistencia",
         modulo: "Asistencia",
-        // permiso: "MiAsistencia-ver",
+        permiso: "AsistenciaUsuario-ver",
       },
       {
         title: "Equipo",
         href: "/dashboard/asistencia/equipo",
         modulo: "Asistencia",
-        // permiso: "Equipo-ver",
+        permiso: "AsistenciaEquipo-ver",
       },
       {
         title: "Reporte Staff",
         href: "/dashboard/asistencia/ReporteAsistencia",
         modulo: "Asistencia",
-        // permiso: "ReporteStaff-ver",
+        permiso: "ReporteStaff-ver",
       },
 
     ],
@@ -311,19 +311,19 @@ const MENU_CONFIG: MenuItem[] = [
         title: "Encuestas Activas",
         href: "/dashboard/encuesta/misEncuestas",
         modulo: "Encuesta",
-        permiso: "",
+        permiso: "EncuestasActivas-ver",
       },
       {
         title: "Encuestas Completadas",
         href: "/dashboard/encuesta/encuestasCompletadas",
         modulo: "Encuesta",
-        permiso: "",
+        permiso: "EncuestasRealizadas-ver",
       },
       {
         title: "Crear Encuesta",
         href: "/dashboard/encuesta/encuestasCreadas",
         modulo: "Encuesta",
-        permiso: "",
+        permiso: "Encuesta-registrar",
       }
     ]
   }
@@ -457,9 +457,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           const filteredSubItems = menu.subItems.filter((sub) => {
             // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
-            if (sub.title === "Reporte Staff" && user?.usuario !== "CAROLINA PICHILINGUE") {
-              return false
-            }
+            // if (sub.title === "Reporte Staff") {
+            //   return false
+            // }
 
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
