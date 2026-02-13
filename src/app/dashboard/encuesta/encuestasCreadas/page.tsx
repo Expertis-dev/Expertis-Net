@@ -7,10 +7,16 @@ import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { SurveyStatusSelector } from "@/Encuesta/components/SurveyStatusSelector"
-import { InputSearch } from "@/Encuesta/components/inputSearch"
+import { InputSearch, InputSearchValues } from "@/Encuesta/components/inputSearch"
+import { LoadingModal } from "@/components/loading-modal"
 
-const fetchEncuestasCreadas = async (nombre: string): Promise<Encuestas[]> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/encuestasCreadas/${nombre}`)
+const fetchEncuestasCreadas = async (nombre: string, filters?: Partial<InputSearchValues>): Promise<Encuestas[]> => {
+    const params = new URLSearchParams();
+    if (filters?.name) params.set("name", filters.name);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+    const query = params.toString();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/encuestasCreadas/${nombre}${query ? `?${query}` : ""}`)
         .then(async res => await res.json())
     return response
 }
@@ -23,8 +29,17 @@ export default function Page() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
+    const [isLoading, setIsLoading] = useState(false)
 
-    const onDeleteSurvey = async  (id: string) => {
+    const handleSearch = (filters: InputSearchValues) => {
+        setIsLoading(true)
+        fetchEncuestasCreadas(user!.usuario.trim(),filters).then((res) => {
+            setEncuestas(Array.isArray(res) ? res : [])
+            setIsLoading(false)
+        })
+    };
+
+    const onDeleteSurvey = async (id: string) => {
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/encuesta/${id}`, {
                 method: "DELETE",
@@ -52,11 +67,11 @@ export default function Page() {
                     <h1 className="text-3xl font-semibold">Mis encuestas creadas</h1>
                     <Button variant={"default"} className="h-10 bg-blue-400 dark:bg-zinc-700 dark:text-white">
                         <Link href={`/dashboard/encuesta/crearEncuesta`}>
-                        Crear nueva encuesta
+                            Crear nueva encuesta
                         </Link>
                     </Button>
                 </div>
-                <InputSearch />
+                <InputSearch onSearch={handleSearch}/>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
                     {encuestas.map((v: Encuestas) => (
                         <article key={v._id} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm dark:shadow-md border border-gray-200 dark:border-zinc-700 hover:shadow-lg dark:hover:shadow-lg dark:hover:shadow-slate-900/30 transform hover:-translate-y-1 transition flex flex-col">
@@ -68,14 +83,14 @@ export default function Page() {
                                 </div>
                                 <button
                                     className="bg-white border-2 border-rose-400 hover:bg-red-500 rounded p-1 transition cursor-pointer dark:bg-red-900/40 dark:border-red-900/40 dark:hover:bg-red-500"
-                                    onClick={() => { setSelectedSurveyId(v.surveyId); setIsModalOpen(true) }}
+                                    onClick={() => { setSelectedSurveyId(v._id); setIsModalOpen(true) }}
                                 >
-                                    <XIcon className="text-red-500 hover:text-white box-content dark:text-gray-300 "/>
+                                    <XIcon className="text-red-500 hover:text-white box-content dark:text-gray-300 " />
                                 </button>
                             </div>
                             <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 line-clamp-3">{v.description}</p>
                             <div className="space-y-3 mt-auto">
-                                <SurveyStatusSelector _id={v._id} surveyState={v.surveyState}/>
+                                <SurveyStatusSelector _id={v._id} surveyState={v.surveyState} />
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 w-full">
                                     <Link href={`/dashboard/encuesta/editarEncuesta/${v._id}`} className="inline-flex w-full sm:w-auto min-w-0 items-center justify-center bg-white text-black border-3 border-blue-400 dark:bg-zinc-900 dark:border-gray-700 dark:text-white text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-md hover:bg-blue-400 dark:hover:bg-zinc-950 transition text-center leading-tight whitespace-normal wrap-break-word">
                                         Editar
@@ -104,6 +119,8 @@ export default function Page() {
                 title="Eliminar encuesta"
                 message="¿Estás seguro de que deseas eliminar esta encuesta? Esta acción no se puede deshacer."
             />
+
+            <LoadingModal isOpen={isLoading} message="cargando..."/>
         </>
     )
 }

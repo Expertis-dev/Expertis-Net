@@ -1,8 +1,9 @@
 "use client"
 import Link from "next/link";
-import { InputSearch } from "@/Encuesta/components/inputSearch";
+import { InputSearch, InputSearchValues } from "@/Encuesta/components/inputSearch";
 import { NotebookPen } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LoadingModal } from "@/components/loading-modal";
 export interface Encuestas {
     _id: string;
     surveyId: string;
@@ -19,9 +20,16 @@ enum SurveyStates {
     CERRADA = "CERRADA"
 }
 
-const fetchEncuestas = async (): Promise<Encuestas[]> => {
+const fetchEncuestas = async (filters?: Partial<InputSearchValues>): Promise<Encuestas[]> => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/0/encuesta`, {
+
+    const params = new URLSearchParams();
+    if (filters?.name) params.set("name", filters.name);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+
+    const query = params.toString();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/0/encuesta${query ? `?${query}` : ""}`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` || '' }
     })
@@ -31,9 +39,22 @@ const fetchEncuestas = async (): Promise<Encuestas[]> => {
 
 export default function Page() {
     const [encuestas, setEncuestas] = useState<Encuestas[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const handleSearch = (filters: InputSearchValues) => {
+        setIsLoading(true)
+        fetchEncuestas(filters).then((res) => {
+            setEncuestas(Array.isArray(res) ? res : [])
+            setIsLoading(false)
+        })
+    };
+
     useEffect(() => {
         fetchEncuestas().then((res) => {
             setEncuestas(Array.isArray(res) ? res : [])
+            setIsLoading(false)
+        }).catch((e) => {
+            console.log(e)
+            setIsLoading(false)
         })
     }, [setEncuestas])
 
@@ -41,7 +62,7 @@ export default function Page() {
         <>
             <h1 className="text-3xl font-semibold">Mis encuestas</h1>
 
-            <InputSearch />
+            <InputSearch onSearch={handleSearch} />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
                 {encuestas.map((v: Encuestas) => (
@@ -60,11 +81,6 @@ export default function Page() {
                                     <h5 className="text-lg font-semibold text-gray-900 dark:text-white leading-7 wrap-break-word">
                                         {v.title}
                                     </h5>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                                        <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-sky-900/40 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                                            Completada
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -86,6 +102,7 @@ export default function Page() {
                     </article>
                 ))}
             </div>
+            <LoadingModal isOpen={isLoading} message="cargando..."/>
         </>
     )
 }

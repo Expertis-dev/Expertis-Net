@@ -64,7 +64,7 @@ export default function CrearEncuestaFormClient() {
         setIsSubmitting(true)
         const sanitized = sanitizePayload(data)
         const createdBy = user?.nombre.toUpperCase().trim() + " " + user?.apellido1.trim().toUpperCase()
-        const surveyId = sanitized.category!.toUpperCase().split(" ").at(-1) + "_" + user?.apellido1.trim().toUpperCase() + "_" + (Math.random() * 999 + 1).toFixed(0)
+        const surveyId = sanitized.category!.toUpperCase().split(" ").at(-1) + "_" + sanitized.title?.trim().split(" ").join("_").toUpperCase() + "_" + (Math.random() * 999 + 1).toFixed(0)
         const body = {
             createdBy,
             surveyId,
@@ -90,7 +90,7 @@ export default function CrearEncuestaFormClient() {
         const sanitized = sanitizePayload(data)
         // const payload = { ...sanitized, state: "BORRADOR" }
         const createdBy = user?.nombre.toUpperCase().trim() + " " + user?.apellido1.trim().toUpperCase()
-        const surveyId = sanitized.category!.toUpperCase().split(" ").join("_") + "_" + user?.apellido1.trim().toUpperCase() + "_" + (Math.random() * 999 + 1).toFixed(0)
+        const surveyId = sanitized.category!.toUpperCase().split(" ").join("_") + "_" + sanitized.title?.trim().split(" ").join("_").toUpperCase() + "_" + (Math.random() * 999 + 1).toFixed(0)
         const body = {
             createdBy,
             surveyId,
@@ -220,7 +220,7 @@ export default function CrearEncuestaFormClient() {
                             return (
                                 <div key={field.id} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 font-medium">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 dark:text-gray-300 font-medium">
                                             {idx + 1}
                                         </div>
 
@@ -347,7 +347,7 @@ export default function CrearEncuestaFormClient() {
                                 mustAnswer: false,
                                 options: [{ label: "", value: "" }]
                             })}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-slate-600 transition"
                         >
                             <Plus size={18} /> Agregar pregunta
                         </button>
@@ -366,7 +366,7 @@ export default function CrearEncuestaFormClient() {
                             type="submit"
                             onClick={handleSubmit(onDraftSubmit)}
                             disabled={isSubmitting}
-                            className="px-4 py-2 rounded-4xl bg-white border-blue-400 dark:bg-zinc-200 border-2 dar text-black hover:bg-blue-400 hover:text-white cursor-pointer transition disabled:opacity-50"
+                            className="px-4 py-2 rounded-4xl bg-white border-blue-400 dark:border-blue-950 dark:bg-zinc-200 border-2 dar text-black hover:bg-blue-400 hover:text-white cursor-pointer transition disabled:opacity-50"
                         >
                             Guardar como Borrador
                         </button>

@@ -1,5 +1,6 @@
 "use client"
-import { InputSearch } from "@/Encuesta/components/inputSearch";
+import { LoadingModal } from "@/components/loading-modal";
+import { InputSearch, InputSearchValues } from "@/Encuesta/components/inputSearch";
 import { CheckSquare2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -11,7 +12,7 @@ export interface Encuestas {
     description: string;
     createdAt: Date;
     surveyState: SurveyStates;
-    myResponse?: {createdAt: Date}[]
+    myResponse?: { createdAt: Date }[]
 }
 
 enum SurveyStates {
@@ -32,9 +33,15 @@ export interface Datum {
     createdAt: Date;
 }
 
-const fetchEncuestas = async (): Promise<Encuestas[]> => {
+const fetchEncuestas = async (filters?: Partial<InputSearchValues>): Promise<Encuestas[]> => {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/1/encuesta`, {
+    const params = new URLSearchParams();
+    if (filters?.name) params.set("name", filters.name);
+    if (filters?.from) params.set("from", filters.from);
+    if (filters?.to) params.set("to", filters.to);
+
+    const query = params.toString();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/1/encuesta${query ? `?${query}` : ""}`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` || '' }
     })
@@ -44,9 +51,24 @@ const fetchEncuestas = async (): Promise<Encuestas[]> => {
 
 export default function Page() {
     const [encuestas, setEncuestas] = useState<Encuestas[]>([]);
+    const [isLoading, setIsLoading] = useState(false)
+    const handleSearch = (filters: InputSearchValues) => {
+        setIsLoading(true)
+        fetchEncuestas(filters).then((res) => {
+            setEncuestas(Array.isArray(res) ? res : [])
+            setIsLoading(false)
+            
+        })
+    };
+    
     useEffect(() => {
+        setIsLoading(true)
         fetchEncuestas().then((r) => {
             setEncuestas(r)
+            setIsLoading(false)
+        }).catch((e) => {
+            console.log(e)
+            setIsLoading(false)
         })
     }, [])
 
@@ -54,7 +76,7 @@ export default function Page() {
         <>
             <h1 className="text-3xl font-semibold">Mis encuestas completadas</h1>
 
-            <InputSearch />
+            <InputSearch onSearch={handleSearch}/>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
                 {encuestas.map((v: Encuestas) => {
@@ -101,8 +123,8 @@ export default function Page() {
                                         <dd className="font-medium text-gray-700 dark:text-gray-200">
                                             {respuestaTime
                                                 ? new Date(respuestaTime).toLocaleString("es-PE", {
-                                                      timeZone: "America/Lima",
-                                                  })
+                                                    timeZone: "America/Lima",
+                                                })
                                                 : "Sin respuestas"}
                                         </dd>
                                     </div>
@@ -112,6 +134,7 @@ export default function Page() {
                     );
                 })}
             </div>
+            <LoadingModal isOpen={isLoading} message="cargando..."/>
         </>
     )
 }
