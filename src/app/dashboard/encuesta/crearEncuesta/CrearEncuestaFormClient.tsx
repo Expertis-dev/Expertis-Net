@@ -220,7 +220,7 @@ export default function CrearEncuestaFormClient() {
                             return (
                                 <div key={field.id} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 dark:text-gray-300 font-medium">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 dark:text-gray-200 font-medium">
                                             {idx + 1}
                                         </div>
 

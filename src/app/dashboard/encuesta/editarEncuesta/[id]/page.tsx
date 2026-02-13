@@ -27,7 +27,7 @@ export default async function Page({
     const {id} = await params
     const encuesta = await fetchEncuesta(id)
     return (
-        <div className="bg-gray-200 dark:bg-slate-900 min-h-screen -mx-4 px-4 -my-4">
+        <div className="bg-gray-200 dark:bg-zinc-900 min-h-screen -mx-4 px-4 -my-4">
             <EditarEncuestaFromClient encuesta={encuesta}/>
         </div>
     )

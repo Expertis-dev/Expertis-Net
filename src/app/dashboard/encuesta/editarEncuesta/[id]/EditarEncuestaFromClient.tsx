@@ -114,14 +114,14 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
         <main className="flex justify-center px-4 py-8 m-auto">
             <section className="w-full max-w-3xl">
                 {/* HEADER */}
-                <header className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-6 border border-gray-100 dark:border-slate-700">
+                <header className="bg-white dark:bg-zinc-800 rounded-xl shadow-md p-6 mb-6 border border-gray-100 dark:border-zinc-700">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Editar encuesta</h1>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Modifica tu encabezado, preguntas o agrega nuevas preguntas</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Modifica tu encabezado, agrega preguntas u opciones o modifica las que ya tienes</p>
                 </header>
 
                 <form onSubmit={handleSubmit(onSaveSubmit)} className="space-y-6">
                     {/* CABECERA DE LA ENCUESTA */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 space-y-4">
+                    <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Datos de la encuesta</h2>
 
                         <div>
@@ -131,7 +131,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                             <input
                                 {...register("title", { required: "El título es obligatorio" })}
                                 placeholder="Ej: Encuesta de satisfacción del cliente"
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>}
                         </div>
@@ -142,7 +142,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                             </label>
                             <select
                                 {...register("category", { required: "La categoría es obligatoria" })}
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Selecciona una categoría</option>
                                 {CATEGORIES.map((cat) => (
@@ -160,7 +160,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                 {...register("description", { required: "La descripción es obligatoria" })}
                                 rows={3}
                                 placeholder="Describe el propósito o contexto de esta encuesta"
-                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
+                                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
                             />
                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
                         </div>
@@ -191,9 +191,9 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                             const requiresOptions = ["UNIQUE_SELECT", "MULTIPLE_SELECT", "LIST"].includes(responseType)
 
                             return (
-                                <div key={field.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 space-y-4">
+                                <div key={field.id} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-zinc-700 space-y-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-600 font-medium">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:text-gray-200 dark:bg-zinc-700 flex items-center justify-center text-blue-600 font-medium">
                                             {idx + 1}
                                         </div>
 
@@ -205,7 +205,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                                 <input
                                                     {...register(`preguntas.${idx}.content`, { required: "El enunciado es obligatorio" })}
                                                     placeholder="Escribe tu pregunta aquí"
-                                                    className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 />
                                             </div>
 
@@ -216,7 +216,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                                     </label>
                                                     <select
                                                         {...register(`preguntas.${idx}.responseType`)}
-                                                        className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     >
                                                         {RESPONSE_TYPES.map((type) => (
                                                             <option key={type.value} value={type.value}>
@@ -243,7 +243,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                             <button
                                                 type="button"
                                                 onClick={() => remove(idx)}
-                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 rounded transition"
+                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-zinc-700 rounded transition"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -252,7 +252,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
 
                                     {/* OPCIONES */}
                                     {requiresOptions && (
-                                        <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+                                        <div className="border-t border-gray-200 dark:border-zinc-700 pt-4">
                                             <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-3">
                                                 Opciones de respuesta <span className="text-red-500">*</span>
                                             </label>
@@ -274,7 +274,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                                                         field.onChange(newOptions)
                                                                     }}
                                                                     placeholder={`Opción ${optIdx + 1}`}
-                                                                    className="flex-1 px-3 py-2 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    className="flex-1 px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                                 />
                                                                 {field.value.length > 1 && (
                                                                     <button
@@ -283,7 +283,7 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                                                             const newOptions = field.value.filter((_: OptionInput, i: number) => i !== optIdx)
                                                                             field.onChange(newOptions)
                                                                         }}
-                                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 rounded transition"
+                                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-zinc-700 rounded transition"
                                                                     >
                                                                         <Trash2 size={16} />
                                                                     </button>
@@ -320,25 +320,25 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
                                 mustAnswer: false,
                                 options: [{ label: "", value: "" }]
                             })}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600 transition"
                         >
                             <Plus size={18} /> Agregar pregunta
                         </button>
                     </div>
 
                     {/* BOTONES DE ACCIÓN */}
-                    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+                    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-zinc-700">
                         <button
                             type="button"
                             onClick={() => reset()}
-                            className="px-4 py-2 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition"
+                            className="px-4 py-2 rounded-md bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600 transition"
                         >
                             Limpiar
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-5 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
+                            className="px-5 py-2 rounded-2xl bg-blue-600 text-white dark:bg-black hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
                         >
                             Guardar Cambios
                         </button>
