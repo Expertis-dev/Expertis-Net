@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import {
     BarChart,
     Bar,
@@ -210,6 +214,31 @@ export default function ReporteMensual() {
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo]);
 
+    const handleExportExcel = () => {
+        if (!processedData || processedData.length === 0) {
+            alert("No hay registros para exportar.");
+            return;
+        }
+
+        const headers = ["Fecha", "Entrada", "Salida", "Estado"];
+        const data = processedData.map(row => [
+            row.fechaFormateada,
+            row.entrada,
+            row.salida,
+            row.estado
+        ]);
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Mi Asistencia");
+
+        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(excelBlob, `Mi_Asistencia_${user?.usuario}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    };
+
     const stats = useMemo(() => {
         const total = processedData.length;
         const faltas = processedData.filter(d => d.esFalta).length;
@@ -241,26 +270,36 @@ export default function ReporteMensual() {
                     <p className="text-muted-foreground">Bienvenido, {user?.usuario || 'Cargando...'}</p>
                 </div>
 
-                <Card className="p-3 border-none shadow-md bg-muted/40">
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="start" className="text-xs font-semibold">Desde:</Label>
-                            <Input
-                                id="start" type="date" value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="h-8 text-sm w-40"
-                            />
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={handleExportExcel}
+                        variant="outline"
+                        className="gap-2 h-10 px-4 border-cyan-200 text-cyan-700 hover:bg-cyan-50 shadow-sm"
+                    >
+                        <Download className="h-4 w-4" />
+                        Exportar Excel
+                    </Button>
+                    <Card className="p-3 border-none shadow-md bg-muted/40">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="start" className="text-xs font-semibold">Desde:</Label>
+                                <Input
+                                    id="start" type="date" value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="h-8 text-sm w-40"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="end" className="text-xs font-semibold">Hasta:</Label>
+                                <Input
+                                    id="end" type="date" value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="h-8 text-sm w-40"
+                                />
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="end" className="text-xs font-semibold">Hasta:</Label>
-                            <Input
-                                id="end" type="date" value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="h-8 text-sm w-40"
-                            />
-                        </div>
-                    </div>
-                </Card>
+                    </Card>
+                </div>
             </div>
 
             {error && (
