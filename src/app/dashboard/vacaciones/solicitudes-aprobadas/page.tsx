@@ -3,26 +3,55 @@ import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Eye, Filter, X } from "lucide-react"
+import { ChevronDownIcon, Eye, Filter, X } from "lucide-react"
 import { BadgeStatus } from "@/components/BadgeStatus"
 
 import { ViewDetalleSolicitud } from "@/components/ViewDetalleSolicitud"
 import { useSolicitudesTotales } from "@/hooks/useSolicitudesTotales"
 import type { SolicitudesAprobadas } from "../../../../types/Vacaciones"
 import { Loading } from "@/components/Loading"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import type { DateRange } from "react-day-picker"
+import * as XLSX from 'xlsx'
+import { saveAs } from "file-saver";
+import { format } from 'date-fns'
+import { es } from "date-fns/locale"
+
 export default function SolicitudesAprobadas() {
     const { solicitudesTotales, isloadingSolicitudesTotales } = useSolicitudesTotales()
     const [showViewModal, setShowViewModal] = useState(false)
     const [selectSolicitud, setSelectSolicitud] = useState<SolicitudesAprobadas>({} as SolicitudesAprobadas)
-    const [searchTerm, setSearchTerm] = useState("")
     const [filtroJefes, setFiltroJefes] = useState(false)
+    const [openCalendar, setOpenCalendar] = useState(false)
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+    const [empleadoBuscar, setEmpleadoBuscar] = useState("")
     const filteredData = useMemo(() => {
         let solicitudesApro = solicitudesTotales;
-        if (solicitudesApro.length > 0 && searchTerm.trim() !== "") {
-            const term = searchTerm.toLowerCase();
+        if (solicitudesApro.length > 0 && empleadoBuscar.trim() !== "") {
+            const term = empleadoBuscar.toLowerCase();
             solicitudesApro = solicitudesApro.filter(
                 (item) => (item.alias ?? "").toLowerCase().includes(term)
             );
+        }
+        if (solicitudesApro.length > 0 && dateRange?.from) {
+            const fromDate = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate());
+            const toDate = dateRange.to
+                ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate())
+                : undefined;
+            solicitudesApro = solicitudesApro.filter((item) => {
+                const solicitudDateRaw = new Date(item.fecSolicitud);
+                const solicitudDate = new Date(
+                    solicitudDateRaw.getFullYear(),
+                    solicitudDateRaw.getMonth(),
+                    solicitudDateRaw.getDate()
+                );
+                if (!toDate) {
+                    return solicitudDate >= fromDate;
+                }
+                return solicitudDate >= fromDate && solicitudDate <= toDate;
+            });
         }
         if (solicitudesApro.length > 0 && filtroJefes) {
             solicitudesApro = solicitudesApro.filter(
@@ -30,7 +59,7 @@ export default function SolicitudesAprobadas() {
             );
         }
         return solicitudesApro;
-    }, [solicitudesTotales, searchTerm, filtroJefes]);
+    }, [solicitudesTotales, empleadoBuscar, dateRange, filtroJefes]);
     if (isloadingSolicitudesTotales || solicitudesTotales === undefined) {
         return (
             <div className="h-[72vh] -translate-x-10">
@@ -38,29 +67,91 @@ export default function SolicitudesAprobadas() {
             </div>
         )
     }
+
+    const getLabelRangoFechas = () => {
+        if (dateRange?.from && dateRange?.to) {
+            return `${dateRange.from.toLocaleDateString("es-PE")} - ${dateRange.to.toLocaleDateString("es-PE")}`
+        }
+        if (dateRange?.from && !dateRange?.to) {
+            return `Desde ${dateRange.from.toLocaleDateString("es-PE")}`
+        }
+        return "Seleccionar rango de fechas"
+    }
+
+    const onClickDownloadExcel = () => {
+        const rows: any[][] = filteredData.map((o) => {
+            return [
+                o.fecSolicitud.split("T")[0], 
+                o.fecInicial.split("T")[0], 
+                o.fecFinal.split("T")[0], 
+                o.alias, 
+                o.estadoVacaciones, 
+                o.cantDias, 
+                o.nombreArea
+            ]
+        });
+        const aoaData: string[][] = [
+            [
+                "Fecha de Solicitud",
+                "Fecha de Inicio",
+                "Fecha Final",
+                "Empleado",
+                "Estado",
+                "Cantidad de Días",
+                "Área",
+            ], // COLUMNAS
+            ...rows
+        ];
+        const worksheet = XLSX.utils.aoa_to_sheet(aoaData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "solicitudes aprobadas");
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(data, `solicitudes_aprobadas_${format((new Date), 'yyyy-MM', { locale: es })}.xlsx`);
+    }
+
     return (
         <div className="space-y-6 animate-in fade-in-0 duration-500">
-            <p className="text-2xl font-bold">Solicitudes Aprobadas</p>
+            <div className="flex justify-between">
+                <p className="text-2xl font-bold">Solicitudes Aprobadas</p>
+                <Button onClick={onClickDownloadExcel}>Exportar Excel</Button>
+            </div>
             <div className="flex flex-col space-y-4">
                 {/* Search and Filter Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="relative w-full sm:w-80">
-                        <Input
-                            type="text"
-                            placeholder="Buscar por empleado"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
+                    <div className="grid grid-cols-3 gap-8 my-2">
+
+                        <div className="space-y-2">
+                            <Label>Buscar Empleado</Label>
+                            <Input
+                                value={empleadoBuscar}
+                                onChange={(e) => setEmpleadoBuscar(e.target.value)}
+                                placeholder="Escribe el nombre o alias"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Rango de Fecha de Solicitud</Label>
+                            <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full justify-between font-normal"
+                                    >
+                                        {getLabelRangoFechas()}
+                                        <ChevronDownIcon className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                                    <Calendar
+                                        mode="range"
+                                        captionLayout="dropdown"
+                                        selected={dateRange}
+                                        onSelect={(range) => setDateRange(range)}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
                     </div>
 
@@ -77,12 +168,13 @@ export default function SolicitudesAprobadas() {
                             Filtro Solo Jefes
                         </Button>
 
-                        {(searchTerm || filtroJefes) && (
+                        {(empleadoBuscar || filtroJefes || dateRange?.from) && (
                             <Button
                                 variant="outline"
                                 onClick={() => {
-                                    setSearchTerm("")
+                                    setEmpleadoBuscar("")
                                     setFiltroJefes(false)
+                                    setDateRange(undefined)
                                 }}
                                 className="transition-all duration-200 hover:bg-gray-50"
                             >
