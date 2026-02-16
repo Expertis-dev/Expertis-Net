@@ -5,6 +5,8 @@ import { useUser } from "@/Provider/UserProvider";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
     Users,
     Search,
@@ -458,6 +460,71 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         );
     }, [colaboradores, searchTerm]);
 
+    const handleExportExcel = () => {
+        if (!enrichedMatrix || Object.keys(enrichedMatrix).length === 0) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+
+        const row1 = ["Usuario", "Horario Base"];
+        daysInMonth.forEach(day => {
+            row1.push(format(day, 'dd/MM', { locale: es }));
+        });
+
+        const aoaData = [row1];
+
+        filteredColabs.forEach(colab => {
+            const meta = enrichedMatrix[colab.usuario];
+            if (!meta) return;
+
+            const rowData = [colab.usuario, meta.horarioBase];
+
+            daysInMonth.forEach(day => {
+                const dayStr = format(day, 'yyyy-MM-dd');
+                const record = meta.asistencias[dayStr];
+                const weekend = isWeekend(day);
+
+                let excelVal = "";
+
+                if (record) {
+                    if (record.type === 'asistencia') {
+                        excelVal = record.hora || "";
+                        if (record.esTardanza) excelVal += " (T)";
+                    } else if (record.type === 'excepcion') {
+                        excelVal = record.sigla || "EXC";
+                    } else if (record.type === 'vacaciones') {
+                        excelVal = "VACACIONES";
+                    } else if (record.type === 'feriado') {
+                        excelVal = "FERIADO";
+                    } else if (record.type === 'falta') {
+                        excelVal = "FALTA";
+                    }
+                } else if (!weekend) {
+                    excelVal = "--";
+                }
+
+                rowData.push(excelVal);
+            });
+
+            aoaData.push(rowData);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(aoaData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte Equipo");
+
+        const wscols = [
+            { wch: 25 },
+            { wch: 12 },
+            ...daysInMonth.map(() => ({ wch: 8 }))
+        ];
+        worksheet['!cols'] = wscols;
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(data, `Reporte_Equipo_${format(currentDate, 'yyyy-MM')}.xlsx`);
+    };
+
     if (loadingColab || (loadingData && asistenciaData.length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
@@ -492,7 +559,11 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     <Button onClick={() => fetchAsistenciaGrupal(true)} disabled={loadingData} variant="outline" size="icon" className="h-10 w-10 shrink-0 dark:border-slate-700 dark:text-slate-300">
                         <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                     </Button>
-                    <Button variant="outline" className="gap-2 border-cyan-200 dark:border-cyan-900/50 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 h-10 px-4">
+                    <Button
+                        onClick={handleExportExcel}
+                        variant="outline"
+                        className="gap-2 border-cyan-200 dark:border-cyan-900/50 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 h-10 px-4"
+                    >
                         <Download className="h-4 w-4" />
                         Exportar
                     </Button>

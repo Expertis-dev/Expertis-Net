@@ -4,6 +4,8 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
     Users,
     Search,
@@ -29,6 +31,11 @@ import {
 // --- CONFIGURACIÓN DE HORARIOS ---
 const HORARIO_STAFF_ESTANDAR = { entrada: "09:00", tolerancia: 0 };
 const HORARIO_STAFF_SUPERVISOR = { entrada: "07:00", tolerancia: 0 };
+const HORARIO_STAFF_6AM = { entrada: "06:00", tolerancia: 0 };
+
+const STAFF_6AM = [
+    "JAMES IZQUIERDO"
+];
 
 const SUPERVISORES_ESP = [
     "JORDAN MAYA",
@@ -270,8 +277,14 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
 
         colaboradores.forEach(colab => {
             const currentAlias = (colab.alias || colab.usuario || "").toString().trim();
-            const isSupEsp = SUPERVISORES_ESP.includes(currentAlias.toUpperCase());
-            const config = isSupEsp ? HORARIO_STAFF_SUPERVISOR : HORARIO_STAFF_ESTANDAR;
+            const aliasUpper = currentAlias.toUpperCase();
+
+            let config = HORARIO_STAFF_ESTANDAR;
+            if (SUPERVISORES_ESP.includes(aliasUpper)) {
+                config = HORARIO_STAFF_SUPERVISOR;
+            } else if (STAFF_6AM.includes(aliasUpper)) {
+                config = HORARIO_STAFF_6AM;
+            }
 
             matrix[currentAlias] = {
                 horarioBase: config.entrada,
@@ -371,6 +384,75 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         });
     }, [colaboradores, searchTerm]);
 
+    const handleExportExcel = () => {
+        if (!enrichedMatrix || Object.keys(enrichedMatrix).length === 0) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+
+        // Preparar headers: Colaborador, Horario, y luego cada día del mes
+        const row1 = ["Colaborador", "Horario"];
+        daysInMonth.forEach(day => {
+            row1.push(format(day, 'dd/MM', { locale: es }));
+        });
+
+        const aoaData = [row1];
+
+        // Recorrer colaboradores filtrados
+        filteredColabs.forEach(colab => {
+            const currentAlias = colab.alias || colab.usuario;
+            const meta = enrichedMatrix[currentAlias];
+            if (!meta) return;
+
+            const rowData = [currentAlias, meta.horarioBase];
+
+            daysInMonth.forEach(day => {
+                const dayStr = format(day, 'yyyy-MM-dd');
+                const record = meta.asistencias[dayStr];
+                const weekend = isWeekend(day);
+
+                let excelVal = "";
+
+                if (record) {
+                    if (record.type === 'asistencia') {
+                        excelVal = record.hora || "";
+                        if (record.esTardanza) excelVal += " (T)";
+                    } else if (record.type === 'feriado') {
+                        excelVal = "FERIADO";
+                    } else if (record.type === 'vacaciones') {
+                        excelVal = "VACACIONES";
+                    } else if (record.type === 'dm') {
+                        excelVal = "DM/LIC";
+                    } else if (record.type === 'falta') {
+                        excelVal = "FALTA";
+                    }
+                } else if (!weekend) {
+                    excelVal = "--";
+                }
+
+                rowData.push(excelVal);
+            });
+
+            aoaData.push(rowData);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(aoaData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte Staff");
+
+        // Ajustar anchos de columna (opcional)
+        const wscols = [
+            { wch: 25 }, // Colaborador
+            { wch: 10 }, // Horario
+            ...daysInMonth.map(() => ({ wch: 8 })) // Días
+        ];
+        worksheet['!cols'] = wscols;
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(data, `Reporte_Staff_${format(currentDate, 'yyyy-MM')}.xlsx`);
+    };
+
     if (loadingColab || (loadingData && asistenciaData.length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
@@ -405,7 +487,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     <Button onClick={() => fetchAsistenciaStaff(true)} disabled={loadingData} variant="outline" size="icon" className="h-10 w-10 shrink-0 dark:border-slate-700 dark:text-slate-300">
                         <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                     </Button>
-                    <Button variant="outline" className="gap-2 border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-10 px-4">
+                    <Button
+                        onClick={handleExportExcel}
+                        variant="outline"
+                        className="gap-2 border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-10 px-4"
+                    >
                         <Download className="h-4 w-4" />
                         Exportar
                     </Button>
@@ -556,6 +642,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
                     <span className="font-bold text-white/70">Horarios (0 min tolerancia):</span>
+                    <span>• Staff 6-3: 6:00 AM</span>
                     <span>• Supervisores / Roberto: 7:00 AM</span>
                     <span>• Staff Gral: 9:00 AM</span>
                 </div>

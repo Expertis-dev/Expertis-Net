@@ -9,10 +9,14 @@ import {
     Clock,
     CheckCircle2,
     AlertCircle,
-    Filter
+    Filter,
+    Download
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, getDay, eachDayOfInterval, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
@@ -167,11 +171,14 @@ const ReporteAsistenciaStaff = () => {
         if (user?.id_grupo === 14) {
             return { entrada: "08:00", tolerancia: 0 }; // 08:00 AM (Sin tolerancia)
         }
+        if (user?.usuario?.toUpperCase() === "JAMES IZQUIERDO") {
+            return { entrada: "06:00", tolerancia: 10 }; // 06:10 AM
+        }
         if (esSupervisorInterno) {
             return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM
         }
         return { entrada: "09:00", tolerancia: 10 }; // 09:10 AM
-    }, [esSupervisorInterno, user?.id_grupo]);
+    }, [esSupervisorInterno, user?.id_grupo, user?.usuario]);
 
     // Procesar datos: Filtrar por Lunes a Viernes (incluyendo feriados) y ordenar
     const processedRegistros = useMemo(() => {
@@ -215,6 +222,43 @@ const ReporteAsistenciaStaff = () => {
 
     }, [staffData, diasVacaciones, horarioConfig]);
 
+    const handleExportExcel = () => {
+        if (!processedRegistros || processedRegistros.length === 0) {
+            alert("No hay registros para exportar.");
+            return;
+        }
+
+        const headers = ["Fecha", "Hora Ingreso", "Hora Salida", "Estado"];
+        const data = processedRegistros.map(row => {
+            const isVacaciones = !!row.esVacaciones;
+            const isFeriado = !!row.esFeriado;
+            const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones;
+
+            let estado = "Puntual";
+            if (isVacaciones) estado = "Vacaciones";
+            else if (isFeriado) estado = `Feriado (${row.esFeriado})`;
+            else if (isFalta) estado = "Inasistencia";
+            else if (row.esTardanza) estado = "Tardanza";
+
+            return [
+                format(parseISO(row.fecha), 'EEEE dd/MM/yyyy', { locale: es }),
+                row.horaIngreso || (isFeriado || isVacaciones ? "--:--" : "No Marcó"),
+                row.horaSalida || "--:--",
+                estado
+            ];
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Mi Asistencia");
+
+        // Ajustar anchos
+        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 25 }];
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(excelBlob, `Mi_Asistencia_${staffData?.nombre || user?.usuario}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    };
 
     const stats = useMemo(() => {
         const total = processedRegistros.length;
@@ -260,6 +304,14 @@ const ReporteAsistenciaStaff = () => {
                         )}
                     </div>
                 </div>
+
+                <Button
+                    onClick={handleExportExcel}
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2 h-10 px-4 rounded-xl shadow-md transition-all"
+                >
+                    <Download className="h-4 w-4" />
+                    Exportar Excel
+                </Button>
             </div>
 
             {error && (
