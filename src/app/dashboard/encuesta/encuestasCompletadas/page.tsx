@@ -1,4 +1,5 @@
 "use client"
+import { Loading } from "@/components/Loading";
 import { LoadingModal } from "@/components/loading-modal";
 import { InputSearch, InputSearchValues } from "@/Encuesta/components/inputSearch";
 import { CheckSquare2 } from "lucide-react";
@@ -71,7 +72,7 @@ export default function Page() {
             setIsLoading(false)
         })
     }, [])
-
+    
     return (
         <>
             <h1 className="text-3xl font-semibold">Mis encuestas completadas</h1>
@@ -156,7 +157,7 @@ export default function Page() {
                 })}
             </div>
             )}
-            <LoadingModal isOpen={isLoading} message="cargando..."/>
+            
         </>
     )
 }

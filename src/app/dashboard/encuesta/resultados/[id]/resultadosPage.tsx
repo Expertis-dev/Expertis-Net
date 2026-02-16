@@ -4,6 +4,9 @@ import { StatisticsPage } from "@/Encuesta/components/resultados/StatisticsPage"
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Encuesta } from "@/types/encuesta";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 const options = [
     "Ver respuestas",
     "Ver estadísticas"
@@ -67,31 +70,45 @@ export const ResultadosPage = ({ id }: Props) => {
     }, [id])
     return (
         <>
-            <div className="flex justify-center">
-                <ul className="hidden sm:flex text-sm font-medium text-center cursor-pointer gap-2 w-[70%]">
-                    {isReady && options.map((o, i) => {
-                        const isActive = activeTab === o;
+            <div className="flex flex-col gap-3">
+                <Link
+                    href={"/dashboard/encuesta/encuestasCreadas"}
+                >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="self-start transition-all duration-200 hover:bg-gray-50"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Volver
+                    </Button>
+                </Link>
+                <div className="flex justify-center">
+                    <ul className="hidden sm:flex text-sm font-medium text-center cursor-pointer gap-2 w-[70%]">
+                        {isReady && options.map((o, i) => {
+                            const isActive = activeTab === o;
 
-                        return (
-                            <li
-                                key={i}
-                                className="flex-1 rounded-xl overflow-hidden"
-                            >
-                                <button
-                                    onClick={() => setActiveTab(o)}
-                                    className={`w-full px-4 py-2.5 rounded-xl border transition duration-150 focus:outline-none focus:ring-2 focus:ring-brand
-                                    
-                                    ${isActive ? "bg-brand text-black border-brand shadow-sm bg-sky-200 dark:bg-zinc-300"
-                                            : "bg-gray-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900"
-                                        }
-                                    `}
+                            return (
+                                <li
+                                    key={i}
+                                    className="flex-1 rounded-xl overflow-hidden"
                                 >
-                                    {o}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
+                                    <button
+                                        onClick={() => setActiveTab(o)}
+                                        className={`w-full px-4 py-2.5 rounded-xl border transition duration-150 focus:outline-none focus:ring-2 focus:ring-brand
+                                    
+                                        ${isActive ? "bg-brand text-black border-brand shadow-sm bg-sky-200 dark:bg-zinc-300"
+                                                : "bg-gray-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900"
+                                            }
+                                        `}
+                                    >
+                                        {o}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
             </div>
             {
                 (respuestas?.length !== 0 || respuestas === undefined) ?
