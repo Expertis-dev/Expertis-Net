@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -145,19 +145,19 @@ const MENU_CONFIG: MenuItem[] = [
         title: "Mi Asistencia",
         href: "/dashboard/asistencia/mi-asistencia",
         modulo: "Asistencia",
-        // permiso: "MiAsistencia-ver",
+        permiso: "AsistenciaUsuario-ver",
       },
       {
         title: "Equipo",
         href: "/dashboard/asistencia/equipo",
         modulo: "Asistencia",
-        // permiso: "Equipo-ver",
+        permiso: "AsistenciaEquipo-ver",
       },
       {
         title: "Reporte Staff",
         href: "/dashboard/asistencia/ReporteAsistencia",
         modulo: "Asistencia",
-        // permiso: "ReporteStaff-ver",
+        permiso: "ReporteStaff-ver",
       },
 
     ],
@@ -301,6 +301,32 @@ const MENU_CONFIG: MenuItem[] = [
       },
     ],
   },
+  {
+    id: "encuesta",
+    title: "Encuesta",
+    icon: PencilIcon,
+    href: "/dashboards/encuesta",
+    subItems: [
+      {
+        title: "Encuestas Activas",
+        href: "/dashboard/encuesta/misEncuestas",
+        modulo: "Encuesta",
+        permiso: "EncuestasActivas-ver",
+      },
+      {
+        title: "Encuestas Completadas",
+        href: "/dashboard/encuesta/encuestasCompletadas",
+        modulo: "Encuesta",
+        permiso: "EncuestasRealizadas-ver",
+      },
+      {
+        title: "Crear Encuesta",
+        href: "/dashboard/encuesta/encuestasCreadas",
+        modulo: "Encuesta",
+        permiso: "Encuesta-registrar",
+      }
+    ]
+  }
   /*{
     id: "mcp",
     title: "Consultas Expertito",
@@ -431,9 +457,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           const filteredSubItems = menu.subItems.filter((sub) => {
             // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
-            if (sub.title === "Reporte Staff" && user?.usuario !== "CAROLINA PICHILINGUE") {
-              return false
-            }
+            // if (sub.title === "Reporte Staff") {
+            //   return false
+            // }
 
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
@@ -490,10 +516,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                     </div>
                   </SheetTitle>
-                  <SheetDescription className="py-1">
-                    <div className="font-medium text-foreground">
-                      {user?.usuario}, {getRolFromStorage()}
-                    </div>
+                  <SheetDescription className="py-1 font-medium text-foreground">
+                    {user?.usuario}, {getRolFromStorage()}
                   </SheetDescription>
                 </SheetHeader>
 

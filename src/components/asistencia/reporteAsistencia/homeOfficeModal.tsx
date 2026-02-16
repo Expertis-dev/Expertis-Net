@@ -27,7 +27,6 @@ export const HomeOfficeFormModal = ({ isOpen, onClose, colab, onSuccess }: HomeO
 
     const onClickButton = async (data: HOForm) => {
         // Enviar datos o procesarlos
-        console.log('HomeOffice submit', data)
         try {
             // Guardar fecha en formato aaaa/mm/dd
             const fechaGuardar = data.fecha ? data.fecha.replace(/-/g, '/') : new Date().toISOString().split('T')[0].replace(/-/g, '/');

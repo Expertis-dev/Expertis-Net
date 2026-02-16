@@ -40,12 +40,12 @@ export function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-center text-slate-600 dark:text-slate-400">{message}</p>
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={onClose}>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline" className="w-full sm:flex-1" onClick={onClose}>
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-[#001529] hover:bg-[#002040] dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white"
+                    className="w-full sm:flex-1 bg-[#001529] hover:bg-[#002040] dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white"
                     onClick={onConfirm}
                   >
                     Continuar

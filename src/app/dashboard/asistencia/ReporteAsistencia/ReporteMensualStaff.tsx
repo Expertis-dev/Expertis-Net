@@ -327,13 +327,13 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         }).catch(() => {
             setIsLoading(false);
         });
-    }, [fetchVacaciones]);
+    }, [fetchVacaciones, fetchHomeOffice]);
 
     useEffect(() => {
         if (!isModalOpen) {
             fetchHomeOffice()
         }
-    }, [isModalOpen])
+    }, [isModalOpen, fetchHomeOffice])
 
     const enrichedMatrix = useMemo(() => {
         const matrix: Record<string, MatrixItem> = {};

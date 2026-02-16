@@ -2,6 +2,8 @@
 import { createContext } from "react";
 // Context/UserContext.ts
 export type User = {
+  apellido1: string;
+  nombre: string;
   idEmpleado: number;
   usuario: string;
   cargo: string;
@@ -12,6 +14,7 @@ export type User = {
   idArea: number;
   idJefe: number;
   estado: number;
+  dni: string
 } | null;
 
 type UserContextType = {
