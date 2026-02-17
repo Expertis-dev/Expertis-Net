@@ -1,6 +1,6 @@
 "use client"
 // Componente de Reporte Mensual de Asistencia para el Staff
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
@@ -34,6 +34,7 @@ import { EmpleadoStaff } from '@/types/Empleado';
 import { HomeOfficeFormModal } from '@/components/asistencia/reporteAsistencia/homeOfficeModal';
 import { HomeOfficeResponse } from '@/types/HomeOffice';
 import { ConfirmationModal } from '@/components/confirmation-modal';
+import { SuccessModal } from "@/components/success-modal";
 
 // --- CONFIGURACIÓN DE GRUPOS ---
 const GRUPOS_HORARIO = [
@@ -114,6 +115,50 @@ interface ReporteProps {
 }
 
 
+export interface AsistenciasResp {
+    success: boolean;
+    mesage:  string;
+    data:    AsistenciasRespData;
+}
+
+export interface AsistenciasRespData {
+    _id:       string;
+    data:      DataData;
+    month:     string;
+    year:      number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface DataData {
+    [name: string]: Empleado
+}
+
+export interface Empleado {
+    horarioConfig: HorarioConfig;
+    asistencias: Asistencias;
+}
+
+export interface HorarioConfig {
+    id: string,
+    label: string,
+    entrada: string,
+    salida: string,
+    tolerancia: string
+}
+
+export interface Asistencias {
+    [fecha: string]: AsistenciaData
+}
+
+export interface AsistenciaData {
+    type: string,
+    esTardanza: boolean,
+    horaI?: string,
+    horaS?: string,
+    label?: string
+}
+
 
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -130,14 +175,25 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
     }
 };
 
+const getAsistenciasDeUnMes = async (mes: string, año: string) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asistenciaDelMesStaff/${mes}/${año}`)
+    const body: AsistenciasResp = await res.json()
+    return body.data
+}
 
 const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedGroup, setSelectedGroup] = useState(GRUPOS_HORARIO[3].id); // Default 9-6
     const [selectedArea, setSelectedArea] = useState<string>("TODAS");
 
-
     const [currentDate] = useState(new Date());
+    const currentMonthValue = useMemo(() => format(currentDate, 'yyyy-MM'), [currentDate]);
+    const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
+    const isCurrentMonth = selectedMonth === currentMonthValue;
+    const selectedDate = useMemo(() => {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        return new Date(y, m - 1, 1);
+    }, [selectedMonth]);
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     // HomeOffice: key => NOMBRE_UPPER, value => array of tiempos normalizados { fecha: 'yyyy-MM-dd', horaIngreso, horaSalida }
@@ -147,19 +203,37 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
     const [deleteTarget, setDeleteTarget] = useState<{ nombre: string; fecha: string } | null>(null);
+    const [successModalIsOpen, setSuccessModalIsOpen] = useState(false);
+    const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [historicalMatrix, setHistoricalMatrix] = useState<Record<string, MatrixItem>>({});
+    const [isMonthDataLoading, setIsMonthDataLoading] = useState(false);
 
     const [empleado, setEmpleado] = useState<PersonalGlobal>()
 
     const daysInMonth = useMemo(() => {
-        const start = startOfMonth(currentDate);
-        const end = endOfMonth(currentDate);
+        const start = startOfMonth(selectedDate);
+        const end = endOfMonth(selectedDate);
         return eachDayOfInterval({ start, end });
-    }, [currentDate]);
+    }, [selectedDate]);
 
     const areasDisponibles = useMemo(() => {
         const areas = colaboradores.map(c => c.Area).filter(Boolean);
         return ["TODAS", ...new Set(areas)].sort();
     }, [colaboradores]);
+
+    const monthOptions = useMemo(() => {
+        const options: { value: string; label: string }[] = [];
+        const minDate = new Date(2026, 0, 1);
+        const cursor = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        while (cursor >= minDate) {
+            const value = format(cursor, 'yyyy-MM');
+            const labelRaw = format(cursor, 'MMMM yyyy', { locale: es });
+            const label = labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
+            options.push({ value, label });
+            cursor.setMonth(cursor.getMonth() - 1);
+        }
+        return options;
+    }, [currentDate]);
 
     // Filtrar colaboradores que pertenecen al grupo actual según el archivo estático
     const colaboradoresDelGrupo = useMemo(() => {
@@ -199,6 +273,53 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         });
     }, [colaboradores, selectedGroup, vacacionesMap, descansosMap, homeOffice]);
 
+    const getColaboradoresPorGrupo = useCallback((groupId: string) => {
+        const conRegistrosYArea = colaboradores.filter(c => {
+            const tieneArea = c.Area && c.Area.trim() !== "";
+            const tieneMarcadoPositivo = Object.values(c.tiempos).some(t =>
+                t && t.horaIngreso && t.horaIngreso.trim() !== "" && t.horaIngreso !== "No marcó Ingreso"
+            );
+
+            const nombreUpper = (c.Nombre || "").toString().trim().toUpperCase();
+            const enVacaciones = (vacacionesMap[nombreUpper] || []).length > 0;
+            const enDescansoMedico = (descansosMap[nombreUpper] || []).length > 0;
+            const enHomeOffice = (homeOffice[nombreUpper] || []).length > 0;
+
+            return tieneArea && (tieneMarcadoPositivo || enVacaciones || enDescansoMedico || enHomeOffice);
+        });
+
+        if (groupId === '9-6') {
+            const nombresAsignados = Object.entries(CONFIG_EMPLEADOS_ESTATICA)
+                .filter(([id]) => id !== '9-6')
+                .flatMap(([, names]) => names.map(n => n.toUpperCase()));
+
+            return conRegistrosYArea.filter((c: PersonalGlobal) => {
+                const nombre = c.Nombre.toUpperCase();
+                return !nombresAsignados.some((name: string) => nombre.includes(name));
+            });
+        }
+
+        const nombresEnGrupo = CONFIG_EMPLEADOS_ESTATICA[groupId] || [];
+        return conRegistrosYArea.filter((c: PersonalGlobal) => {
+            const nombre = c.Nombre.toUpperCase();
+            return nombresEnGrupo.some((name: string) => nombre.includes(name.toUpperCase()));
+        });
+    }, [colaboradores, vacacionesMap, descansosMap, homeOffice]);
+
+    const historicalColabs = useMemo(() => {
+        return Object.entries(historicalMatrix)
+            .filter(([, item]) => item?.horarioConfig?.id === selectedGroup)
+            .map(([name]) => {
+                const match = colaboradores.find(c => c.Nombre.toUpperCase() === name.toUpperCase());
+                return {
+                    Nombre: name,
+                    id: match?.id ?? name,
+                    Area: match?.Area ?? "",
+                    tiempos: match?.tiempos ?? {}
+                } as PersonalGlobal;
+            });
+    }, [historicalMatrix, selectedGroup, colaboradores]);
+
     const fetchVacaciones = useCallback(async () => {
         if (!colaboradores || colaboradores.length === 0) return;
 
@@ -210,7 +331,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const idsEmpleados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdsEmpleadosPorListaAlias`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({nombres: nombreEmpleado}),
+                body: JSON.stringify({ nombres: nombreEmpleado }),
             })
                 .then(res => res.json())
                 .then(id => id.data)
@@ -335,11 +456,58 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         }
     }, [isModalOpen, fetchHomeOffice])
 
-    const enrichedMatrix = useMemo(() => {
+    const normalizeMesData = useCallback((data?: AsistenciasRespData) => {
+        const matrix: Record<string, MatrixItem> = {};
+        if (!data?.data) return matrix;
+        Object.entries(data.data).forEach(([name, emp]) => {
+            if (!emp || !emp.horarioConfig) return;
+            matrix[name] = {
+                horarioConfig: {
+                    id: emp.horarioConfig.id,
+                    label: emp.horarioConfig.label,
+                    entrada: emp.horarioConfig.entrada,
+                    salida: emp.horarioConfig.salida,
+                    tolerancia: Number(emp.horarioConfig.tolerancia) || 0
+                },
+                asistencias: (emp.asistencias || {}) as MatrixItem["asistencias"]
+            };
+        });
+        return matrix;
+    }, []);
+
+    const selectedMonthName = useMemo(() => format(selectedDate, 'MMMM', { locale: es }).toLowerCase(), [selectedDate]);
+    const selectedYear = useMemo(() => format(selectedDate, 'yyyy'), [selectedDate]);
+
+    useEffect(() => {
+        let active = true;
+        if (isCurrentMonth) {
+            setHistoricalMatrix({});
+            setIsMonthDataLoading(false);
+            return;
+        }
+        setIsMonthDataLoading(true);
+        getAsistenciasDeUnMes(selectedMonthName, selectedYear)
+            .then((data) => {
+                if (!active) return;
+                setHistoricalMatrix(normalizeMesData(data));
+            })
+            .catch((error) => {
+                console.error("Error al obtener asistencias del mes:", error);
+                if (active) setHistoricalMatrix({});
+            })
+            .finally(() => {
+                if (active) setIsMonthDataLoading(false);
+            });
+        return () => {
+            active = false;
+        };
+    }, [isCurrentMonth, normalizeMesData, selectedMonthName, selectedYear]);
+
+    const buildMatrix = useCallback((colabs: PersonalGlobal[], groupConfig: typeof GRUPOS_HORARIO[0]) => {
         const matrix: Record<string, MatrixItem> = {};
         const todayStr = format(new Date(), 'yyyy-MM-dd');
-        const config = GRUPOS_HORARIO.find((g) => g.id === selectedGroup)!;
-        colaboradoresDelGrupo.forEach((colab: PersonalGlobal) => {
+        const config = groupConfig;
+        colabs.forEach((colab: PersonalGlobal) => {
             const nombreKey = colab.Nombre;
             const nombreUpper = (nombreKey || "").toString().trim().toUpperCase();
             matrix[nombreKey] = { horarioConfig: config, asistencias: {} };
@@ -409,7 +577,48 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             });
         });
         return matrix;
-    }, [colaboradoresDelGrupo, daysInMonth, vacacionesMap, descansosMap, homeOffice, selectedGroup]);
+    }, [daysInMonth, vacacionesMap, descansosMap, homeOffice]);
+
+    const enrichedMatrix = useMemo(() => {
+        const config = GRUPOS_HORARIO.find((g) => g.id === selectedGroup)!;
+        return buildMatrix(colaboradoresDelGrupo, config);
+    }, [buildMatrix, colaboradoresDelGrupo, selectedGroup]);
+
+    const displayMatrix = useMemo(() => {
+        return isCurrentMonth ? enrichedMatrix : historicalMatrix;
+    }, [enrichedMatrix, historicalMatrix, isCurrentMonth]);
+
+    const handleGuardarTodo = async () => {
+        if (!isCurrentMonth) return;
+        const mergedMatrix: Record<string, MatrixItem> = {};
+        GRUPOS_HORARIO.forEach((grupo) => {
+            const colabs = getColaboradoresPorGrupo(grupo.id);
+            const groupMatrix = buildMatrix(colabs, grupo);
+            Object.assign(mergedMatrix, groupMatrix);
+        });
+
+        try {
+            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asistenciaDelMesStaff`, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mergedMatrix)
+            });
+
+            if (resp.ok) {
+                setSuccessModalIsOpen(true);
+                if (successTimeoutRef.current) {
+                    clearTimeout(successTimeoutRef.current);
+                }
+                successTimeoutRef.current = setTimeout(() => {
+                    setSuccessModalIsOpen(false);
+                }, 2000);
+            }
+        } catch (error) {
+            console.error("Error al guardar la matriz mensual:", error);
+        }
+
+        console.log(mergedMatrix);
+    };
 
     const handleExportExcel = () => {
         const allValidColabs = colaboradores.filter(c => {
@@ -502,28 +711,34 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        saveAs(data, `Reporte_Global_Staff_${format(currentDate, 'yyyy-MM', { locale: es })}.xlsx`);
+        saveAs(data, `Reporte_Global_Staff_${format(selectedDate, 'yyyy-MM', { locale: es })}.xlsx`);
     };
 
     const filteredColabs = useMemo(() => {
-        return colaboradoresDelGrupo.filter((c: PersonalGlobal) => {
+        const source = isCurrentMonth ? colaboradoresDelGrupo : historicalColabs;
+        return source.filter((c: PersonalGlobal) => {
             const matchesSearch = c.Nombre.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesArea = selectedArea === "TODAS" || c.Area === selectedArea;
             return matchesSearch && matchesArea;
         });
-    }, [colaboradoresDelGrupo, searchTerm, selectedArea]);
+    }, [colaboradoresDelGrupo, historicalColabs, isCurrentMonth, searchTerm, selectedArea]);
+
+    const isScreenLoading = isCurrentMonth ? isLoading : isMonthDataLoading;
 
     const onCLickTimerButton = (colab: PersonalGlobal) => {
+        if (!isCurrentMonth) return;
         setIsModalOpen(true)
         setEmpleado(colab)
     }
 
     const handleOpenDeleteModal = (nombre: string, fecha: string) => {
+        if (!isCurrentMonth) return;
         setDeleteTarget({ nombre, fecha });
         setIsDeleteModalOpen(true);
     }
 
     const handleConfirmDelete = async () => {
+        if (!isCurrentMonth) return;
         if (!deleteTarget) return;
 
         try {
@@ -561,13 +776,28 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                 REPORTE <span className="text-blue-900 dark:text-blue-400 uppercase">Mensual Staff</span>
                             </h1>
                             <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                                Control de Entradas y Salidas • {format(currentDate, 'MMMM yyyy', { locale: es })}
+                                Control de Entradas y Salidas • {format(selectedDate, 'MMMM yyyy', { locale: es })}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    {/* Selector de Mes */}
+                    <div className="relative flex-1 sm:min-w-[200px]">
+                        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <select
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-900/20 transition-all dark:text-slate-200 appearance-none cursor-pointer"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                        >
+                            {monthOptions.map((m) => (
+                                <option key={m.value} value={m.value}>
+                                    {m.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     {/* Filtro por Área */}
                     <div className="relative flex-1 sm:min-w-[200px]">
                         <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -602,6 +832,13 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                         <RefreshCw className={`h-4 w-4`} />
                     </Button>
                     <Button
+                        onClick={handleGuardarTodo}
+                        disabled={!isCurrentMonth}
+                        className="bg-slate-700 hover:bg-slate-800 text-white rounded-2xl px-6 h-11 gap-2 shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-700"
+                    >
+                        Guardar
+                    </Button>
+                    <Button
                         onClick={handleExportExcel}
                         className="bg-blue-900 dark:bg-blue-700 hover:bg-blue-800 dark:hover:bg-blue-600 text-white rounded-2xl px-6 h-11 gap-2 shadow-lg shadow-blue-900/20 dark:shadow-blue-900/20"
                     >
@@ -630,7 +867,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             </div>
 
             {/* Matriz Reporte */}
-            {isLoading ? (
+            {isScreenLoading ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                     <RefreshCw className="h-10 w-10 text-blue-900 animate-spin" />
                     <p className="text-slate-500 font-medium">Sincronizando registros mensuales...</p>
@@ -661,7 +898,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                 <TableBody>
                                     {filteredColabs.length > 0 ? filteredColabs.map((colab) => {
                                         const personalName = colab.Nombre;
-                                        const item = enrichedMatrix[personalName];
+                                        const item = displayMatrix[personalName];
 
                                         if (!item) return null;
 
@@ -673,7 +910,16 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                             <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight mr-4">
                                                                 {personalName}
                                                             </span>
-                                                            <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900' onClick={() => onCLickTimerButton(colab)}><TimerIcon className='stroke-current' /></Button>
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="icon"
+                                                                title='Click para agregar horas de HomeOffice'
+                                                                disabled={!isCurrentMonth}
+                                                                className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-300'
+                                                                onClick={() => onCLickTimerButton(colab)}
+                                                            >
+                                                                <TimerIcon className='stroke-current' />
+                                                            </Button>
                                                         </div>
                                                         <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{colab.Area}</span>
                                                     </div>
@@ -709,7 +955,15 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                 </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
-                                                                    <CircleX color='red' width={20} height={20} className='absolute top-1 right-1 cursor-pointer' onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)} />
+                                                                    {isCurrentMonth && (
+                                                                        <CircleX
+                                                                            color='red'
+                                                                            width={20}
+                                                                            height={20}
+                                                                            className='absolute top-1 right-1 cursor-pointer'
+                                                                            onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)}
+                                                                        />
+                                                                    )}
                                                                     <HomeIcon color='purple' />
                                                                     <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-lg bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-transparent dark:border-transparent dark:text-purple-400`}>
                                                                         {record.horaI || 'S/MARCADO'}
@@ -758,6 +1012,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 title="Eliminar registro de HomeOffice"
                 message={`¿Estás seguro de que deseas eliminar el registro de HomeOffice del ${deleteTarget?.fecha}?`}
             />
+            <SuccessModal isOpen={successModalIsOpen} message="Guardado exitosamente" />
         </div>
     );
 };

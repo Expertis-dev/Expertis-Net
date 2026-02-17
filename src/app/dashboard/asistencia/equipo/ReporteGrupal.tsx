@@ -17,7 +17,8 @@ import {
     RefreshCw,
     XCircle,
     Umbrella,
-    Laptop
+    Laptop,
+    HomeIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -693,7 +694,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                 </span>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center bg-cyan-50 dark:bg-cyan-900/30 w-full h-full justify-center border-x border-cyan-100 dark:border-cyan-900">
-                                                                    <Laptop className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />
+                                                                    <HomeIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />
                                                                     <span className="text-[9px] font-black text-cyan-700 dark:text-cyan-300 tracking-tighter">
                                                                         {record.hora ? `HO ${record.hora}` : "HO"}
                                                                     </span>
