@@ -40,6 +40,7 @@ const GRUPOS_HORARIO = [
     { id: '6-3', label: 'Grupo 6am - 3pm', entrada: '06:00', salida: '15:00', tolerancia: 10 },
     { id: '7-5', label: 'Grupo 7am - 5pm', entrada: '07:00', salida: '17:00', tolerancia: 10 },
     { id: '8-5', label: 'Grupo 8am - 5pm', entrada: '08:00', salida: '17:00', tolerancia: 0 },
+    { id: '8:30-5:30', label: 'Grupo 8:30am - 5:30pm', entrada: '08:30', salida: '17:30', tolerancia: 0 },
     { id: '9-6', label: 'Grupo 9am - 6pm', entrada: '09:00', salida: '18:00', tolerancia: 0 },
 ];
 
@@ -62,11 +63,14 @@ const CONFIG_EMPLEADOS_ESTATICA: Record<string, string[]> = {
         "ROBERTO INZUA"
     ],
     '8-5': [
-        "ROBERT MANGUINURI",
         "MAURO ADAUTO",
         "FIORELLA DIAZ",
         "JORDAN MAYA",
         "JHON PULACHE"
+    ],
+    '8:30-5:30': [
+        "ROBERT MANGUINURI",
+        "ANGEL MARTINEZ"
     ],
     '9-6': [] // Se deja vacío ya que ahora es el grupo por defecto (fallback)
 };
@@ -147,8 +151,13 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
     const [deleteTarget, setDeleteTarget] = useState<{ nombre: string; fecha: string } | null>(null);
-
     const [empleado, setEmpleado] = useState<PersonalGlobal>()
+
+    const isAdminRRHH = useMemo(() => {
+        if (typeof window === "undefined") return false;
+        const rol = localStorage.getItem("rol")?.replace(/"/g, "");
+        return rol === "JEFE RR.HH.";
+    }, []);
 
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentDate);
@@ -160,6 +169,41 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         const areas = colaboradores.map(c => c.Area).filter(Boolean);
         return ["TODAS", ...new Set(areas)].sort();
     }, [colaboradores]);
+
+    // Calcular conteo por grupo para los tabs (usando colaboradores válidos)
+    const groupCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        GRUPOS_HORARIO.forEach(g => counts[g.id] = 0);
+
+        const conRegistrosYArea = colaboradores.filter(c => {
+            const tieneArea = c.Area && c.Area.trim() !== "";
+            // Filtro por área para el conteo de los grupos
+            const matchesArea = selectedArea === "TODAS" || c.Area === selectedArea;
+            if (!matchesArea) return false;
+
+            const tieneMarcadoPositivo = Object.values(c.tiempos).some(t =>
+                t && t.horaIngreso && t.horaIngreso.trim() !== "" && t.horaIngreso !== "No marcó Ingreso"
+            );
+            const nombreUpper = (c.Nombre || "").toString().trim().toUpperCase();
+            return tieneArea && (tieneMarcadoPositivo || (vacacionesMap[nombreUpper] || []).length > 0 || (descansosMap[nombreUpper] || []).length > 0 || (homeOffice[nombreUpper] || []).length > 0);
+        });
+
+        conRegistrosYArea.forEach(c => {
+            const nombre = c.Nombre.toUpperCase();
+            let asignado = false;
+            for (const [groupId, members] of Object.entries(CONFIG_EMPLEADOS_ESTATICA)) {
+                if (groupId === '9-6') continue;
+                if (members.some(m => nombre.includes(m.toUpperCase()))) {
+                    counts[groupId]++;
+                    asignado = true;
+                    break;
+                }
+            }
+            if (!asignado) counts['9-6']++;
+        });
+
+        return counts;
+    }, [colaboradores, vacacionesMap, descansosMap, homeOffice, selectedArea]);
 
     // Filtrar colaboradores que pertenecen al grupo actual según el archivo estático
     const colaboradoresDelGrupo = useMemo(() => {
@@ -210,7 +254,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
             const idsEmpleados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerIdsEmpleadosPorListaAlias`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({nombres: nombreEmpleado}),
+                body: JSON.stringify({ nombres: nombreEmpleado }),
             })
                 .then(res => res.json())
                 .then(id => id.data)
@@ -284,9 +328,16 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
 
     const fetchHomeOffice = useCallback(async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice`)
+            const queryParams = colaboradores
+                .map((c) => (c.Nombre))
+                .map((n, i) => {
+                    const alias = "alias=";
+                    const prefix = i === 0 ? "?" : "&";
+                    return prefix + alias + n;
+                });
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)
             const json: HomeOfficeResponse = await res.json()
-            const data = json.data
+            const data = json.data || []
             const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {}
             data.forEach((em) => {
                 const alias = (em.nombre || "").toString().trim().toUpperCase();
@@ -355,7 +406,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                 // Vacaciones
                 if ((vacacionesMap[nombreUpper] || []).includes(dayStr)) {
                     matrix[nombreKey].asistencias[dayStr] = { type: 'vacaciones', label: 'VAC' };
-                    // return;
+                    return;
                 }
 
                 const descansosMedicos: string[] = descansosMap[nombreUpper] || [];
@@ -619,10 +670,16 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                             <TabsTrigger
                                 key={grupo.id}
                                 value={grupo.id}
-                                className="flex-1 py-3 rounded-2xl data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-900/30 transition-all font-bold text-xs uppercase tracking-tighter"
+                                className="flex-1 py-3 rounded-2xl data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-900/30 transition-all font-bold text-xs uppercase tracking-tighter group"
                             >
                                 <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
                                 {grupo.label}
+                                <span className={`ml-3 px-2.5 py-0.5 rounded-full text-[11px] font-black transition-all scale-110 shadow-sm border ${(groupCounts[grupo.id] || 0) > 0
+                                        ? 'bg-blue-600 text-white dark:bg-blue-500 shadow-blue-500/20 border-blue-400/30 group-data-[state=active]:bg-white group-data-[state=active]:text-blue-900 group-data-[state=active]:border-white'
+                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border-slate-300 dark:border-slate-700 opacity-60'
+                                    }`}>
+                                    {groupCounts[grupo.id] || 0}
+                                </span>
                             </TabsTrigger>
                         ))}
                     </TabsList>
@@ -673,7 +730,11 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                             <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight mr-4">
                                                                 {personalName}
                                                             </span>
-                                                            <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900' onClick={() => onCLickTimerButton(colab)}><TimerIcon className='stroke-current' /></Button>
+                                                            {isAdminRRHH && (
+                                                                <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900' onClick={() => onCLickTimerButton(colab)}>
+                                                                    <TimerIcon className='stroke-current' />
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                         <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{colab.Area}</span>
                                                     </div>
@@ -709,7 +770,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                 </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
-                                                                    <CircleX color='red' width={20} height={20} className='absolute top-1 right-1 cursor-pointer' onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)} />
+                                                                    {isAdminRRHH && (
+                                                                        <CircleX color='red' width={20} height={20} className='absolute top-1 right-1 cursor-pointer' onClick={() => handleOpenDeleteModal(colab.Nombre, dayStr)} />
+                                                                    )}
                                                                     <HomeIcon color='purple' />
                                                                     <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-lg bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-transparent dark:border-transparent dark:text-purple-400`}>
                                                                         {record.horaI || 'S/MARCADO'}

@@ -34,9 +34,15 @@ import {
 const HORARIO_STAFF_ESTANDAR = { entrada: "09:00", tolerancia: 0 };
 const HORARIO_STAFF_SUPERVISOR = { entrada: "07:00", tolerancia: 0 };
 const HORARIO_STAFF_6AM = { entrada: "06:00", tolerancia: 0 };
+const HORARIO_STAFF_830AM = { entrada: "08:30", tolerancia: 0 };
 
 const STAFF_6AM = [
     "JAMES IZQUIERDO"
+];
+
+const STAFF_830AM = [
+    "ROBERT MANGUINURI",
+    "ANGEL MARTINEZ"
 ];
 
 const SUPERVISORES_ESP = [
@@ -153,6 +159,19 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         return eachDayOfInterval({ start, end });
     }, [currentDate]);
 
+    // 1.5. Calcular estadísticas de horarios
+    const stats = useMemo(() => {
+        const counts = { six: 0, seven: 0, eightThirty: 0, nine: 0 };
+        colaboradores.forEach(c => {
+            const alias = (c.alias || c.usuario || "").toString().trim().toUpperCase();
+            if (STAFF_6AM.includes(alias)) counts.six++;
+            else if (SUPERVISORES_ESP.includes(alias)) counts.seven++;
+            else if (STAFF_830AM.includes(alias)) counts.eightThirty++;
+            else counts.nine++;
+        });
+        return counts;
+    }, [colaboradores]);
+
     /**
      * Sincroniza la asistencia grupal de Staff:
      * Envía directamente la lista de alias al servidor.
@@ -267,14 +286,14 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
             const result: { data: [] } = await response.json();
             console.log(result)
             setAsistenciaData(result.data || []);
-            const queryParams = (result.data || [])
-                .map((e: { nombre: string }) => e.nombre)
+            const queryParams = colaboradores
+                .map((c) => (c.alias || c.usuario))
                 .map((n, i) => {
-                    const alias = "alias="
-                    const prefix = i === 0 ? "?" : "&"
-                    return prefix + alias + n
-                })
-            const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json()
+                    const alias = "alias=";
+                    const prefix = i === 0 ? "?" : "&";
+                    return prefix + alias + n;
+                });
+            const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json();
             const data: HomeOfficeEntry[] = respHomeOffice.data || []
             const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {}
             data.forEach((em) => {
@@ -330,6 +349,8 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                 config = HORARIO_STAFF_SUPERVISOR;
             } else if (STAFF_6AM.includes(aliasUpper)) {
                 config = HORARIO_STAFF_6AM;
+            } else if (STAFF_830AM.includes(aliasUpper)) {
+                config = HORARIO_STAFF_830AM;
             }
 
             matrix[currentAlias] = {
@@ -714,11 +735,23 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     </div>
                     <span className="opacity-80">Home Office</span>
                 </div>
-                <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
-                    <span className="font-bold text-white/70">Horarios (0 min tolerancia):</span>
-                    <span>• Staff 6-3: 6:00 AM</span>
-                    <span>• Supervisores / Roberto: 7:00 AM</span>
-                    <span>• Staff Gral: 9:00 AM</span>
+                <div className="flex items-center gap-4 text-[10px] border-l border-white/10 pl-6 h-6">
+                    <span className="font-bold text-white/50 uppercase tracking-wider">Turnos:</span>
+                    <div className="flex gap-2">
+                        {[
+                            { label: '6:00 AM', val: stats.six },
+                            { label: '7:00 AM', val: stats.seven },
+                            { label: '8:30 AM', val: stats.eightThirty },
+                            { label: '9:00 AM', val: stats.nine }
+                        ].map((s, idx) => (
+                            <span key={idx} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all ${s.val > 0
+                                    ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
+                                    : 'bg-white/5 text-white/20 border-white/5 opacity-40'
+                                }`}>
+                                {s.label} <b className={`px-1.5 rounded-full text-white ${s.val > 0 ? 'bg-blue-600' : 'bg-white/10 text-white/40'}`}>{s.val}</b>
+                            </span>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div >
