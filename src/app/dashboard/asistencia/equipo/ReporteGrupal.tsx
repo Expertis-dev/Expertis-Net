@@ -154,6 +154,17 @@ interface DMInfo {
     fecha_fin: string;
 }
 
+interface HomeOfficeTiempo {
+    fecha: string;
+    horaIngreso: string | null;
+    horaSalida: string | null;
+}
+
+interface HomeOfficeEntry {
+    nombre: string;
+    tiempos: HomeOfficeTiempo[];
+}
+
 // --- HELPER: Expandir rango de vacaciones ---
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -330,12 +341,12 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     return prefix + alias + n;
                 });
             const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json();
-            const data: any[] = respHomeOffice.data || [];
+            const data: HomeOfficeEntry[] = respHomeOffice.data || [];
             const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {};
             data.forEach((em) => {
                 const alias = (em.nombre || "").toString().trim().toUpperCase();
                 if (!RecordHomeOffice[alias]) RecordHomeOffice[alias] = [];
-                const normalized = (em.tiempos || []).map((t: any) => {
+                const normalized = (em.tiempos || []).map((t) => {
                     const fechaStr = t.fecha.split('T')[0];
                     const [y, m, d] = fechaStr.split('-').map(Number);
                     const dateLocal = new Date(y, m - 1, d);

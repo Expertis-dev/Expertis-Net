@@ -16,8 +16,7 @@ import {
     XCircle,
     Umbrella,
     Laptop,
-    HomeIcon,
-    CircleX
+    HomeIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +101,17 @@ interface DMItem {
     idEmpleado: number;
     fecha_inicio: string;
     fecha_fin: string;
+}
+
+interface HomeOfficeTiempo {
+    fecha: string;
+    horaIngreso: string | null;
+    horaSalida: string | null;
+}
+
+interface HomeOfficeEntry {
+    nombre: string;
+    tiempos: HomeOfficeTiempo[];
 }
 
 // --- HELPER: Expandir rango de vacaciones ---
@@ -257,21 +267,20 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
             const result: { data: [] } = await response.json();
             console.log(result)
             setAsistenciaData(result.data || []);
-            const queryParams = result.data
+            const queryParams = (result.data || [])
                 .map((e: { nombre: string }) => e.nombre)
                 .map((n, i) => {
                     const alias = "alias="
-                    let prefix: string;
-                    i === 0 ? prefix = "?" : prefix = "&"
+                    const prefix = i === 0 ? "?" : "&"
                     return prefix + alias + n
                 })
             const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json()
-            const data: any[] = respHomeOffice.data
+            const data: HomeOfficeEntry[] = respHomeOffice.data || []
             const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {}
             data.forEach((em) => {
                 const alias = (em.nombre || "").toString().trim().toUpperCase();
                 if (!RecordHomeOffice[alias]) RecordHomeOffice[alias] = [];
-                    const normalized = (em.tiempos || []).map((t: {fecha: string, horaIngreso: string, horaSalida: string}) => {
+                const normalized = (em.tiempos || []).map((t) => {
                     // Extraer fecha directamente del string o parsear sin asumir UTC
                     // Si t.fecha es "2026-02-04" o "2026-02-04T...", extraer la parte yyyy-MM-dd
                     const fechaStr = t.fecha.split('T')[0]; // Obtiene "2026-02-04"
