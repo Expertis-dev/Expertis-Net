@@ -14,7 +14,10 @@ import {
     Loader2,
     RefreshCw,
     XCircle,
-    Umbrella
+    Umbrella,
+    Laptop,
+    HomeIcon,
+    CircleX
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -132,7 +135,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
-
+    const [homeOffice, setHomeOffice] = useState<Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]>>({})
     // 1. Generar la lista de todos los días del mes para las cabeceras de la tabla
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentDate);
@@ -251,8 +254,42 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
 
             if (!response.ok) throw new Error("Error al obtener asistencia de staff");
 
-            const result = await response.json();
+            const result: { data: [] } = await response.json();
+            console.log(result)
             setAsistenciaData(result.data || []);
+            const queryParams = result.data
+                .map((e: { nombre: string }) => e.nombre)
+                .map((n, i) => {
+                    const alias = "alias="
+                    let prefix: string;
+                    i === 0 ? prefix = "?" : prefix = "&"
+                    return prefix + alias + n
+                })
+            const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json()
+            const data: any[] = respHomeOffice.data
+            const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {}
+            data.forEach((em) => {
+                const alias = (em.nombre || "").toString().trim().toUpperCase();
+                if (!RecordHomeOffice[alias]) RecordHomeOffice[alias] = [];
+                    const normalized = (em.tiempos || []).map((t: {fecha: string, horaIngreso: string, horaSalida: string}) => {
+                    // Extraer fecha directamente del string o parsear sin asumir UTC
+                    // Si t.fecha es "2026-02-04" o "2026-02-04T...", extraer la parte yyyy-MM-dd
+                    const fechaStr = t.fecha.split('T')[0]; // Obtiene "2026-02-04"
+                    // Parsear en zona horaria local sin UTC
+                    const [y, m, d] = fechaStr.split('-').map(Number);
+                    const dateLocal = new Date(y, m - 1, d); // Crea fecha en zona local
+                    return {
+                        fecha: format(dateLocal, 'yyyy-MM-dd'),
+                        horaIngreso: t.horaIngreso || null,
+                        horaSalida: t.horaSalida || null,
+                    };
+                });
+                const merged = [...(RecordHomeOffice[alias] || []), ...normalized];
+                const uniqueByFecha: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }> = {};
+                merged.forEach(m => uniqueByFecha[m.fecha] = m);
+                RecordHomeOffice[alias] = Object.values(uniqueByFecha);
+            })
+            setHomeOffice(RecordHomeOffice)
         } catch (err) {
             console.error("Error en Reporte Staff:", err);
             setError("No se pudo sincronizar la asistencia del staff.");
@@ -335,6 +372,17 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                     return;
                 }
 
+                const hoffice = homeOffice[currentAlias.toUpperCase()] || [];
+                const hoForDay = hoffice.find(h => h.fecha === dayStr);
+                if (hoForDay) {
+                    matrix[currentAlias].asistencias[dayStr] = {
+                        type: "homeoffice",
+                        label: "HO",
+                        hora: hoForDay.horaIngreso || undefined
+                    }
+                    return;
+                }
+
                 const record = marcaciones.find((m: Marcacion) => {
                     const fRaw = m.fecha || m.asistencia?.fecha || "";
                     if (!fRaw) return false;
@@ -375,7 +423,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth, vacacionesMap, descansosMap]);
+    }, [colaboradores, asistenciaData, daysInMonth, vacacionesMap, descansosMap, homeOffice]);
 
     const filteredColabs = useMemo(() => {
         return colaboradores.filter(c => {
@@ -425,6 +473,9 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                         excelVal = "DM/LIC";
                     } else if (record.type === 'falta') {
                         excelVal = "FALTA";
+                    } else if (record.type === "homeoffice") {
+                        excelVal = record.hora || ""
+                        excelVal = excelVal + " (HO)"
                     }
                 } else if (!weekend) {
                     excelVal = "--";
@@ -576,6 +627,14 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                                     }`}>
                                                                     {record.hora}
                                                                 </span>
+                                                            ) : record?.type === 'homeoffice' ? (
+                                                                <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
+                                                                    <HomeIcon color='purple' size={15} />
+                                                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border text-purple-700 bg-amber-50 border-purple-700 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-900/50'
+                                                                        }`}>
+                                                                        {record.hora}
+                                                                    </span>
+                                                                </div>
                                                             ) : record?.type === 'feriado' ? (
                                                                 <div className="flex flex-col items-center opacity-60">
                                                                     <Umbrella className="h-3 w-3 text-blue-500 dark:text-blue-400" />
@@ -639,6 +698,12 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                         <Umbrella className="h-2 w-2 text-blue-500" />
                     </div>
                     <span className="opacity-80">Vacaciones</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-cyan-500 rounded-md border border-white/20 flex items-center justify-center">
+                        <Laptop className="h-2 w-2 text-white" />
+                    </div>
+                    <span className="opacity-80">Home Office</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
                     <span className="font-bold text-white/70">Horarios (0 min tolerancia):</span>

@@ -16,7 +16,8 @@ import {
     Loader2,
     RefreshCw,
     XCircle,
-    Umbrella
+    Umbrella,
+    Laptop
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
+    const [homeOffice, setHomeOffice] = useState<Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]>>({})
 
     // 1. Generar la lista de todos los días del mes para las cabeceras de la tabla
     const daysInMonth = useMemo(() => {
@@ -319,6 +321,36 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
 
             const result = await response.json();
             setAsistenciaData(result.data || []);
+
+            const queryParams = colaboradores
+                .map((c) => (c.alias || c.usuario))
+                .map((n, i) => {
+                    const alias = "alias=";
+                    const prefix = i === 0 ? "?" : "&";
+                    return prefix + alias + n;
+                });
+            const respHomeOffice = await (await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaHomeOffice${queryParams.join("")}`)).json();
+            const data: any[] = respHomeOffice.data || [];
+            const RecordHomeOffice: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]> = {};
+            data.forEach((em) => {
+                const alias = (em.nombre || "").toString().trim().toUpperCase();
+                if (!RecordHomeOffice[alias]) RecordHomeOffice[alias] = [];
+                const normalized = (em.tiempos || []).map((t: any) => {
+                    const fechaStr = t.fecha.split('T')[0];
+                    const [y, m, d] = fechaStr.split('-').map(Number);
+                    const dateLocal = new Date(y, m - 1, d);
+                    return {
+                        fecha: format(dateLocal, 'yyyy-MM-dd'),
+                        horaIngreso: t.horaIngreso || null,
+                        horaSalida: t.horaSalida || null,
+                    };
+                });
+                const merged = [...(RecordHomeOffice[alias] || []), ...normalized];
+                const uniqueByFecha: Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }> = {};
+                merged.forEach(m => { uniqueByFecha[m.fecha] = m; });
+                RecordHomeOffice[alias] = Object.values(uniqueByFecha);
+            });
+            setHomeOffice(RecordHomeOffice);
         } catch (err) {
             console.error("Error en flujo de asistencia:", err);
             setError("No se pudo sincronizar la asistencia del equipo.");
@@ -397,6 +429,17 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     return;
                 }
 
+                const hoffice = homeOffice[(colab.alias || colab.usuario || "").toString().trim().toUpperCase()] || [];
+                const hoForDay = hoffice.find(h => h.fecha === dayStr);
+                if (hoForDay) {
+                    matrix[colab.usuario].asistencias[dayStr] = {
+                        type: "homeoffice",
+                        label: "HO",
+                        hora: hoForDay.horaIngreso || undefined
+                    };
+                    return;
+                }
+
                 // Buscamos el registro para este día
                 const record = marcaciones.find((m: Marcacion) => {
                     const fRaw = m.asistencia?.fecha || m.fecha || "";
@@ -451,7 +494,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, user?.usuario, user?.id_grupo]);
+    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, homeOffice, user?.usuario, user?.id_grupo]);
 
     // 4. Filtrado por búsqueda
     const filteredColabs = useMemo(() => {
@@ -492,6 +535,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         if (record.esTardanza) excelVal += " (T)";
                     } else if (record.type === 'excepcion') {
                         excelVal = record.sigla || "EXC";
+                    } else if (record.type === 'homeoffice') {
+                        excelVal = record.hora ? `HO ${record.hora}` : "HO";
                     } else if (record.type === 'vacaciones') {
                         excelVal = "VACACIONES";
                     } else if (record.type === 'feriado') {
@@ -646,6 +691,13 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                     }`}>
                                                                     {record.hora}
                                                                 </span>
+                                                            ) : record?.type === 'homeoffice' ? (
+                                                                <div className="flex flex-col items-center bg-cyan-50 dark:bg-cyan-900/30 w-full h-full justify-center border-x border-cyan-100 dark:border-cyan-900">
+                                                                    <Laptop className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />
+                                                                    <span className="text-[9px] font-black text-cyan-700 dark:text-cyan-300 tracking-tighter">
+                                                                        {record.hora ? `HO ${record.hora}` : "HO"}
+                                                                    </span>
+                                                                </div>
                                                             ) : record?.type === 'excepcion' ? (
                                                                 <div className={`w-full h-full flex flex-col items-center justify-center border-x border-b-0 ${record.clases}`}>
                                                                     <span className="text-[10px] font-black leading-none">{record.sigla}</span>
@@ -715,6 +767,12 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         <Umbrella className="h-2 w-2 text-blue-500" />
                     </div>
                     <span className="opacity-80">Vacaciones</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-cyan-500 rounded-md border border-white/20 flex items-center justify-center">
+                        <Laptop className="h-2 w-2 text-white" />
+                    </div>
+                    <span className="opacity-80">Home Office</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
                     <span>• Tolerancia 7:00 (10min)</span>
