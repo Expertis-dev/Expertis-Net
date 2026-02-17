@@ -84,7 +84,9 @@ export default function EncuestaFormClient({ encuesta }: Props) {
         }).catch(() => {
             alert("Hubo un error al subir la respuesta")
         })
-        router.push("/dashboard/encuesta/misEncuestas")
+        setTimeout(() => {
+            router.push("/dashboard/encuesta/misEncuestas")
+        }, 1500)
     }
 
     return (

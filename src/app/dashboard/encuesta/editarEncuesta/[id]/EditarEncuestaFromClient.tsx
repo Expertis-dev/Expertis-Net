@@ -81,7 +81,9 @@ export const EditarEncuestaFromClient = ({ encuesta }: Props) => {
             alert("Hubo un error al publicar la encuesta")
             setIsSubmitting(false)
         })
-        router.push("/dashboard/encuesta/encuestasCreadas")
+        setTimeout(() => {
+            router.push("/dashboard/encuesta/encuestasCreadas")
+        }, 1500)
     }
 
     const requiresOptionsFor = (type: string) => ["UNIQUE_SELECT", "MULTIPLE_SELECT", "LIST"].includes(type)
