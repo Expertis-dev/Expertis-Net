@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 import { ConfirmationModal } from "@/components/confirmation-modal"
-import { LoadingModal } from "@/components/loading-modal"
 import { useRouter } from "next/navigation"
 import { Pregunta } from "@/types/encuesta"
 
@@ -173,7 +172,6 @@ export default function Page() {
                 message="Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer."
             />
 
-            <LoadingModal isOpen={isLoading} message="cargando..."/>
         </>
     )
 }

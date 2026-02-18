@@ -213,7 +213,39 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
     const [isMonthDataLoading, setIsMonthDataLoading] = useState(false);
 
     const [empleado, setEmpleado] = useState<PersonalGlobal>()
+    const groupCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        GRUPOS_HORARIO.forEach(g => counts[g.id] = 0);
 
+        const conRegistrosYArea = colaboradores.filter(c => {
+            const tieneArea = c.Area && c.Area.trim() !== "";
+            // Filtro por área para el conteo de los grupos
+            const matchesArea = selectedArea === "TODAS" || c.Area === selectedArea;
+            if (!matchesArea) return false;
+
+            const tieneMarcadoPositivo = Object.values(c.tiempos).some(t =>
+                t && t.horaIngreso && t.horaIngreso.trim() !== "" && t.horaIngreso !== "No marcó Ingreso"
+            );
+            const nombreUpper = (c.Nombre || "").toString().trim().toUpperCase();
+            return tieneArea && (tieneMarcadoPositivo || (vacacionesMap[nombreUpper] || []).length > 0 || (descansosMap[nombreUpper] || []).length > 0 || (homeOffice[nombreUpper] || []).length > 0);
+        });
+
+        conRegistrosYArea.forEach(c => {
+            const nombre = c.Nombre.toUpperCase();
+            let asignado = false;
+            for (const [groupId, members] of Object.entries(CONFIG_EMPLEADOS_ESTATICA)) {
+                if (groupId === '9-6') continue;
+                if (members.some(m => nombre.includes(m.toUpperCase()))) {
+                    counts[groupId]++;
+                    asignado = true;
+                    break;
+                }
+            }
+            if (!asignado) counts['9-6']++;
+        });
+
+        return counts;
+    }, [colaboradores, vacacionesMap, descansosMap, homeOffice, selectedArea]);
     const isAdminRRHH = useMemo(() => {
         if (typeof window === "undefined") return false;
         const rol = localStorage.getItem("rol")?.replace(/"/g, "");
@@ -933,16 +965,11 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                             <span className="text-sm font-bold pt-1.5 text-slate-800 dark:text-slate-200 truncate max-w-[200px] leading-tight mr-4">
                                                                 {personalName}
                                                             </span>
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="icon"
-                                                                title='Click para agregar horas de HomeOffice'
-                                                                disabled={!isCurrentMonth}
-                                                                className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-300'
-                                                                onClick={() => onCLickTimerButton(colab)}
-                                                            >
-                                                                <TimerIcon className='stroke-current' />
-                                                            </Button>
+                                                            {isAdminRRHH && (
+                                                                <Button variant="secondary" size="icon" title='Click para agregar horas de HomeOffice' className='group flex bg-gray-300 hover:border-1 hover:border-gray-500 hover:bg-blue-800 hover:shadow-2xl hover:text-white dark:hover:text-black dark:hover:bg-gray-500 dark:bg-blue-900' onClick={() => onCLickTimerButton(colab)}>
+                                                                    <TimerIcon className='stroke-current' />
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                         <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{colab.Area}</span>
                                                     </div>
@@ -978,7 +1005,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                                 </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
-                                                                    {isCurrentMonth && (
+                                                                    {(isCurrentMonth && isAdminRRHH) && (
                                                                         <CircleX
                                                                             color='red'
                                                                             width={20}

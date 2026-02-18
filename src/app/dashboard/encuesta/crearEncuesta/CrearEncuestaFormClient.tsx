@@ -33,7 +33,7 @@ interface Props {
     body?: Object
 }
 
-export default function CrearEncuestaFormClient({body = {}}: Props) {
+export default function CrearEncuestaFormClient({ body = {} }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [successModalIsOpen, setSuccessModalIsOpen] = useState(false)
@@ -436,7 +436,7 @@ export default function CrearEncuestaFormClient({body = {}}: Props) {
                                 type="submit"
                                 onClick={handleSubmit(onTemplateSubmit)}
                                 disabled={isSubmitting}
-                                className="px-4 py-2 rounded-2xl bg-white dark:bg-zinc-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition"
+                                className="px-4 py-2 rounded-4xl bg-white border-blue-400 dark:border-blue-950 dark:bg-zinc-200 border-2 dar text-black hover:bg-blue-400 hover:text-white dark:hover:text-black dark:hover:bg-zinc-400 cursor-pointer transition disabled:opacity-50"
                             >
                                 Guardar Plantilla
                             </button>
