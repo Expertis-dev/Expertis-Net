@@ -21,8 +21,6 @@ const fetchEncuestasCreadas = async (nombre: string, filters?: Partial<InputSear
     return response
 }
 
-
-
 export default function Page() {
     const { user } = useUser()
     const [encuestas, setEncuestas] = useState<Encuestas[]>([]);
@@ -55,6 +53,7 @@ export default function Page() {
             console.log(error)
         }
     }
+    
     useEffect(() => {
         if (user) {
             fetchEncuestasCreadas(user.usuario.trim()).then(res => setEncuestas(res))
@@ -63,13 +62,20 @@ export default function Page() {
     return (
         <>
             <div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-3xl font-semibold">Mis encuestas creadas</h1>
-                    <Button variant={"default"} className="h-10 bg-blue-400 dark:bg-zinc-700 dark:text-white">
-                        <Link href={`/dashboard/encuesta/crearEncuesta`}>
-                            Crear nueva encuesta
-                        </Link>
-                    </Button>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button variant={"default"} className="h-10 bg-white text-black border-3 border-blue-400 dark:bg-zinc-900 dark:border-gray-700 dark:text-white hover:bg-blue-400 dark:hover:bg-zinc-950">
+                            <Link href={`/dashboard/encuesta/plantillasCreadas`}>
+                                Ver plantillas
+                            </Link>
+                        </Button>
+                        <Button variant={"default"} className="h-10 bg-blue-400 dark:bg-zinc-700 dark:text-white">
+                            <Link href={`/dashboard/encuesta/crearEncuesta`}>
+                                Crear nueva encuesta
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
                 <InputSearch onSearch={handleSearch}/>
                 {!isLoading && encuestas.length === 0 ? (
