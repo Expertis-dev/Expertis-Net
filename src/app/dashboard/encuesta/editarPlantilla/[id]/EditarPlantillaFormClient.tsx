@@ -76,7 +76,7 @@ export const EditarPlantillaFormClient = ({ plantilla }: Props) => {
             ...sanitized
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/encuestaPlantilla/${plantilla._id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/encuestaPlantilla/${plantilla._id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)

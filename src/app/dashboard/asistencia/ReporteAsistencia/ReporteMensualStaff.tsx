@@ -487,7 +487,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         } catch (error) {
             console.log("Fallo al traer los datos de HomeOffice", error)
         }
-    }, [])
+    }, [colaboradores])
 
     useEffect(() => {
         // Solo ejecutar cuando el modal se cierra (pasamos de true a false)

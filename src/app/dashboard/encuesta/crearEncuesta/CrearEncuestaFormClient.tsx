@@ -6,7 +6,7 @@ import { Trash2, Plus } from "lucide-react"
 import { useUser } from "@/Provider/UserProvider"
 import { useRouter, useSearchParams } from "next/navigation"
 import { SuccessModal } from "@/components/success-modal"
-import { AGENCIA, CATEGORIES, RESPONSE_TYPES } from "@/types/encuesta"
+import { AGENCIA, CATEGORIES, Pregunta, RESPONSE_TYPES } from "@/types/encuesta"
 
 type PreguntaForm = {
     _id?: string
@@ -29,11 +29,8 @@ type EncuestaForm = {
     preguntas: PreguntaForm[];
 };
 
-interface Props {
-    body?: Object
-}
 
-export default function CrearEncuestaFormClient({ body = {} }: Props) {
+export default function CrearEncuestaFormClient() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [successModalIsOpen, setSuccessModalIsOpen] = useState(false)
@@ -73,12 +70,12 @@ export default function CrearEncuestaFormClient({ body = {} }: Props) {
         if (!raw) return
         try {
             const template = JSON.parse(raw)
-            const preguntas = Array.isArray(template?.preguntas) ? template.preguntas.map((p: any) => ({
+            const preguntas = Array.isArray(template?.preguntas) ? template.preguntas.map((p: Pregunta) => ({
                 content: String(p?.content ?? ""),
                 responseType: String(p?.responseType ?? "TEXT_LINE"),
                 mustAnswer: Boolean(p?.mustAnswer),
                 options: Array.isArray(p?.options)
-                    ? p.options.map((o: any) => ({
+                    ? p.options.map((o) => ({
                         label: String(o?.label ?? ""),
                         value: String(o?.value ?? o?.label ?? "")
                     }))

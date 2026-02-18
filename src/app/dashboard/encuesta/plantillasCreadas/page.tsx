@@ -6,6 +6,7 @@ import { XIcon } from "lucide-react"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { useRouter } from "next/navigation"
 import { Pregunta } from "@/types/encuesta"
+import { InputSearch, InputSearchValues } from "@/Encuesta/components/inputSearch"
 
 type Plantilla = {
     _id: string
@@ -47,6 +48,7 @@ const fetchPlantillas = async (): Promise<PlantillasResponse> => {
 
 export default function Page() {
     const [plantillas, setPlantillas] = useState<Plantilla[]>([])
+    const [filteredPlantillas, setFilteredPlantillas] = useState<Plantilla[]>([])
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
@@ -72,10 +74,29 @@ export default function Page() {
     useEffect(() => {
         setIsLoading(true)
         fetchPlantillas().then(res => {
-            setPlantillas(res?.data ?? [])
+            const data = res?.data ?? []
+            setPlantillas(data)
+            setFilteredPlantillas(data)
             setIsLoading(false)
         })
     }, [refreshKey])
+
+    const handleSearch = (filters: InputSearchValues) => {
+        const name = filters.name.trim().toLowerCase()
+        const from = filters.from ? new Date(filters.from) : null
+        const to = filters.to ? new Date(filters.to) : null
+        if (from) from.setHours(0, 0, 0, 0)
+        if (to) to.setHours(23, 59, 59, 999)
+
+        const filtered = plantillas.filter((p) => {
+            const matchesName = name.length === 0 || p.title.toLowerCase().includes(name)
+            const createdAt = new Date(p.createdAt)
+            const matchesFrom = !from || createdAt >= from
+            const matchesTo = !to || createdAt <= to
+            return matchesName && matchesFrom && matchesTo
+        })
+        setFilteredPlantillas(filtered)
+    }
 
     const onPublishAsSurvey = async (id: string) => {
         setIsLoading(true)
@@ -100,7 +121,8 @@ export default function Page() {
                         </Link>
                     </Button>
                 </div>
-                {!isLoading && plantillas.length === 0 ? (
+                <InputSearch onSearch={handleSearch} />
+                {!isLoading && filteredPlantillas.length === 0 ? (
                     <div className="mt-6 rounded-2xl border border-slate-200/70 dark:border-zinc-700 bg-gradient-to-br from-slate-50 via-white to-sky-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-slate-900 p-8 shadow-sm">
                         <div className="mx-auto flex max-w-lg flex-col items-center text-center">
                             <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
@@ -116,7 +138,7 @@ export default function Page() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-5">
-                        {plantillas.map((p: Plantilla) => (
+                        {filteredPlantillas.map((p: Plantilla) => (
                             <article key={p._id} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm dark:shadow-md border border-gray-200 dark:border-zinc-700 hover:shadow-lg dark:hover:shadow-lg dark:hover:shadow-slate-900/30 transform hover:-translate-y-1 transition flex flex-col">
                                 <div className="flex items-start gap-3 mb-3 min-w-0">
                                     <div className="min-w-0 flex-1">
