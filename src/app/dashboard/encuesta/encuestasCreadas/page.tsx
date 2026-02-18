@@ -67,7 +67,7 @@ export default function Page() {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <Button variant={"default"} className="h-10 bg-white text-black border-3 border-blue-400 dark:bg-zinc-900 dark:border-gray-700 dark:text-white hover:bg-blue-400 dark:hover:bg-zinc-950">
                             <Link href={`/dashboard/encuesta/plantillasCreadas`}>
-                                Ver mis plantillas
+                                Ver plantillas
                             </Link>
                         </Button>
                         <Button variant={"default"} className="h-10 bg-blue-400 dark:bg-zinc-700 dark:text-white">
