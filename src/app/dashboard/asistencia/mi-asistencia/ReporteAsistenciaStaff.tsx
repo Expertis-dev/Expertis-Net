@@ -86,6 +86,11 @@ const SUPERVISORES_INTERNOS = [
     "ANTHONY TORRES"
 ];
 
+const STAFF_830AM = [
+    "ROBERT MANGUINURI",
+    "ANGEL MARTINEZ"
+];
+
 const ReporteAsistenciaStaff = () => {
     const { user } = useUser();
     const [loading, setLoading] = useState(false);
@@ -171,8 +176,12 @@ const ReporteAsistenciaStaff = () => {
         if (user?.id_grupo === 14) {
             return { entrada: "08:00", tolerancia: 0 }; // 08:00 AM (Sin tolerancia)
         }
-        if (user?.usuario?.toUpperCase() === "JAMES IZQUIERDO") {
+        const aliasUpper = user?.usuario?.toUpperCase() || "";
+        if (aliasUpper === "JAMES IZQUIERDO") {
             return { entrada: "06:00", tolerancia: 10 }; // 06:10 AM
+        }
+        if (STAFF_830AM.includes(aliasUpper)) {
+            return { entrada: "08:30", tolerancia: 0 }; // 08:30 AM
         }
         if (esSupervisorInterno) {
             return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM

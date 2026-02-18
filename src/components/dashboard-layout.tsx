@@ -324,7 +324,14 @@ const MENU_CONFIG: MenuItem[] = [
         href: "/dashboard/encuesta/encuestasCreadas",
         modulo: "Encuesta",
         permiso: "Encuesta-registrar",
-      }
+      },
+      {
+        title: "Ver plantillas",
+        href: "/dashboard/encuesta/plantillasCreadas",
+        modulo: "Encuesta",
+        permiso: "Encuesta-registrar",
+      },
+
     ]
   }
   /*{

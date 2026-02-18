@@ -79,18 +79,18 @@ export default function SolicitudesAprobadas() {
     }
 
     const onClickDownloadExcel = () => {
-        const rows: any[][] = filteredData.map((o) => {
+        const rows = filteredData.map((o) => {
             return [
-                o.fecSolicitud.split("T")[0], 
-                o.fecInicial.split("T")[0], 
-                o.fecFinal.split("T")[0], 
-                o.alias, 
-                o.estadoVacaciones, 
-                o.cantDias, 
+                o.fecSolicitud.split("T")[0],
+                o.fecInicial.split("T")[0],
+                o.fecFinal.split("T")[0],
+                o.alias,
+                o.estadoVacaciones,
+                o.cantDias,
                 o.nombreArea
             ]
         });
-        const aoaData: string[][] = [
+        const aoaData: (string | number | null | undefined)[][] = [
             [
                 "Fecha de Solicitud",
                 "Fecha de Inicio",
