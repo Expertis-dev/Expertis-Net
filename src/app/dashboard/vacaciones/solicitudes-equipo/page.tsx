@@ -45,20 +45,20 @@ export default function SolicitudesEquipo() {
         let data = [...solicitudesAprobadas]
         if (empleadoBuscar.trim() !== "") {
             const value = empleadoBuscar.toLowerCase()
-            data = data.filter((solicitud) =>
+            data = data.filter((solicitud: SolicitudesAprobadas) =>
                 solicitud.alias.toLowerCase().includes(value)
             )
         }
         if (dateRange?.from) {
             const fromYMD = dateRange.from.toISOString().split("T")[0]
             data = data.filter(
-                (solicitud) => solicitud.fecSolicitud.split("T")[0] >= fromYMD
+                (solicitud: SolicitudesAprobadas) => solicitud.fecSolicitud.split("T")[0] >= fromYMD
             )
         }
         if (dateRange?.to) {
             const toYMD = dateRange.to.toISOString().split("T")[0]
             data = data.filter(
-                (solicitud) => solicitud.fecSolicitud.split("T")[0] <= toYMD
+                (solicitud: SolicitudesAprobadas) => solicitud.fecSolicitud.split("T")[0] <= toYMD
             )
         }
         setFilterSolicitudesAprobadas(data)
@@ -109,7 +109,7 @@ export default function SolicitudesEquipo() {
                         </TableHeader>
                         <TableBody>
                             {solicitudesPendientes && solicitudesPendientes.length > 0 ? (
-                                solicitudesPendientes.map((solicitud, index) => (
+                                solicitudesPendientes.map((solicitud: SolicitudesAprobadas, index: number) => (
                                     <TableRow
                                         key={`${solicitud.id}`}
                                         className="animate-in slide-in-from-left-5 duration-300"
@@ -130,18 +130,18 @@ export default function SolicitudesEquipo() {
                                             {solicitud.cantDias}
                                         </TableCell>
                                         <TableCell className="font-medium">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSolicitudSeleccionada(solicitud);
-                                        setIsVer(true);
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                >
-                                    <Eye className="h-4 w-4" />
-                                </Button>
-                            </TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSolicitudSeleccionada(solicitud);
+                                                    setIsVer(true);
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
@@ -222,7 +222,7 @@ export default function SolicitudesEquipo() {
                         </TableHeader>
                         <TableBody>
                             {filterSolicitudesAprobadas && filterSolicitudesAprobadas.length > 0 ? (
-                                filterSolicitudesAprobadas.map((solicitud, index) => (
+                                filterSolicitudesAprobadas.map((solicitud: SolicitudesAprobadas, index: number) => (
                                     <TableRow
                                         key={`${solicitud.idVacacionesSolicitudes}`}
                                         className="animate-in slide-in-from-left-5 duration-300"

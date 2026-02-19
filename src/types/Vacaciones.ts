@@ -70,6 +70,7 @@ export type SolicitudesAprobadas = {
     idVacacionesSolicitudes: number | null;
     id: number
 };
+export type ArraySolicitudesAprobadas = Array<SolicitudesAprobadas>;
 export type SolicitudesTotales = {
     ALIAS_EMPLEADO: string;
     COD_MES: string;
