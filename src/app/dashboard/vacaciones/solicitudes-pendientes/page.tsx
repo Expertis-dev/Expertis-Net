@@ -54,7 +54,7 @@ export default function SolicitudesPendientes() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {SolicitudesPendientes.length > 0 ? SolicitudesPendientes.map((solicitud, index) => (
+                    {SolicitudesPendientes.length > 0 ? SolicitudesPendientes.map((solicitud: SolicitudesAprobadas, index: number) => (
                         <TableRow
                             key={`${solicitud.idSolicitudAprobada}`}
                             className="animate-in slide-in-from-left-5 duration-300"

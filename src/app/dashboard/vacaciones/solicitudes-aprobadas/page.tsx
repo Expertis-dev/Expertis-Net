@@ -32,7 +32,7 @@ export default function SolicitudesAprobadas() {
         if (solicitudesApro.length > 0 && empleadoBuscar.trim() !== "") {
             const term = empleadoBuscar.toLowerCase();
             solicitudesApro = solicitudesApro.filter(
-                (item) => (item.alias ?? "").toLowerCase().includes(term)
+                (item: SolicitudesAprobadas) => (item.alias ?? "").toLowerCase().includes(term)
             );
         }
         if (solicitudesApro.length > 0 && dateRange?.from) {
@@ -40,7 +40,7 @@ export default function SolicitudesAprobadas() {
             const toDate = dateRange.to
                 ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate())
                 : undefined;
-            solicitudesApro = solicitudesApro.filter((item) => {
+            solicitudesApro = solicitudesApro.filter((item: SolicitudesAprobadas) => {
                 const solicitudDateRaw = new Date(item.fecSolicitud);
                 const solicitudDate = new Date(
                     solicitudDateRaw.getFullYear(),
@@ -55,7 +55,7 @@ export default function SolicitudesAprobadas() {
         }
         if (solicitudesApro.length > 0 && filtroJefes) {
             solicitudesApro = solicitudesApro.filter(
-                (item) => item.idEmpleado === item.idJefe
+                (item: SolicitudesAprobadas) => item.idEmpleado === item.idJefe
             );
         }
         return solicitudesApro;
@@ -79,7 +79,7 @@ export default function SolicitudesAprobadas() {
     }
 
     const onClickDownloadExcel = () => {
-        const rows = filteredData.map((o) => {
+        const rows = filteredData.map((o: SolicitudesAprobadas) => {
             return [
                 o.fecSolicitud.split("T")[0],
                 o.fecInicial.split("T")[0],
@@ -200,7 +200,7 @@ export default function SolicitudesAprobadas() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {solicitudesTotales && filteredData.map((solicitud, index) => (
+                    {solicitudesTotales && filteredData.map((solicitud: SolicitudesAprobadas, index: number) => (
                         <TableRow
                             key={solicitud.idVacacionesSolicitudes}
                             className="animate-in slide-in-from-left-5 duration-300"
