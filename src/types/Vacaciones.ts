@@ -67,7 +67,18 @@ export type SolicitudesAprobadas = {
     usrInsert: string;
     usrUpdate: string | null;
     nombreArea: string | null;
-    idVacacionesSolicitudes: number  | null;
+    idVacacionesSolicitudes: number | null;
     id: number
 };
-export type ArraySolicitudesAprobadas = Array<SolicitudesAprobadas>;
+export type SolicitudesTotales = {
+    ALIAS_EMPLEADO: string;
+    COD_MES: string;
+    DIAS_GOZADOS_HABILES: number;
+    DIAS_GOZADOS_NO_HABILES: number;
+    DIAS_GOZADOS_TOTALES: number;
+    DNI: string;
+    ESTADO_VACACIONES: string;
+    FECHA_FIN_VACACIONES: string;
+    FECHA_INCIO_VACACIONES: string;
+};
+export type ArraySolicitudesTotales = Array<SolicitudesTotales>;

@@ -299,6 +299,12 @@ const MENU_CONFIG: MenuItem[] = [
         modulo: "Vacaciones",
         permiso: "CalendarioJefes-ver",
       },
+      {
+        title: "Reporte General",
+        href: "/dashboard/vacaciones/reporte-general",
+        modulo: "Vacaciones",
+        permiso: "ReporteGeneral-ver",
+      },
     ],
   },
   {
