@@ -52,6 +52,7 @@ const nivel3Options = {
     { value: "LICENCIA CON GH- VARIAS", label: "LICENCIA CON GH - VARIAS" },
     { value: "LICENCIAS SIN GH", label: "LICENCIAS SIN GH" },
     { value: "MATERNIDAD (PRE Y POST)", label: "MATERNIDAD (PRE Y POST)" },
+    { value: "LICENCIA APROBADA POR GERENCIA", label: "LICENCIA APROBADA POR GERENCIA" },
     // { value: "DESCANSO MEDICO", label: "Descanso Médico" },
   ],
   FALTA_INJUSTIFICADA: [
