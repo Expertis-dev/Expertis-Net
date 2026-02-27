@@ -365,7 +365,7 @@ const ReporteAsistenciaStaff = () => {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                         <Badge variant="outline" className="text-xs font-mono">
-                            Horario Base: {horarioConfig.entrada} (Tolerancia: +{horarioConfig.tolerancia} min)
+                            Horario Base: {horarioConfig.entrada} (Tolerancia: +0 min)
                         </Badge>
                         {esSupervisorInterno && (
                             <Badge className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
@@ -533,19 +533,21 @@ const ReporteAsistenciaStaff = () => {
                                                 <TableCell className={
                                                     isFalta
                                                         ? "text-red-400 italic"
-                                                        : row.esTardanza
-                                                            ?
-                                                            (((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0]) > 0)
-                                                                ||
-                                                                (
-                                                                    ((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0]) === 0) &&
-                                                                    (+row.horaIngreso?.split(":")[1]! - +horarioConfig.entrada.split(":")[1] > (15 + horarioConfig.tolerancia))
-                                                                ))
-                                                                ? "text-red-600 font-semibold" :
-                                                                "text-amber-600 font-semibold"
-                                                            : row.horaIngreso
-                                                                ? "text-emerald-600 font-semibold"
-                                                                : "text-foreground"
+                                                        : row.horaIngreso
+                                                            ? (() => {
+                                                                const horaMatch = row.horaIngreso?.match(/(\d{2}:\d{2})/);
+                                                                if (!horaMatch) return "text-emerald-600 font-semibold";
+                                                                const [h, m] = horaMatch[1].split(':').map(Number);
+                                                                const [baseH, baseM] = horarioConfig.entrada.split(':').map(Number);
+                                                                const minsIngreso = h * 60 + m;
+                                                                const minsBase = baseH * 60 + baseM;
+                                                                const minsTarde = minsIngreso - minsBase;
+                                                                if (minsTarde <= 0) return "text-emerald-600 font-semibold";
+                                                                return minsTarde > 15
+                                                                    ? "text-red-600 font-semibold"
+                                                                    : "text-amber-600 font-semibold";
+                                                            })()
+                                                            : "text-foreground"
                                                 }>
                                                     {row.horaIngreso || (isFeriado || isVacaciones || isDescansoMedico ? "--:--" : "No Marcó")}
                                                 </TableCell>

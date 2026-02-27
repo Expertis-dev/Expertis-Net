@@ -42,11 +42,33 @@ interface DiaLaboral {
     esLaborable: boolean;
 }
 
+interface DescansoMedico {
+    idEmpleado: number;
+    fecha_inicio: string;
+    fecha_fin: string;
+}
+
 // Función auxiliar para parsear fechas sin desfase de zona horaria (UTC vs Local)
 const parseAsLocal = (dateString: string) => {
     if (!dateString) return new Date();
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
     return new Date(year, month - 1, day);
+};
+
+const expandirRangoDm = (fecInicial: string, fecFinal: string): string[] => {
+    try {
+        const [y1, m1, d1] = fecInicial.split(/-|T/).map(Number);
+        const [y2, m2, d2] = fecFinal.split(/-|T/).map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+        const end = new Date(y2, m2 - 1, d2);
+        const days: string[] = [];
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            days.push(format(d, 'yyyy-MM-dd'));
+        }
+        return days;
+    } catch {
+        return [];
+    }
 };
 
 /**
@@ -80,6 +102,7 @@ export default function ReporteMensual() {
     const [diasLaborales, setDiasLaborales] = useState<DiaLaboral[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [descansosMedicos, setDescansosMedicos] = useState<string[]>([]);
 
     // Función para obtener datos desde el backend
     const fetchAsistencia = useCallback(async () => {
@@ -140,6 +163,32 @@ export default function ReporteMensual() {
         fetchAsistencia();
     }, [fetchAsistencia, startDate, endDate]);
 
+    useEffect(() => {
+        const fetchDMs = async () => {
+            if (!user?.idEmpleado) return;
+            try {
+                const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: [user.idEmpleado] })
+                });
+                if (!resp.ok) return;
+                const json = await resp.json();
+                const listDM: DescansoMedico[] = json.data || [];
+                const diasSet = new Set<string>();
+                listDM.forEach(dm => {
+                    const dias = expandirRangoDm(dm.fecha_inicio, dm.fecha_fin);
+                    dias.forEach(d => diasSet.add(d));
+                });
+                console.log(Array.from(diasSet))
+                setDescansosMedicos(Array.from(diasSet));
+            } catch (e) {
+                console.error("Error al obtener descansos medicos:", e);
+            }
+        };
+        fetchDMs();
+    }, [user?.idEmpleado]);
+
     // Lógica para procesar los datos obtenidos (Cruzando asistencia vs días laborales)
     const processedData = useMemo(() => {
         const start = parseAsLocal(startDate);
@@ -162,6 +211,8 @@ export default function ReporteMensual() {
 
         return baseDays.map(dia => {
             const itemDate = parseAsLocal(dia.fecha);
+            const dayKey = format(itemDate, 'yyyy-MM-dd');
+            const esDescansoMedico = descansosMedicos.includes(dayKey);
 
             // Buscar marcación para este día
             const registro = asistencias.find(asist => {
@@ -180,6 +231,20 @@ export default function ReporteMensual() {
                 };
             };
 
+            if (esDescansoMedico) {
+                return {
+                    fecha: dia.fecha,
+                    fechaFormateada: format(itemDate, 'EEEE dd/MM/yyyy', { locale: es }),
+                    entrada: "DM",
+                    salida: "DM",
+                    estado: "Descanso Médico",
+                    esTardanza: false,
+                    esFalta: false,
+                    entradaDecimal: null,
+                    esDescansoMedico: true
+                };
+            }
+
             if (registro) {
                 const entryTime = extractTime(registro.horaInicio_EnLaCola);
                 const exitTime = extractTime(registro.horaInicio_Desconectado);
@@ -196,7 +261,8 @@ export default function ReporteMensual() {
                     estado: estado,
                     esTardanza,
                     esFalta: false,
-                    entradaDecimal: entryTime.horas + entryTime.minutos / 60
+                    entradaDecimal: entryTime.horas + entryTime.minutos / 60,
+                    esDescansoMedico: false
                 };
             } else {
                 // Si es día laborable pero no hay registro -> FALTA
@@ -208,7 +274,8 @@ export default function ReporteMensual() {
                     estado: "Falta",
                     esTardanza: false,
                     esFalta: true,
-                    entradaDecimal: null
+                    entradaDecimal: null,
+                    esDescansoMedico: false
                 };
             }
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
@@ -243,7 +310,7 @@ export default function ReporteMensual() {
         const total = processedData.length;
         const faltas = processedData.filter(d => d.esFalta).length;
         const tardanzas = processedData.filter(d => d.esTardanza).length;
-        const asistenciasReales = total - faltas;
+        const asistenciasReales = total - faltas - processedData.filter(d => d.esDescansoMedico).length;
         const puntuales = asistenciasReales - tardanzas;
         const percentPuntual = asistenciasReales > 0 ? ((puntuales / asistenciasReales) * 100).toFixed(0) : 0;
         return { total, faltas, tardanzas, puntuales, percentPuntual };
@@ -386,7 +453,10 @@ export default function ReporteMensual() {
                                 />
                                 <Bar dataKey="entradaDecimal" radius={[4, 4, 0, 0]}>
                                     {processedData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.esTardanza ? '#ea580c' : '#0891b2'} />
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={entry.esDescansoMedico ? '#6366f1' : (entry.esTardanza ? '#ea580c' : '#0891b2')}
+                                        />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -416,7 +486,8 @@ export default function ReporteMensual() {
                                             <TableCell className="text-muted-foreground">{row.salida}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge className={
-                                                    row.esFalta ? "bg-red-100 text-red-700 border-none" :
+                                                    row.esDescansoMedico ? "bg-indigo-100 text-indigo-700 border-none" :
+                                                        row.esFalta ? "bg-red-100 text-red-700 border-none" :
                                                         row.esTardanza ? "bg-orange-100 text-orange-700 border-none" :
                                                             "bg-green-100 text-green-700 border-none"
                                                 }>

@@ -120,7 +120,10 @@ interface Marcacion {
     asistencia?: {
         fecha?: string;
         ingreso?: string;
+        esLaborable?: boolean;
+        salida?: string
     };
+    salida?: string;
     fecha?: string;
     ingreso?: string;
     horaIngreso?: string;
@@ -137,6 +140,7 @@ interface MatrixItem {
         type: string;
         label?: string;
         hora?: string;
+        horaSalida?: string;
         esTardanza?: boolean;
         sigla?: string;
         clases?: string;
@@ -332,6 +336,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
             if (!response.ok) throw new Error("Error al obtener asistencia del grupo");
 
             const result = await response.json();
+            console.log(result)
             setAsistenciaData(result.data || []);
 
             const queryParams = colaboradores
@@ -467,11 +472,14 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
 
                 // Extraemos la hora si existe el registro
                 const horaRaw = record?.asistencia?.ingreso || record?.ingreso || "";
+                const salidaRaw = record?.asistencia?.salida || record?.salida || "";
 
                 if (horaRaw) {
                     // --- CASO 1: HAY ASISTENCIA ---
                     const horaMatch = horaRaw.match(/(\d{2}:\d{2})/);
                     const ingresoLimpio = horaMatch ? horaMatch[1] : null;
+                    const salidaMatch = salidaRaw.match(/(\d{2}:\d{2})/);
+                    const salidaLimpia = salidaMatch ? salidaMatch[1] : null;
 
                     if (ingresoLimpio) {
                         const [h, m] = ingresoLimpio.split(':').map(Number);
@@ -483,6 +491,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         matrix[colab.usuario].asistencias[dayStr] = {
                             type: 'asistencia',
                             hora: ingresoLimpio,
+                            horaSalida: salidaLimpia || undefined,
                             esTardanza
                         };
                         return; // Salir del bucle diario si ya procesamos asistencia
@@ -693,16 +702,23 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                     <TableCell
                                                         key={`${colab.usuario}-${dayStr}`}
                                                         className={`text-center p-0 border-r dark:border-slate-800 border-b dark:border-slate-800 h-12 ${weekend ? 'bg-slate-50/20 dark:bg-slate-800/10' : ''}`}
-                                                        title={record ? (record.type === 'asistencia' ? `Entrada: ${record.hora} | Base: ${meta.horarioBase}` : record.label) : ''}
+                                                        title={record ? (record.type === 'asistencia' ? `Entrada: ${record.hora}${record.horaSalida ? ` | Salida: ${record.horaSalida}` : ''} | Base: ${meta.horarioBase}` : record.label) : ''}
                                                     >
                                                         <div className="w-full h-full flex items-center justify-center">
                                                             {record?.type === 'asistencia' ? (
-                                                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
-                                                                    ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
-                                                                    : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
-                                                                    }`}>
-                                                                    {record.hora}
-                                                                </span>
+                                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
+                                                                        ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
+                                                                        : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
+                                                                        }`}>
+                                                                        {record.hora}
+                                                                    </span>
+                                                                    {record.horaSalida ? (
+                                                                        <span className="text-[10px] font-normal text-slate-700 dark:text-slate-300">
+                                                                            {record.horaSalida}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center bg-cyan-50 dark:bg-cyan-900/30 w-full h-full justify-center border-x border-cyan-100 dark:border-cyan-900">
                                                                     <HomeIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />

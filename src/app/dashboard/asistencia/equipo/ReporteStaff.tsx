@@ -71,10 +71,13 @@ interface Colaborador {
 interface Marcacion {
     fecha?: string;
     horaIngreso?: string;
+    horaSalida?: string;
     ingreso?: string;
+    salida?: string;
     asistencia?: {
         fecha?: string;
         ingreso?: string;
+        salida?: string;
     };
 }
 
@@ -92,6 +95,7 @@ interface MatrixItem {
         type: string;
         label?: string;
         hora?: string;
+        horaSalida?: string;
         esTardanza?: boolean;
     }>;
 }
@@ -135,6 +139,16 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, reference
         console.error("Error al expandir rango de vacaciones:", e);
         return [];
     }
+};
+
+const normalizarHora = (raw?: string | null): string | null => {
+    if (!raw) return null;
+    const match = raw.match(/(\d{2}:\d{2})/);
+    if (match) return match[1];
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (/no marc/i.test(trimmed)) return null;
+    return trimmed;
 };
 
 interface ReporteProps {
@@ -423,10 +437,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
 
                 // Priorizamos 'horaIngreso' que es lo que muestra la imagen
                 const horaRaw = record?.horaIngreso || record?.ingreso || record?.asistencia?.ingreso || "";
+                const salidaRaw = record?.horaSalida || record?.salida || record?.asistencia?.salida || "";
 
                 if (horaRaw) {
-                    const horaMatch = horaRaw.match(/(\d{2}:\d{2})/);
-                    const ingresoLimpio = horaMatch ? horaMatch[1] : null;
+                    const ingresoLimpio = normalizarHora(horaRaw);
+                    const salidaLimpia = normalizarHora(salidaRaw);
 
                     if (ingresoLimpio) {
                         const [h, m] = ingresoLimpio.split(':').map(Number);
@@ -438,6 +453,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                         matrix[currentAlias].asistencias[dayStr] = {
                             type: 'asistencia',
                             hora: ingresoLimpio,
+                            horaSalida: salidaLimpia || undefined,
                             esTardanza
                         };
                         return;
@@ -647,16 +663,21 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                     <TableCell
                                                         key={`${colab.usuario}-${dayStr}`}
                                                         className={`text-center p-0 border-r dark:border-slate-800 border-b dark:border-slate-800 h-12 ${weekend ? 'bg-slate-50/20 dark:bg-slate-800/10' : ''}`}
-                                                        title={record ? (record.type === 'asistencia' ? `Entrada: ${record.hora}` : record.label) : ''}
+                                                        title={record ? (record.type === 'asistencia' ? `Entrada: ${record.hora} | Salida: ${record.horaSalida || 'No marcó'}` : record.label) : ''}
                                                     >
                                                         <div className="w-full h-full flex items-center justify-center">
                                                             {record?.type === 'asistencia' ? (
-                                                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
-                                                                    ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
-                                                                    : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
-                                                                    }`}>
-                                                                    {record.hora}
-                                                                </span>
+                                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
+                                                                        ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
+                                                                        : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
+                                                                        }`}>
+                                                                        {record.hora}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-normal text-slate-700 dark:text-slate-300">
+                                                                        {record.horaSalida || "No marcó"}
+                                                                    </span>
+                                                                </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1 relative">
                                                                     <HomeIcon color='purple' size={15} />
