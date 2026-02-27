@@ -90,7 +90,7 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
     const u = usuario.toUpperCase();
 
     if (u.includes("MAYA") || u.includes("AYRE")) {
-        return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM
+        return { entrada: "7:00", tolerancia: 5 }; // 7:10 AM
     }
 
     // Colaboradores con horario base 8:00 AM
@@ -101,10 +101,10 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
         u.includes("DAVILA") ||
         u.includes("SUYO")
     ) {
-        return { entrada: "8:00", tolerancia: 10 }; // 8:10 AM
+        return { entrada: "8:00", tolerancia: 5 }; // 8:10 AM
     }
 
-    return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM por defecto
+    return { entrada: "7:00", tolerancia: 5 }; // 7:10 AM por defecto
 };
 
 // --- TIPOS ---
