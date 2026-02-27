@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, parseISO, getDay, eachDayOfInterval, isSameMonth } from "date-fns";
+import { format, parseISO, getDay, eachDayOfInterval, isSameMonth, set } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 
@@ -28,6 +28,7 @@ interface Registro {
     horaSalida: string | null;
     esFeriado?: string | null;
     esVacaciones?: boolean;
+    esDescansoMedico?: boolean;
     esTardanza?: boolean;
 }
 
@@ -43,6 +44,23 @@ interface Vacacion {
     fecFinal: string;
     estado: string;
     codMes: string;
+}
+
+interface DescansoMedico {
+    idAusenciasLaborables: number;
+    idEmpleado: number;
+    tipoAusencia: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    numDias: number;
+    datos_especificos: string;
+    estado: string;
+    fecInsert: string;
+    fecUpdate: string | null;
+    fecDelete: string | null;
+    usrInsert: string | null;
+    usrUpdate: string | null;
+    usrDelete: string | null;
 }
 
 
@@ -72,6 +90,22 @@ const expandirRangoVacaciones = (fecInicial: string, fecFinal: string): string[]
     }
 };
 
+const expandirRangoDm = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
+    try {
+        const [y1, m1, d1] = fecInicial.split(/-|T/).map(Number);
+        const [y2, m2, d2] = fecFinal.split(/-|T/).map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+        const end = new Date(y2, m2 - 1, d2);
+        const days = eachDayOfInterval({ start, end });
+        return days
+            .filter(day => isSameMonth(day, referenceDate))
+            .map(day => format(day, 'yyyy-MM-dd'));
+    } catch (e) {
+        console.error("Error al expandir rango de vacaciones:", e);
+        return [];
+    }
+};
+
 // Lista de supervisores internos con horario especial (07:00 AM)
 const SUPERVISORES_INTERNOS = [
     "JORDAN MAYA",
@@ -91,12 +125,28 @@ const STAFF_830AM = [
     "ANGEL MARTINEZ"
 ];
 
+const getDescansosMedicos = async (idEmpleado: number) => {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idEmpleados: [idEmpleado] })
+        }).then(async r => await r.json())
+        console.log(response)
+        return response
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 const ReporteAsistenciaStaff = () => {
     const { user } = useUser();
     const [loading, setLoading] = useState(false);
     const [staffData, setStaffData] = useState<StaffData | null>(null);
     const [diasVacaciones, setDiasVacaciones] = useState<string[]>([]);
+    const [DM, setDM] = useState<DescansoMedico[]>([])
     const [error, setError] = useState<string | null>(null);
+    const [currentDate] = useState(new Date());
 
     useEffect(() => {
         const fetchVacations = async () => {
@@ -125,8 +175,11 @@ const ReporteAsistenciaStaff = () => {
                 console.error("Error al cargar historial de vacaciones:", error);
             }
         };
-
-        fetchVacations();
+        getDescansosMedicos(user?.idEmpleado!).then((r: any) => {
+            const data = Array.isArray(r?.data) ? r.data : [];
+            setDM(data)
+        })
+        fetchVacations()
     }, [user?.idEmpleado]);
 
     useEffect(() => {
@@ -193,9 +246,13 @@ const ReporteAsistenciaStaff = () => {
     const processedRegistros = useMemo(() => {
         if (!staffData?.registros) return [];
 
+        const dmDays = new Set<string>();
+        DM.forEach(dm => {
+            const dias = expandirRangoDm(dm.fecha_inicio, dm.fecha_fin, currentDate);
+            dias.forEach(d => dmDays.add(d));
+        });
 
-
-        return staffData.registros
+        const data = staffData.registros
             .map(reg => {
                 // Normalizar la fecha del registro para comparación (YYYY-MM-DD)
                 const dateKey = reg.fecha.split('T')[0];
@@ -219,6 +276,7 @@ const ReporteAsistenciaStaff = () => {
                     ...reg,
                     esFeriado: getFeriado(reg.fecha),
                     esVacaciones: diasVacaciones.includes(dateKey),
+                    esDescansoMedico: dmDays.has(dateKey),
                     esTardanza
                 };
             })
@@ -228,8 +286,8 @@ const ReporteAsistenciaStaff = () => {
                 return day >= 1 && day <= 5; // Mon-Fri
             })
             .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
-    }, [staffData, diasVacaciones, horarioConfig]);
+        return data
+    }, [DM, staffData, diasVacaciones, horarioConfig, currentDate]);
 
     const handleExportExcel = () => {
         if (!processedRegistros || processedRegistros.length === 0) {
@@ -241,17 +299,19 @@ const ReporteAsistenciaStaff = () => {
         const data = processedRegistros.map(row => {
             const isVacaciones = !!row.esVacaciones;
             const isFeriado = !!row.esFeriado;
-            const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones;
+            const isDescansoMedico = !!row.esDescansoMedico;
+            const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones && !isDescansoMedico;
 
             let estado = "Puntual";
             if (isVacaciones) estado = "Vacaciones";
             else if (isFeriado) estado = `Feriado (${row.esFeriado})`;
+            else if (isDescansoMedico) estado = "Descanso Medico";
             else if (isFalta) estado = "Inasistencia";
             else if (row.esTardanza) estado = "Tardanza";
 
             return [
                 format(parseISO(row.fecha), 'EEEE dd/MM/yyyy', { locale: es }),
-                row.horaIngreso || (isFeriado || isVacaciones ? "--:--" : "No Marcó"),
+                row.horaIngreso || (isFeriado || isVacaciones || isDescansoMedico ? "--:--" : "No Marcó"),
                 row.horaSalida || "--:--",
                 estado
             ];
@@ -271,13 +331,14 @@ const ReporteAsistenciaStaff = () => {
 
     const stats = useMemo(() => {
         const total = processedRegistros.length;
-        const faltas = processedRegistros.filter(r => !r.horaIngreso && !r.esFeriado && !r.esVacaciones).length;
+        const faltas = processedRegistros.filter(r => !r.horaIngreso && !r.esFeriado && !r.esVacaciones && !r.esDescansoMedico).length;
         const tardanzas = processedRegistros.filter(r => r.esTardanza).length;
         const feriados = processedRegistros.filter(r => r.esFeriado).length;
         const vacsCount = processedRegistros.filter(r => r.esVacaciones).length;
+        const dmsCount = processedRegistros.filter(r => r.esDescansoMedico).length;
         const asistencias = processedRegistros.filter(r => r.horaIngreso).length;
 
-        return { total, faltas, asistencias, feriados, vacsCount, tardanzas };
+        return { total, faltas, asistencias, feriados, vacsCount, dmsCount, tardanzas };
     }, [processedRegistros]);
 
     if (loading) {
@@ -331,7 +392,7 @@ const ReporteAsistenciaStaff = () => {
             )}
 
             {/* Cards de Resumen */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 <Card className="hover:shadow-lg transition-all border-l-4 border-l-cyan-500 shadow-md">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
@@ -369,6 +430,20 @@ const ReporteAsistenciaStaff = () => {
                             </div>
                             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                 <Clock className="h-5 w-5 text-blue-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-all border-l-4 border-l-teal-500 shadow-md">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Desc. Medico</p>
+                                <h3 className="text-2xl font-bold text-teal-600">{stats.dmsCount}</h3>
+                            </div>
+                            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                                <Clock className="h-5 w-5 text-teal-600" />
                             </div>
                         </div>
                     </CardContent>
@@ -432,7 +507,8 @@ const ReporteAsistenciaStaff = () => {
                                     processedRegistros.map((row, idx) => {
                                         const isVacaciones = !!row.esVacaciones;
                                         const isFeriado = !!row.esFeriado;
-                                        const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones;
+                                        const isDescansoMedico = !!row.esDescansoMedico;
+                                        const isFalta = !row.horaIngreso && !isFeriado && !isVacaciones && !isDescansoMedico;
                                         const fechaObj = parseISO(row.fecha);
                                         return (
                                             <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
@@ -448,25 +524,30 @@ const ReporteAsistenciaStaff = () => {
                                                             Vacaciones
                                                         </span>
                                                     )}
+                                                    {isDescansoMedico && (
+                                                        <span className="block text-[10px] text-teal-600 font-semibold uppercase mt-0.5">
+                                                            Descanso Medico
+                                                        </span>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className={
                                                     isFalta
                                                         ? "text-red-400 italic"
                                                         : row.esTardanza
-                                                            ? 
-                                                            (((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0])>0)
-                                                                || 
+                                                            ?
+                                                            (((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0]) > 0)
+                                                                ||
                                                                 (
-                                                                    ((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0])===0) &&
+                                                                    ((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0]) === 0) &&
                                                                     (+row.horaIngreso?.split(":")[1]! - +horarioConfig.entrada.split(":")[1] > (15 + horarioConfig.tolerancia))
-                                                                )) 
-                                                                ? "text-red-600 font-semibold":
+                                                                ))
+                                                                ? "text-red-600 font-semibold" :
                                                                 "text-amber-600 font-semibold"
                                                             : row.horaIngreso
                                                                 ? "text-emerald-600 font-semibold"
                                                                 : "text-foreground"
                                                 }>
-                                                    {row.horaIngreso || (isFeriado || isVacaciones ? "--:--" : "No Marcó")}
+                                                    {row.horaIngreso || (isFeriado || isVacaciones || isDescansoMedico ? "--:--" : "No Marcó")}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {row.horaSalida || "--:--"}
@@ -477,14 +558,16 @@ const ReporteAsistenciaStaff = () => {
                                                             ? "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none shadow-sm"
                                                             : isFeriado
                                                                 ? "bg-orange-100 text-orange-700 hover:bg-orange-100 border-none shadow-sm"
-                                                                : isFalta
-                                                                    ? "bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-sm"
-                                                                    : row.esTardanza
-                                                                        ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
-                                                                        : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
+                                                                : isDescansoMedico
+                                                                    ? "bg-teal-100 text-teal-700 hover:bg-teal-100 border-none shadow-sm"
+                                                                    : isFalta
+                                                                        ? "bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-sm"
+                                                                        : row.esTardanza
+                                                                            ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-sm"
+                                                                            : "bg-green-100 text-green-700 hover:bg-green-100 border-none shadow-sm"
                                                     }>
 
-                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Puntual"}
+                                                        {isVacaciones ? "Vacaciones" : isFeriado ? "Feriado" : isDescansoMedico ? "Descanso Medico" : isFalta ? "Inasistencia" : row.esTardanza ? "Tardanza" : "Puntual"}
 
                                                     </Badge >
                                                 </TableCell >
@@ -508,3 +591,7 @@ const ReporteAsistenciaStaff = () => {
 };
 
 export default ReporteAsistenciaStaff;
+
+
+
+
