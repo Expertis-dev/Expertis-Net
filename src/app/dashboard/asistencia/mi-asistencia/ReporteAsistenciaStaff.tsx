@@ -453,7 +453,15 @@ const ReporteAsistenciaStaff = () => {
                                                     isFalta
                                                         ? "text-red-400 italic"
                                                         : row.esTardanza
-                                                            ? "text-amber-600 font-semibold"
+                                                            ? 
+                                                            (((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0])>0)
+                                                                || 
+                                                                (
+                                                                    ((+row.horaIngreso?.split(":")[0]! - +horarioConfig.entrada.split(":")[0])===0) &&
+                                                                    (+row.horaIngreso?.split(":")[1]! - +horarioConfig.entrada.split(":")[1] > (15 + horarioConfig.tolerancia))
+                                                                )) 
+                                                                ? "text-red-600 font-semibold":
+                                                                "text-amber-600 font-semibold"
                                                             : row.horaIngreso
                                                                 ? "text-emerald-600 font-semibold"
                                                                 : "text-foreground"
