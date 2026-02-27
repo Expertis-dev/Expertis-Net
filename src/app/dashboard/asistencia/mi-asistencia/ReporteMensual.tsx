@@ -48,6 +48,15 @@ interface DescansoMedico {
     fecha_fin: string;
 }
 
+interface JustificacionRegistro {
+    fecha: string;
+    nivel1?: string;
+    nivel2?: string;
+    nivel3?: string;
+    descripcion?: string;
+    observacion?: string;
+}
+
 // Función auxiliar para parsear fechas sin desfase de zona horaria (UTC vs Local)
 const parseAsLocal = (dateString: string) => {
     if (!dateString) return new Date();
@@ -90,6 +99,12 @@ const obtenerEstadoAsistencia = (esTardanza: boolean): string => {
     return esTardanza ? "Tardanza" : "Puntual";
 };
 
+const obtenerJustificaciones = (nombre: string) => {
+    const response = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificacion/${nombre}`)
+        .then(async r => await r.json())
+    return response
+}
+
 export default function ReporteMensual() {
     const { user } = useUser();
 
@@ -103,6 +118,7 @@ export default function ReporteMensual() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [descansosMedicos, setDescansosMedicos] = useState<string[]>([]);
+    const [justificaciones, setJustificaciones] = useState<JustificacionRegistro[]>([]);
 
     // Función para obtener datos desde el backend
     const fetchAsistencia = useCallback(async () => {
@@ -189,6 +205,40 @@ export default function ReporteMensual() {
         fetchDMs();
     }, [user?.idEmpleado]);
 
+    useEffect(() => {
+        const fetchJustificaciones = async () => {
+            if (!user?.usuario) return;
+            try {
+                const data = await obtenerJustificaciones(user.usuario);
+                setJustificaciones(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Error al obtener justificaciones:", e);
+                setJustificaciones([]);
+            }
+        };
+        fetchJustificaciones();
+    }, [user?.usuario]);
+
+    const justificacionesPorDia = useMemo(() => {
+        const start = parseAsLocal(startDate);
+        const end = parseAsLocal(endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        const map = new Map<string, JustificacionRegistro[]>();
+        (justificaciones || []).forEach((j: JustificacionRegistro) => {
+            const d = parseAsLocal(j.fecha);
+            d.setHours(0, 0, 0, 0);
+            if (d < start || d > end) return;
+            const key = format(d, 'yyyy-MM-dd');
+            const list = map.get(key) || [];
+            list.push(j);
+            map.set(key, list);
+        });
+
+        return map;
+    }, [justificaciones, startDate, endDate]);
+
     // Lógica para procesar los datos obtenidos (Cruzando asistencia vs días laborales)
     const processedData = useMemo(() => {
         const start = parseAsLocal(startDate);
@@ -213,6 +263,13 @@ export default function ReporteMensual() {
             const itemDate = parseAsLocal(dia.fecha);
             const dayKey = format(itemDate, 'yyyy-MM-dd');
             const esDescansoMedico = descansosMedicos.includes(dayKey);
+            const justificacionesDelDia = justificacionesPorDia.get(dayKey) || [];
+            const tieneJustificacion = justificacionesDelDia.length > 0;
+            const justificacionPrincipal = justificacionesDelDia[0];
+            const detalleJustificacion = justificacionPrincipal?.nivel2
+                || justificacionPrincipal?.nivel3
+                || justificacionPrincipal?.descripcion
+                || "Justificado";
 
             // Buscar marcación para este día
             const registro = asistencias.find(asist => {
@@ -241,7 +298,9 @@ export default function ReporteMensual() {
                     esTardanza: false,
                     esFalta: false,
                     entradaDecimal: null,
-                    esDescansoMedico: true
+                    esDescansoMedico: true,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
                 };
             }
 
@@ -262,7 +321,9 @@ export default function ReporteMensual() {
                     esTardanza,
                     esFalta: false,
                     entradaDecimal: entryTime.horas + entryTime.minutos / 60,
-                    esDescansoMedico: false
+                    esDescansoMedico: false,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
                 };
             } else {
                 // Si es día laborable pero no hay registro -> FALTA
@@ -275,11 +336,13 @@ export default function ReporteMensual() {
                     esTardanza: false,
                     esFalta: true,
                     entradaDecimal: null,
-                    esDescansoMedico: false
+                    esDescansoMedico: false,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
                 };
             }
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo]);
+    }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo, descansosMedicos, justificacionesPorDia]);
 
     const handleExportExcel = () => {
         if (!processedData || processedData.length === 0) {
@@ -287,19 +350,20 @@ export default function ReporteMensual() {
             return;
         }
 
-        const headers = ["Fecha", "Entrada", "Salida", "Estado"];
+        const headers = ["Fecha", "Entrada", "Salida", "Estado", "Justificación"];
         const data = processedData.map(row => [
             row.fechaFormateada,
             row.entrada,
             row.salida,
-            row.estado
+            row.estado,
+            row.esJustificado ? (row.detalleJustificacion || "Justificado") : ""
         ]);
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Mi Asistencia");
 
-        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
+        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }];
 
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -473,6 +537,7 @@ export default function ReporteMensual() {
                                     <TableHead className="font-bold">Entrada</TableHead>
                                     <TableHead className="font-bold">Salida</TableHead>
                                     <TableHead className="font-bold text-center">Estado</TableHead>
+                                    <TableHead className="font-bold text-center">Justificación</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -494,11 +559,20 @@ export default function ReporteMensual() {
                                                     {row.estado}
                                                 </Badge>
                                             </TableCell>
+                                            <TableCell className="text-center">
+                                                {row.esJustificado ? (
+                                                    <Badge className="bg-blue-100 text-blue-700 border-none" title={row.detalleJustificacion}>
+                                                        {row.detalleJustificacion.toLowerCase().split("_").map(p => p[0].toUpperCase().concat(p.slice(1))).join(" ")}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                                             No se encontraron registros.
                                         </TableCell>
                                     </TableRow>
