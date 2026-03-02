@@ -65,13 +65,15 @@ interface DescansoMedico {
     usrDelete: string | null;
 }
 
-interface JustificacionRegistro {
+export interface JustificacionRegistro {
     fecha: string;
     nivel1?: string;
     nivel2?: string;
     nivel3?: string;
     descripcion?: string;
     observacion?: string;
+    asesor: string;
+    codigoEmpleado: number;
 }
 
 const obtenerJustificaciones = (nombre: string) => {
