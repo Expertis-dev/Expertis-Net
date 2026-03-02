@@ -658,6 +658,14 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                 const dayStr = format(day, 'yyyy-MM-dd');
                                                 const record = meta?.asistencias?.[dayStr];
                                                 const weekend = isWeekend(day);
+                                                const retrasoMin = (() => {
+                                                    if (record?.type !== 'asistencia' || !record.hora || !meta?.horarioBase) return 0;
+                                                    const [ingH, ingM] = record.hora.split(':').map(Number);
+                                                    const [baseH, baseM] = meta.horarioBase.split(':').map(Number);
+                                                    if ([ingH, ingM, baseH, baseM].some(v => Number.isNaN(v))) return 0;
+                                                    return (ingH * 60 + ingM) - (baseH * 60 + baseM);
+                                                })();
+                                                const esTardanzaCritica = Boolean(record?.esTardanza && retrasoMin > 15);
 
                                                 return (
                                                     <TableCell
@@ -669,7 +677,9 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                             {record?.type === 'asistencia' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-0.5">
                                                                     <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
-                                                                        ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
+                                                                        ? esTardanzaCritica
+                                                                            ? 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-900/30 dark:border-rose-900/50'
+                                                                            : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
                                                                         : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
                                                                         }`}>
                                                                         {record.hora}
@@ -707,7 +717,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                                     <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase">No Marcó</span>
                                                                 </div>
                                                             ) : (
-                                                                !weekend ? <span className="text-slate-200 dark:text-slate-700 text-xs text-center w-full">--</span> : null
+                                                                !weekend ? <span className="text-gray-500 dark:text-slate-700 text-[12px] text-center w-full px-1.5">sin datos</span> : null
                                                             )}
                                                         </div>
                                                     </TableCell>
@@ -730,7 +740,11 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-amber-500 rounded-full border border-white/20"></div>
-                    <span className="opacity-80">Tardanza</span>
+                    <span className="opacity-80">Tardanza (&lt;=15 min)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-rose-500 rounded-full border border-white/20"></div>
+                    <span className="opacity-80">Tardanza (&gt;15 min)</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-rose-600 rounded-md border border-white/20 flex items-center justify-center">

@@ -940,9 +940,9 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     <span className="opacity-80">Home Office</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
-                    <span>• Tolerancia 7:00 (10min)</span>
+                    <span>• Tolerancia 7:00 (5min)</span>
                     <span>• 7:10 (5min)</span>
-                    <span>• 9:00 (10min)</span>
+                    <span>• 9:00 (5min)</span>
                 </div>
             </div>
         </div>
