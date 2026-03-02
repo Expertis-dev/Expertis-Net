@@ -30,7 +30,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmpleadoStaff, Grupo } from '@/types/Empleado';
+import { EmpleadoStaff } from '@/types/Empleado';
 import { HomeOfficeFormModal } from '@/components/asistencia/reporteAsistencia/homeOfficeModal';
 import { HomeOfficeResponse } from '@/types/HomeOffice';
 import { ConfirmationModal } from '@/components/confirmation-modal';
@@ -980,7 +980,14 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                     const dayStr = format(day, 'yyyy-MM-dd');
                                                     const record = item.asistencias[dayStr];
                                                     const weekend = isWeekend(day);
-                                                    const horaEntrada = GRUPOS_HORARIO.filter(g => g.id === selectedGroup)[0].entrada.split(":")
+                                                    const horaEntrada = GRUPOS_HORARIO.filter(g => g.id === selectedGroup)[0].entrada.split(":");
+                                                    const [horaIngresoHStr = "0", horaIngresoMStr = "0"] = (record?.horaI || "").split(":");
+                                                    const horaIngresoH = Number(horaIngresoHStr);
+                                                    const horaIngresoM = Number(horaIngresoMStr);
+                                                    const horaBaseH = Number(horaEntrada[0] || "0");
+                                                    const horaBaseM = Number(horaEntrada[1] || "0");
+                                                    const esTardanzaCritica = ((horaIngresoH - horaBaseH) > 0)
+                                                        || (((horaIngresoH - horaBaseH) === 0) && ((horaIngresoM - horaBaseM) > 15));
                                                     return (
                                                         <TableCell
                                                             key={`${colab.id}-${dayStr}`}
@@ -989,10 +996,7 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                                                             {record?.type === 'asistencia' ? (
                                                                 <div className="flex flex-col items-center justify-center gap-1 h-full px-1">
                                                                     <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-lg transition-colors ${record.esTardanza
-                                                                        ? (
-                                                                            ((+record.horaI?.split(":")[0]! - (+horaEntrada[0])) > 0) ||
-                                                                            (((+record.horaI?.split(":")[0]! - (+horaEntrada[0])) === 0) && (+record.horaI?.split(":")[1]! - (+horaEntrada[1]) > 15))
-                                                                        ) ? 'bg-rose-100 text-rose-700 border border-red-600 shadow-sm dark:bg-transparent dark:border-transparent dark:shadow-none dark:text-rose-500'
+                                                                        ? esTardanzaCritica ? 'bg-rose-100 text-rose-700 border border-red-600 shadow-sm dark:bg-transparent dark:border-transparent dark:shadow-none dark:text-rose-500'
                                                                             : 'bg-yellow-200 text-yellow-700 border border-orange-400 shadow-sm dark:bg-transparent dark:border-transparent dark:shadow-none dark:text-emerald-500'
                                                                         : 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm dark:bg-transparent dark:border-transparent dark:shadow-none dark:text-emerald-500'}`}
                                                                     >

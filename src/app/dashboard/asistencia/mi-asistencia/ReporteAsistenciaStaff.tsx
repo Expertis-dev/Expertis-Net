@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, parseISO, getDay, eachDayOfInterval, isSameMonth, set } from "date-fns";
+import { format, parseISO, getDay, eachDayOfInterval, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 
@@ -195,10 +195,14 @@ const ReporteAsistenciaStaff = () => {
                 console.error("Error al cargar historial de vacaciones:", error);
             }
         };
-        getDescansosMedicos(user?.idEmpleado!).then((r: any) => {
-            const data = Array.isArray(r?.data) ? r.data : [];
-            setDM(data)
-        })
+        if (user?.idEmpleado) {
+            getDescansosMedicos(user.idEmpleado).then((r: { data: DescansoMedico[] }) => {
+                const data = Array.isArray(r?.data) ? r.data : [];
+                setDM(data)
+            })
+        } else {
+            setDM([]);
+        }
         fetchVacations()
     }, [user?.idEmpleado]);
 

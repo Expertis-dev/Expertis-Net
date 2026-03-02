@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useUser } from "@/Provider/UserProvider";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import * as XLSX from "xlsx";
@@ -397,20 +397,24 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     }, [colaboradores, currentDate]);
 
     useEffect(() => {
-        fetchJustificacionesGrupo(user?.idEmpleado!).then(r => {
-            const list = Array.isArray(r) ? r : [];
-            setJustificaciones(list);
-        });
+        if (user?.idEmpleado) {
+            fetchJustificacionesGrupo(user.idEmpleado).then(r => {
+                const list = Array.isArray(r) ? r : [];
+                setJustificaciones(list);
+            });
+        } else {
+            setJustificaciones([]);
+        }
         if (!colaboradores || colaboradores.length === 0) return;
         fetchAsistenciaGrupal();
-    }, [colaboradores, fetchAsistenciaGrupal, user]);
+    }, [colaboradores, fetchAsistenciaGrupal, user?.idEmpleado]);
 
     const justificacionesIndex = useMemo(() => {
         const index: Record<string, Record<string, JustificacionRegistro[]>> = {};
         (justificaciones || []).forEach(j => {
-            const dateObj = parseISO(j.fecha);
+            const dateObj = j.fecha;
             if (!isSameMonth(dateObj, currentDate)) return;
-            const dayKey = format(dateObj, 'yyyy-MM-dd');
+            const dayKey = dateObj.split("T")[0]
             const keys = [normalizeKey(j.asesor), normalizeKey(j.codigoEmpleado)];
             keys.forEach(key => {
                 if (!key) return;
@@ -824,7 +828,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                     className="absolute top-0.5 right-0.5 h-4 min-w-4 px-1 rounded-full bg-sky-600 text-white text-[8px] font-black leading-4 shadow-sm border border-white/80 dark:border-slate-900"
                                                                     title={`Justificacion: ${justificacionLabel}`}
                                                                 >
-                                                                    J
+                                                                    <p className='pr-0.5 bottom-[-1px] absolute'>J</p>
                                                                 </div>
                                                             ) : null}
                                                             {record?.type === 'asistencia' ? (
@@ -921,7 +925,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     <div className="w-3 h-3 bg-sky-500 rounded-full border border-white/20 flex items-center justify-center">
                         <span className="text-[7px] font-bold text-white">J</span>
                     </div>
-                    <span className="opacity-80">Con justificacion (decorador)</span>
+                    <span className="opacity-80">Con justificacion</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-100 rounded-md border border-blue-300 flex items-center justify-center">
