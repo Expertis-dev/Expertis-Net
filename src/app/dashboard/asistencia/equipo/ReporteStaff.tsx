@@ -655,6 +655,8 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                             </TableCell>
                                             {daysInMonth.map((day) => {
                                                 const dayStr = format(day, 'yyyy-MM-dd');
+                                                const todayStr = format(new Date(), 'yyyy-MM-dd');
+                                                const isFuture = dayStr > todayStr;
                                                 const record = meta?.asistencias?.[dayStr];
                                                 const weekend = isWeekend(day);
                                                 const retrasoMin = (() => {
@@ -716,7 +718,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                                                                     <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase">No Marcó</span>
                                                                 </div>
                                                             ) : (
-                                                                !weekend ? <span className="text-gray-500 dark:text-slate-700 text-[12px] text-center w-full px-1.5">sin datos</span> : null
+                                                                (!weekend && !isFuture) ? <span className="text-gray-500 dark:text-slate-700 text-[12px] text-center w-full px-1.5">sin datos</span> : null
                                                             )}
                                                         </div>
                                                     </TableCell>
