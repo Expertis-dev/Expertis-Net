@@ -1,5 +1,6 @@
 import { AsesorFila } from "@/components/feedback/asesor/AsesorFila";
 import { AsesorHeaders } from "@/components/feedback/asesor/AsesorHeaders";
+import { FilterAsesor } from "@/components/feedback/asesor/FilterAsesor";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { SheetIcon } from "lucide-react";
@@ -34,6 +35,7 @@ export default function AsesoresPage() {
                 </div>
             </div>
 
+            <FilterAsesor/>
             
             {/* Tabla */}
             <Table>
