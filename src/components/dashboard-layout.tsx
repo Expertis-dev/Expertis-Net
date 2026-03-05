@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, GlassesIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -338,6 +338,34 @@ const MENU_CONFIG: MenuItem[] = [
         permiso: "Encuesta-registrar",
       },
 
+    ]
+  },
+  {
+    id: "feedback",
+    title: "feedback",
+    icon: GlassesIcon,
+    href: "/dashboards/feedback",
+    subItems: [
+      {
+        title: "Feedback Asesores",
+        href: "/dashboard/feedback/asesores",
+        modulo: "Encuesta"
+      },
+      {
+        title: "Feedback Supervisores",
+        href: "/dashboard/feedback/supervisores",
+        modulo: "Encuesta"
+      },
+      {
+        title: "Historial Feedback Supervisor",
+        href: "/dashboard/feedback/historialSupervisores",
+        modulo: "Encuesta"
+      },
+      {
+        title: "Historial Feedback Asesor",
+        href: "/dashboard/feedback/historialAsesores",
+        modulo: "Encuesta"
+      },
     ]
   }
   /*{
