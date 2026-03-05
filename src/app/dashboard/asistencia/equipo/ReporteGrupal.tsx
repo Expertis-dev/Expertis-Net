@@ -100,7 +100,8 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
         u.includes("AGUANAR") ||
         u.includes("AGAMA") ||
         u.includes("DAVILA") ||
-        u.includes("SUYO")
+        u.includes("SUYO") ||
+        u.includes("TORRES")
     ) {
         return { entrada: "8:00", tolerancia: 5 }; // 8:10 AM
     }
@@ -207,7 +208,7 @@ const fetchJustificacionesGrupo = async (idEncargado: number) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idUsuario: idEncargado })
     }).then(async r => await r.json());
-    
+
     return response
 }
 

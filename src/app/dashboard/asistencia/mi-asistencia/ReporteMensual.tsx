@@ -148,7 +148,7 @@ export default function ReporteMensual() {
             const rolRaw = localStorage.getItem("rol");
             const rol = rolRaw ? rolRaw.replace(/"/g, "") : "";
 
-            const endpointAsistencia = rol === "SUPERVISOR" && user?.id_grupo === 14
+            const endpointAsistencia = rol === "SUPERVISOR" && (user?.id_grupo === 14 || user?.id_grupo === 11)
                 ? `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeSupervisor/${currentId}`
                 : `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeAsesor/${currentId}`;
 
@@ -553,8 +553,8 @@ export default function ReporteMensual() {
                                                 <Badge className={
                                                     row.esDescansoMedico ? "bg-indigo-100 text-indigo-700 border-none" :
                                                         row.esFalta ? "bg-red-100 text-red-700 border-none" :
-                                                        row.esTardanza ? "bg-orange-100 text-orange-700 border-none" :
-                                                            "bg-green-100 text-green-700 border-none"
+                                                            row.esTardanza ? "bg-orange-100 text-orange-700 border-none" :
+                                                                "bg-green-100 text-green-700 border-none"
                                                 }>
                                                     {row.estado}
                                                 </Badge>

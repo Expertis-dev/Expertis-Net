@@ -56,7 +56,6 @@ const SUPERVISORES_ESP = [
     "JORGE VASQUEZ",
     "MAYRA LLIMPE",
     "ROBERTO INZUA",
-    "ANTHONY TORRES"
 ];
 
 // --- TIPOS ---
@@ -780,8 +779,8 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                             { label: '9:00 AM', val: stats.nine }
                         ].map((s, idx) => (
                             <span key={idx} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all ${s.val > 0
-                                    ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
-                                    : 'bg-white/5 text-white/20 border-white/5 opacity-40'
+                                ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
+                                : 'bg-white/5 text-white/20 border-white/5 opacity-40'
                                 }`}>
                                 {s.label} <b className={`px-1.5 rounded-full text-white ${s.val > 0 ? 'bg-blue-600' : 'bg-white/10 text-white/40'}`}>{s.val}</b>
                             </span>
