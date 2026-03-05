@@ -84,7 +84,7 @@ const EXCEPCIONES_GRUPALES = [
  */
 const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { entrada: string; tolerancia: number } => {
     // Si el supervisor es del grupo 14 (BPO), todos sus colaboradores tienen horario 8:00 AM (Sin tolerancia)
-    if (idGrupoSupervisor === 14) {
+    if (idGrupoSupervisor === 14 || idGrupoSupervisor === 11) {
         return { entrada: "8:00", tolerancia: 0 };
     }
 
@@ -144,6 +144,7 @@ interface MatrixItem {
         hora?: string;
         horaSalida?: string;
         esTardanza?: boolean;
+        minutosTardanza?: number;
         sigla?: string;
         clases?: string;
         tieneJustificacion?: boolean;
@@ -563,18 +564,21 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     const salidaMatch = salidaRaw.match(/(\d{2}:\d{2})/);
                     const salidaLimpia = salidaMatch ? salidaMatch[1] : null;
 
+                    
                     if (ingresoLimpio) {
                         const [h, m] = ingresoLimpio.split(':').map(Number);
                         const [baseH, baseM] = config.entrada.split(':').map(Number);
                         const minsIngreso = h * 60 + m;
-                        const minsLimite = baseH * 60 + baseM + config.tolerancia;
-                        const esTardanza = minsIngreso > minsLimite;
+                        const minsBase = baseH * 60 + baseM;
+                        const minutosTardanza = Math.max(0, minsIngreso - minsBase);
+                        const esTardanza = minutosTardanza > 0;
 
                         matrix[colab.usuario].asistencias[dayStr] = {
                             type: 'asistencia',
                             hora: ingresoLimpio,
                             horaSalida: salidaLimpia || undefined,
                             esTardanza,
+                            minutosTardanza,
                             ...withJustificacion
                         };
                         return; // Salir del bucle diario si ya procesamos asistencia
@@ -833,19 +837,14 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                 </div>
                                                             ) : null}
                                                             {record?.type === 'asistencia' ? (
-                                                                <div className="flex flex-col items-center justify-center gap-0.5">
-                                                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
-                                                                        ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
-                                                                        : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
-                                                                        }`}>
-                                                                        {record.hora}
-                                                                    </span>
-                                                                    {record.horaSalida ? (
-                                                                        <span className="text-[10px] font-normal text-slate-700 dark:text-slate-300">
-                                                                            {record.horaSalida}
-                                                                        </span>
-                                                                    ) : null}
-                                                                </div>
+                                                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
+                                                                    ? (record.minutosTardanza && record.minutosTardanza > 15
+                                                                        ? 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-900/30 dark:border-rose-900/50'
+                                                                        : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50')
+                                                                    : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
+                                                                    }`}>
+                                                                    {record.hora}
+                                                                </span>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center bg-cyan-50 dark:bg-cyan-900/30 w-full h-full justify-center border-x border-cyan-100 dark:border-cyan-900">
                                                                     <HomeIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />
@@ -902,7 +901,11 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-amber-500 rounded-full border border-white/20"></div>
-                    <span className="opacity-80">Tardanza</span>
+                    <span className="opacity-80">Tardanza (0-15m)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-rose-500 rounded-full border border-white/20"></div>
+                    <span className="opacity-80">Tardanza +15m</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-rose-600 rounded-md border border-white/20 flex items-center justify-center">
