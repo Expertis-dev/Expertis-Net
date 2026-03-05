@@ -31,6 +31,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { JustificacionRegistro } from '../mi-asistencia/ReporteAsistenciaStaff';
 
 // --- CONFIGURACIÓN DE HORARIOS Y TOLERANCIAS ---
 // Representa la hora de entrada y los minutos de gracia antes de marcar como tardanza.
@@ -90,7 +91,7 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
     const u = usuario.toUpperCase();
 
     if (u.includes("MAYA") || u.includes("AYRE")) {
-        return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM
+        return { entrada: "7:00", tolerancia: 5 }; // 7:10 AM
     }
 
     // Colaboradores con horario base 8:00 AM
@@ -99,12 +100,13 @@ const determinarHorarioBase = (usuario: string, idGrupoSupervisor?: number): { e
         u.includes("AGUANAR") ||
         u.includes("AGAMA") ||
         u.includes("DAVILA") ||
-        u.includes("SUYO")
+        u.includes("SUYO") ||
+        u.includes("TORRES")
     ) {
-        return { entrada: "8:00", tolerancia: 10 }; // 8:10 AM
+        return { entrada: "8:00", tolerancia: 5 }; // 8:10 AM
     }
 
-    return { entrada: "7:00", tolerancia: 10 }; // 7:10 AM por defecto
+    return { entrada: "7:00", tolerancia: 5 }; // 7:10 AM por defecto
 };
 
 // --- TIPOS ---
@@ -120,7 +122,10 @@ interface Marcacion {
     asistencia?: {
         fecha?: string;
         ingreso?: string;
+        esLaborable?: boolean;
+        salida?: string
     };
+    salida?: string;
     fecha?: string;
     ingreso?: string;
     horaIngreso?: string;
@@ -137,9 +142,12 @@ interface MatrixItem {
         type: string;
         label?: string;
         hora?: string;
+        horaSalida?: string;
         esTardanza?: boolean;
         sigla?: string;
         clases?: string;
+        tieneJustificacion?: boolean;
+        detalleJustificacion?: string;
     }>;
 }
 
@@ -166,6 +174,11 @@ interface HomeOfficeEntry {
     tiempos: HomeOfficeTiempo[];
 }
 
+const normalizeKey = (value?: string | number | null) => {
+    if (value === null || value === undefined) return "";
+    return value.toString().trim().toUpperCase();
+};
+
 // --- HELPER: Expandir rango de vacaciones ---
 const expandirRangoVacaciones = (fecInicial: string, fecFinal: string, referenceDate: Date): string[] => {
     try {
@@ -188,6 +201,17 @@ interface ReporteProps {
     colaboradores: Colaborador[];
 }
 
+
+const fetchJustificacionesGrupo = async (idEncargado: number) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificaciones/obtenerJustsPorUsuario`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idUsuario: idEncargado })
+    }).then(async r => await r.json());
+
+    return response
+}
+
 const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     const { user } = useUser();
     // const { colaboradores, loading: loadingColab } = useColaboradores(); // ELIMINADO
@@ -202,7 +226,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
     const [homeOffice, setHomeOffice] = useState<Record<string, { fecha: string; horaIngreso: string | null; horaSalida: string | null }[]>>({})
-
+    const [justificaciones, setJustificaciones] = useState<JustificacionRegistro[]>([]);
     // 1. Generar la lista de todos los días del mes para las cabeceras de la tabla
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentDate);
@@ -332,6 +356,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
             if (!response.ok) throw new Error("Error al obtener asistencia del grupo");
 
             const result = await response.json();
+            console.log(result)
             setAsistenciaData(result.data || []);
 
             const queryParams = colaboradores
@@ -373,9 +398,35 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     }, [colaboradores, currentDate]);
 
     useEffect(() => {
+        if (user?.idEmpleado) {
+            fetchJustificacionesGrupo(user.idEmpleado).then(r => {
+                const list = Array.isArray(r) ? r : [];
+                setJustificaciones(list);
+            });
+        } else {
+            setJustificaciones([]);
+        }
         if (!colaboradores || colaboradores.length === 0) return;
         fetchAsistenciaGrupal();
-    }, [colaboradores, fetchAsistenciaGrupal]);
+    }, [colaboradores, fetchAsistenciaGrupal, user?.idEmpleado]);
+
+    const justificacionesIndex = useMemo(() => {
+        const index: Record<string, Record<string, JustificacionRegistro[]>> = {};
+        (justificaciones || []).forEach(j => {
+            const dateObj = j.fecha;
+            if (!isSameMonth(dateObj, currentDate)) return;
+            const dayKey = dateObj.split("T")[0]
+            const keys = [normalizeKey(j.asesor), normalizeKey(j.codigoEmpleado)];
+            keys.forEach(key => {
+                if (!key) return;
+                if (!index[key]) index[key] = {};
+                const list = index[key][dayKey] || [];
+                list.push(j);
+                index[key][dayKey] = list;
+            });
+        });
+        return index;
+    }, [justificaciones, currentDate]);
 
     /**
      * PROCESAMIENTO DE LA MATRIZ DE ASISTENCIA
@@ -388,6 +439,22 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         colaboradores.forEach(colab => {
             const config = determinarHorarioBase(colab.usuario, user?.id_grupo);
             const currentIdMov = colabIdMap[colab.usuario];
+            const colabKeys = [
+                normalizeKey(colab.usuario),
+                normalizeKey(colab.alias),
+                normalizeKey(colab.idEmpleado)
+            ].filter(Boolean);
+            const justificacionesPorDia = colabKeys.reduce((acc, key) => {
+                const byDay = justificacionesIndex[key];
+                if (!byDay) return acc;
+                Object.keys(byDay).forEach(dayKey => {
+                    const list = byDay[dayKey];
+                    if (!list || list.length === 0) return;
+                    if (!acc[dayKey]) acc[dayKey] = [];
+                    acc[dayKey].push(...list);
+                });
+                return acc;
+            }, {} as Record<string, JustificacionRegistro[]>);
 
             matrix[colab.usuario] = {
                 horarioBase: config.entrada,
@@ -403,13 +470,30 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 const holidayName = getFeriado(dayStr);
                 const weekend = isWeekend(day);
                 const isPast = dayStr < todayStr;
+                const justificacionesDelDiaRaw = justificacionesPorDia[dayStr] || [];
+                const justificacionesDelDiaMap = new Map<string, JustificacionRegistro>();
+                justificacionesDelDiaRaw.forEach(j => {
+                    const key = `${j.fecha}|${j.codigoEmpleado}|${j.asesor}|${j.nivel2 || ""}|${j.nivel3 || ""}|${j.descripcion || ""}`;
+                    justificacionesDelDiaMap.set(key, j);
+                });
+                const justificacionesDelDia = Array.from(justificacionesDelDiaMap.values());
+                const justificacionPrincipal = justificacionesDelDia[0];
+                const detalleJustificacion = justificacionPrincipal?.nivel2
+                    || justificacionPrincipal?.nivel3
+                    || justificacionPrincipal?.descripcion
+                    || justificacionPrincipal?.observacion
+                    || "Justificado";
+                const withJustificacion = justificacionesDelDia.length > 0
+                    ? { tieneJustificacion: true, detalleJustificacion }
+                    : {};
 
                 // --- 0. VERIFICAR VACACIONES ---
                 const vcs = vacacionesMap[colab.usuario] || [];
                 if (vcs.includes(dayStr)) {
                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: 'vacaciones',
-                        label: 'VACACIONES'
+                        label: 'VACACIONES',
+                        ...withJustificacion
                     };
                     return;
                 }
@@ -421,7 +505,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         type: 'excepcion',
                         sigla: 'DM',
                         clases: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300',
-                        label: 'DESC. MÉDICO'
+                        label: 'DESC. MÉDICO',
+                        ...withJustificacion
                     };
                     return;
                 }
@@ -436,7 +521,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: 'excepcion',
                         sigla: exc.sigla,
-                        clases: exc.clases
+                        clases: exc.clases,
+                        ...withJustificacion
                     };
                     return;
                 }
@@ -447,7 +533,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: "homeoffice",
                         label: "HO",
-                        hora: hoForDay.horaIngreso || undefined
+                        hora: hoForDay.horaIngreso || undefined,
+                        ...withJustificacion
                     };
                     return;
                 }
@@ -467,11 +554,14 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
 
                 // Extraemos la hora si existe el registro
                 const horaRaw = record?.asistencia?.ingreso || record?.ingreso || "";
+                const salidaRaw = record?.asistencia?.salida || record?.salida || "";
 
                 if (horaRaw) {
                     // --- CASO 1: HAY ASISTENCIA ---
                     const horaMatch = horaRaw.match(/(\d{2}:\d{2})/);
                     const ingresoLimpio = horaMatch ? horaMatch[1] : null;
+                    const salidaMatch = salidaRaw.match(/(\d{2}:\d{2})/);
+                    const salidaLimpia = salidaMatch ? salidaMatch[1] : null;
 
                     if (ingresoLimpio) {
                         const [h, m] = ingresoLimpio.split(':').map(Number);
@@ -483,7 +573,9 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         matrix[colab.usuario].asistencias[dayStr] = {
                             type: 'asistencia',
                             hora: ingresoLimpio,
-                            esTardanza
+                            horaSalida: salidaLimpia || undefined,
+                            esTardanza,
+                            ...withJustificacion
                         };
                         return; // Salir del bucle diario si ya procesamos asistencia
                     }
@@ -493,20 +585,34 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 if (holidayName) {
                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: 'feriado',
-                        label: holidayName
+                        label: holidayName,
+                        ...withJustificacion
                     };
+                    return;
                 }
                 // --- CASO 3: FALTA (Día laborable pasado sin marcación) ---
                 else if (!weekend && isPast) {
                     matrix[colab.usuario].asistencias[dayStr] = {
-                        type: 'falta'
+                        type: 'falta',
+                        ...withJustificacion
+                    };
+                    return;
+                }
+
+                if (justificacionesDelDia.length > 0) {
+                    matrix[colab.usuario].asistencias[dayStr] = {
+                        type: 'justificacion',
+                        sigla: 'J',
+                        label: detalleJustificacion,
+                        clases: 'bg-sky-50/30 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-900/60',
+                        ...withJustificacion
                     };
                 }
             });
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, homeOffice, user?.usuario, user?.id_grupo]);
+    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, homeOffice, justificacionesIndex, user?.usuario, user?.id_grupo]);
 
     // 4. Filtrado por búsqueda
     const filteredColabs = useMemo(() => {
@@ -547,6 +653,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         if (record.esTardanza) excelVal += " (T)";
                     } else if (record.type === 'excepcion') {
                         excelVal = record.sigla || "EXC";
+                    } else if (record.type === 'justificacion') {
+                        excelVal = record.label ? `JUST ${record.label}` : "JUST";
                     } else if (record.type === 'homeoffice') {
                         excelVal = record.hora ? `HO ${record.hora}` : "HO";
                     } else if (record.type === 'vacaciones') {
@@ -555,6 +663,15 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         excelVal = "FERIADO";
                     } else if (record.type === 'falta') {
                         excelVal = "FALTA";
+                    }
+
+                    const justExcel = record.detalleJustificacion
+                        ? `JUST: ${record.detalleJustificacion}`
+                        : (record.tieneJustificacion ? "JUST" : "");
+                    if (record.type === 'justificacion') {
+                        excelVal = justExcel || (record.label ? `JUST ${record.label}` : "JUST");
+                    } else if (justExcel) {
+                        excelVal = excelVal ? `${excelVal} | ${justExcel}` : justExcel;
                     }
                 } else if (!weekend) {
                     excelVal = "--";
@@ -688,21 +805,47 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                 const dayStr = format(day, 'yyyy-MM-dd');
                                                 const record = meta?.asistencias[dayStr];
                                                 const weekend = isWeekend(day);
+                                                const justificacionLabel = record?.tieneJustificacion
+                                                    ? (record.detalleJustificacion || "Justificado")
+                                                    : "";
+                                                const baseTitle = record
+                                                    ? (record.type === 'asistencia'
+                                                        ? `Entrada: ${record.hora}${record.horaSalida ? ` | Salida: ${record.horaSalida}` : ''} | Base: ${meta.horarioBase}`
+                                                        : record.label || '')
+                                                    : '';
+                                                const cellTitle = [baseTitle, justificacionLabel ? `Justificacion: ${justificacionLabel}` : '']
+                                                    .filter(Boolean)
+                                                    .join(' | ');
 
                                                 return (
                                                     <TableCell
                                                         key={`${colab.usuario}-${dayStr}`}
                                                         className={`text-center p-0 border-r dark:border-slate-800 border-b dark:border-slate-800 h-12 ${weekend ? 'bg-slate-50/20 dark:bg-slate-800/10' : ''}`}
-                                                        title={record ? (record.type === 'asistencia' ? `Entrada: ${record.hora} | Base: ${meta.horarioBase}` : record.label) : ''}
+                                                        title={cellTitle}
                                                     >
-                                                        <div className="w-full h-full flex items-center justify-center">
+                                                        <div className="w-full h-full flex items-center justify-center relative">
+                                                            {record?.tieneJustificacion ? (
+                                                                <div
+                                                                    className="absolute top-0.5 right-0.5 h-4 min-w-4 px-1 rounded-full bg-sky-600 text-white text-[8px] font-black leading-4 shadow-sm border border-white/80 dark:border-slate-900"
+                                                                    title={`Justificacion: ${justificacionLabel}`}
+                                                                >
+                                                                    <p className='pr-0.5 bottom-[-1px] absolute'>J</p>
+                                                                </div>
+                                                            ) : null}
                                                             {record?.type === 'asistencia' ? (
-                                                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
-                                                                    ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
-                                                                    : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
-                                                                    }`}>
-                                                                    {record.hora}
-                                                                </span>
+                                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${record.esTardanza
+                                                                        ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-900/50'
+                                                                        : 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-900/50'
+                                                                        }`}>
+                                                                        {record.hora}
+                                                                    </span>
+                                                                    {record.horaSalida ? (
+                                                                        <span className="text-[10px] font-normal text-slate-700 dark:text-slate-300">
+                                                                            {record.horaSalida}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
                                                             ) : record?.type === 'homeoffice' ? (
                                                                 <div className="flex flex-col items-center bg-cyan-50 dark:bg-cyan-900/30 w-full h-full justify-center border-x border-cyan-100 dark:border-cyan-900">
                                                                     <HomeIcon className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mb-0.5" />
@@ -714,6 +857,11 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                 <div className={`w-full h-full flex flex-col items-center justify-center border-x border-b-0 ${record.clases}`}>
                                                                     <span className="text-[10px] font-black leading-none">{record.sigla}</span>
                                                                     <span className="text-[6px] font-bold uppercase mt-0.5">{record.label}</span>
+                                                                </div>
+                                                            ) : record?.type === 'justificacion' ? (
+                                                                <div className={`w-full h-full flex flex-col items-center justify-center border-x border-b-0 ${record.clases}`}>
+                                                                    <span className="text-[10px] font-black leading-none">{record.sigla}</span>
+                                                                    <span className="text-[6px] font-bold uppercase mt-0.5">JUST</span>
                                                                 </div>
                                                             ) : record?.type === 'vacaciones' ? (
                                                                 <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/40 w-full h-full justify-center border-x border-blue-100 dark:border-blue-900">
@@ -775,6 +923,12 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     <span className="opacity-80">Excepciones</span>
                 </div>
                 <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-sky-500 rounded-full border border-white/20 flex items-center justify-center">
+                        <span className="text-[7px] font-bold text-white">J</span>
+                    </div>
+                    <span className="opacity-80">Con justificacion</span>
+                </div>
+                <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-100 rounded-md border border-blue-300 flex items-center justify-center">
                         <Umbrella className="h-2 w-2 text-blue-500" />
                     </div>
@@ -787,9 +941,9 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     <span className="opacity-80">Home Office</span>
                 </div>
                 <div className="text-xs opacity-50 space-x-4 border-l border-white/10 pl-6">
-                    <span>• Tolerancia 7:00 (10min)</span>
+                    <span>• Tolerancia 7:00 (5min)</span>
                     <span>• 7:10 (5min)</span>
-                    <span>• 9:00 (10min)</span>
+                    <span>• 9:00 (5min)</span>
                 </div>
             </div>
         </div>

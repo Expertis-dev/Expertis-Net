@@ -57,7 +57,7 @@ export const DateAnswer: React.FC<DateProps> = ({ value = '', onChange }) => {
 
 export const MultipleAnswers: React.FC<MultipleProps> = ({ options, name = 'option', value, onChange }) => {
     return (
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
             {options.map((o) => {
                 const id = `${name}-${o.label}`
                 return (

@@ -104,17 +104,19 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                         const name = `${pregunta.id}`
                         return (
                             <div key={pregunta.id} className="rounded-lg border border-gray-100 dark:border-zinc-700 p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.2fr)] gap-3 md:gap-6 items-start">
-                                    <div className="shrink-0">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-zinc-700 flex items-center justify-center text-blue-600 font-medium">{idx + 1}</div>
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-base font-medium text-gray-800 dark:text-gray-100">{pregunta.content}</span>
-                                            {pregunta.mustAnswer ? <span className="text-sm text-red-500">*</span> : null}
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-zinc-700 flex items-center justify-center text-blue-600 font-medium">{idx + 1}</div>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-base font-medium text-gray-800 dark:text-gray-100">{pregunta.content}</span>
+                                                {pregunta.mustAnswer ? <span className="text-sm text-red-500">*</span> : null}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 pl-12">
                                         {pregunta.responseType === 'TEXT_LINE' && (
                                             <Controller
                                                 control={control}
@@ -188,7 +190,7 @@ export default function EncuestaFormClient({ encuesta }: Props) {
                                                     name={name}
                                                     rules={{ required: pregunta.mustAnswer }}
                                                     render={({ field }) => (
-                                                        <div className="flex flex-col sm:flex-row gap-3">
+                                                        <div className="flex flex-col gap-3">
                                                             {pregunta.options?.map((o) => {
                                                                 const val = String(o.value)
                                                                 const selectedValues = Array.isArray(field.value) ? field.value : []

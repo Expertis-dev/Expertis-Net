@@ -42,11 +42,42 @@ interface DiaLaboral {
     esLaborable: boolean;
 }
 
+interface DescansoMedico {
+    idEmpleado: number;
+    fecha_inicio: string;
+    fecha_fin: string;
+}
+
+interface JustificacionRegistro {
+    fecha: string;
+    nivel1?: string;
+    nivel2?: string;
+    nivel3?: string;
+    descripcion?: string;
+    observacion?: string;
+}
+
 // Función auxiliar para parsear fechas sin desfase de zona horaria (UTC vs Local)
 const parseAsLocal = (dateString: string) => {
     if (!dateString) return new Date();
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
     return new Date(year, month - 1, day);
+};
+
+const expandirRangoDm = (fecInicial: string, fecFinal: string): string[] => {
+    try {
+        const [y1, m1, d1] = fecInicial.split(/-|T/).map(Number);
+        const [y2, m2, d2] = fecFinal.split(/-|T/).map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+        const end = new Date(y2, m2 - 1, d2);
+        const days: string[] = [];
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            days.push(format(d, 'yyyy-MM-dd'));
+        }
+        return days;
+    } catch {
+        return [];
+    }
 };
 
 /**
@@ -68,6 +99,12 @@ const obtenerEstadoAsistencia = (esTardanza: boolean): string => {
     return esTardanza ? "Tardanza" : "Puntual";
 };
 
+const obtenerJustificaciones = (nombre: string) => {
+    const response = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/justificacion/${nombre}`)
+        .then(async r => await r.json())
+    return response
+}
+
 export default function ReporteMensual() {
     const { user } = useUser();
 
@@ -80,6 +117,8 @@ export default function ReporteMensual() {
     const [diasLaborales, setDiasLaborales] = useState<DiaLaboral[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [descansosMedicos, setDescansosMedicos] = useState<string[]>([]);
+    const [justificaciones, setJustificaciones] = useState<JustificacionRegistro[]>([]);
 
     // Función para obtener datos desde el backend
     const fetchAsistencia = useCallback(async () => {
@@ -109,7 +148,7 @@ export default function ReporteMensual() {
             const rolRaw = localStorage.getItem("rol");
             const rol = rolRaw ? rolRaw.replace(/"/g, "") : "";
 
-            const endpointAsistencia = rol === "SUPERVISOR" && user?.id_grupo === 14
+            const endpointAsistencia = rol === "SUPERVISOR" && (user?.id_grupo === 14 || user?.id_grupo === 11)
                 ? `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeSupervisor/${currentId}`
                 : `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAsistenciaMensualDeAsesor/${currentId}`;
 
@@ -140,6 +179,66 @@ export default function ReporteMensual() {
         fetchAsistencia();
     }, [fetchAsistencia, startDate, endDate]);
 
+    useEffect(() => {
+        const fetchDMs = async () => {
+            if (!user?.idEmpleado) return;
+            try {
+                const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerDMsPorEmpleados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idEmpleados: [user.idEmpleado] })
+                });
+                if (!resp.ok) return;
+                const json = await resp.json();
+                const listDM: DescansoMedico[] = json.data || [];
+                const diasSet = new Set<string>();
+                listDM.forEach(dm => {
+                    const dias = expandirRangoDm(dm.fecha_inicio, dm.fecha_fin);
+                    dias.forEach(d => diasSet.add(d));
+                });
+                console.log(Array.from(diasSet))
+                setDescansosMedicos(Array.from(diasSet));
+            } catch (e) {
+                console.error("Error al obtener descansos medicos:", e);
+            }
+        };
+        fetchDMs();
+    }, [user?.idEmpleado]);
+
+    useEffect(() => {
+        const fetchJustificaciones = async () => {
+            if (!user?.usuario) return;
+            try {
+                const data = await obtenerJustificaciones(user.usuario);
+                setJustificaciones(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Error al obtener justificaciones:", e);
+                setJustificaciones([]);
+            }
+        };
+        fetchJustificaciones();
+    }, [user?.usuario]);
+
+    const justificacionesPorDia = useMemo(() => {
+        const start = parseAsLocal(startDate);
+        const end = parseAsLocal(endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        const map = new Map<string, JustificacionRegistro[]>();
+        (justificaciones || []).forEach((j: JustificacionRegistro) => {
+            const d = parseAsLocal(j.fecha);
+            d.setHours(0, 0, 0, 0);
+            if (d < start || d > end) return;
+            const key = format(d, 'yyyy-MM-dd');
+            const list = map.get(key) || [];
+            list.push(j);
+            map.set(key, list);
+        });
+
+        return map;
+    }, [justificaciones, startDate, endDate]);
+
     // Lógica para procesar los datos obtenidos (Cruzando asistencia vs días laborales)
     const processedData = useMemo(() => {
         const start = parseAsLocal(startDate);
@@ -162,6 +261,15 @@ export default function ReporteMensual() {
 
         return baseDays.map(dia => {
             const itemDate = parseAsLocal(dia.fecha);
+            const dayKey = format(itemDate, 'yyyy-MM-dd');
+            const esDescansoMedico = descansosMedicos.includes(dayKey);
+            const justificacionesDelDia = justificacionesPorDia.get(dayKey) || [];
+            const tieneJustificacion = justificacionesDelDia.length > 0;
+            const justificacionPrincipal = justificacionesDelDia[0];
+            const detalleJustificacion = justificacionPrincipal?.nivel2
+                || justificacionPrincipal?.nivel3
+                || justificacionPrincipal?.descripcion
+                || "Justificado";
 
             // Buscar marcación para este día
             const registro = asistencias.find(asist => {
@@ -180,6 +288,22 @@ export default function ReporteMensual() {
                 };
             };
 
+            if (esDescansoMedico) {
+                return {
+                    fecha: dia.fecha,
+                    fechaFormateada: format(itemDate, 'EEEE dd/MM/yyyy', { locale: es }),
+                    entrada: "DM",
+                    salida: "DM",
+                    estado: "Descanso Médico",
+                    esTardanza: false,
+                    esFalta: false,
+                    entradaDecimal: null,
+                    esDescansoMedico: true,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
+                };
+            }
+
             if (registro) {
                 const entryTime = extractTime(registro.horaInicio_EnLaCola);
                 const exitTime = extractTime(registro.horaInicio_Desconectado);
@@ -196,7 +320,10 @@ export default function ReporteMensual() {
                     estado: estado,
                     esTardanza,
                     esFalta: false,
-                    entradaDecimal: entryTime.horas + entryTime.minutos / 60
+                    entradaDecimal: entryTime.horas + entryTime.minutos / 60,
+                    esDescansoMedico: false,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
                 };
             } else {
                 // Si es día laborable pero no hay registro -> FALTA
@@ -208,11 +335,14 @@ export default function ReporteMensual() {
                     estado: "Falta",
                     esTardanza: false,
                     esFalta: true,
-                    entradaDecimal: null
+                    entradaDecimal: null,
+                    esDescansoMedico: false,
+                    esJustificado: tieneJustificacion,
+                    detalleJustificacion
                 };
             }
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo]);
+    }, [asistencias, diasLaborales, startDate, endDate, user?.id_grupo, descansosMedicos, justificacionesPorDia]);
 
     const handleExportExcel = () => {
         if (!processedData || processedData.length === 0) {
@@ -220,19 +350,20 @@ export default function ReporteMensual() {
             return;
         }
 
-        const headers = ["Fecha", "Entrada", "Salida", "Estado"];
+        const headers = ["Fecha", "Entrada", "Salida", "Estado", "Justificación"];
         const data = processedData.map(row => [
             row.fechaFormateada,
             row.entrada,
             row.salida,
-            row.estado
+            row.estado,
+            row.esJustificado ? (row.detalleJustificacion || "Justificado") : ""
         ]);
 
         const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Mi Asistencia");
 
-        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
+        worksheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }];
 
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -243,7 +374,7 @@ export default function ReporteMensual() {
         const total = processedData.length;
         const faltas = processedData.filter(d => d.esFalta).length;
         const tardanzas = processedData.filter(d => d.esTardanza).length;
-        const asistenciasReales = total - faltas;
+        const asistenciasReales = total - faltas - processedData.filter(d => d.esDescansoMedico).length;
         const puntuales = asistenciasReales - tardanzas;
         const percentPuntual = asistenciasReales > 0 ? ((puntuales / asistenciasReales) * 100).toFixed(0) : 0;
         return { total, faltas, tardanzas, puntuales, percentPuntual };
@@ -386,7 +517,10 @@ export default function ReporteMensual() {
                                 />
                                 <Bar dataKey="entradaDecimal" radius={[4, 4, 0, 0]}>
                                     {processedData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.esTardanza ? '#ea580c' : '#0891b2'} />
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={entry.esDescansoMedico ? '#6366f1' : (entry.esTardanza ? '#ea580c' : '#0891b2')}
+                                        />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -403,6 +537,7 @@ export default function ReporteMensual() {
                                     <TableHead className="font-bold">Entrada</TableHead>
                                     <TableHead className="font-bold">Salida</TableHead>
                                     <TableHead className="font-bold text-center">Estado</TableHead>
+                                    <TableHead className="font-bold text-center">Justificación</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -416,18 +551,28 @@ export default function ReporteMensual() {
                                             <TableCell className="text-muted-foreground">{row.salida}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge className={
-                                                    row.esFalta ? "bg-red-100 text-red-700 border-none" :
-                                                        row.esTardanza ? "bg-orange-100 text-orange-700 border-none" :
-                                                            "bg-green-100 text-green-700 border-none"
+                                                    row.esDescansoMedico ? "bg-indigo-100 text-indigo-700 border-none" :
+                                                        row.esFalta ? "bg-red-100 text-red-700 border-none" :
+                                                            row.esTardanza ? "bg-orange-100 text-orange-700 border-none" :
+                                                                "bg-green-100 text-green-700 border-none"
                                                 }>
                                                     {row.estado}
                                                 </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {row.esJustificado ? (
+                                                    <Badge className="bg-blue-100 text-blue-700 border-none" title={row.detalleJustificacion}>
+                                                        {row.detalleJustificacion.toLowerCase().split("_").map(p => p[0].toUpperCase().concat(p.slice(1))).join(" ")}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                                             No se encontraron registros.
                                         </TableCell>
                                     </TableRow>
