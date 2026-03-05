@@ -85,11 +85,11 @@ const expandirRangoDm = (fecInicial: string, fecFinal: string): string[] => {
  */
 const calcularEsTardanza = (horas: number, minutos: number, id_grupo?: number): boolean => {
     // Grupo 14: Entrada 8:00 AM (Sin tolerancia)
-    if (id_grupo === 14) {
+    if (id_grupo === 14 || id_grupo == 11) {
         return horas > 8 || (horas === 8 && minutos > 0);
     }
     // Default: Entrada 7:00 AM (con 10 min de tolerancia)
-    return horas > 7 || (horas === 7 && minutos > 10);
+    return horas > 7 || (horas === 7 && minutos > 5);
 };
 
 /**
