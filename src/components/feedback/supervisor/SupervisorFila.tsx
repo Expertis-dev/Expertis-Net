@@ -3,7 +3,7 @@ import React from 'react'
 
 export const SupervisorFila = () => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 transition-colors justify-items-center">
+        <div className="grid grid-cols-1 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
             <div className="flex justify-between md:block">
                 <span>Ana Martinez</span>
             </div>
@@ -14,7 +14,7 @@ export const SupervisorFila = () => {
                 <span>2026-1</span>
             </div>
             <div className="flex justify-between md:block">
-                <span className="text-green-600 font-medium text-sm">Publicada</span>
+                <span className="text-green-600 dark:text-green-400 font-medium text-sm">Publicada</span>
             </div>
             <div className="flex items-center justify-center gap-2 md:justify-start">
                 <button className="p-0.5 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors">

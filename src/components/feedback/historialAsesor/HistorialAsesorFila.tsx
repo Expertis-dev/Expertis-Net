@@ -1,9 +1,9 @@
-import { DownloadIcon, EyeIcon } from 'lucide-react'
+import { EyeIcon } from 'lucide-react'
 import React from 'react'
 
 export const HistorialAsesorFila = () => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 px-3 py-0.5 items-center border-b hover:bg-gray-50 transition-colors justify-items-center">
+        <div className="grid grid-cols-1 md:grid-cols-4 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
             <div className="flex justify-between md:block">
                 <span>Rutina</span>
             </div>

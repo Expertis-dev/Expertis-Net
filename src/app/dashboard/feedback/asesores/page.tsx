@@ -1,5 +1,5 @@
 import { AsesorFila } from "@/components/feedback/asesor/AsesorFila";
-import { AsesorHeaders } from "@/components/feedback/asesor/AsesorHeaders";
+import { AsesorHeaders } from "@/components/feedback/AsesorHeaders";
 import { FilterAsesor } from "@/components/feedback/asesor/FilterAsesor";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,12 @@ export default function AsesoresPage() {
     return (
         <>
             {/*//* HEADER */}
-            <div className="flex flex-row justify-between mb-4">
+            <div className="flex flex-row justify-between mb-4 mx-2">
                 <div className="flex flex-col gap-1 text-gray-900">
-                    <h1 className="text-2xl font-bold leading-tight text-slate-800">
+                    <h1 className="text-2xl font-bold leading-tight text-slate-800 dark:text-zinc-200">
                         Historial de feedback de asesores
                     </h1>
-                    <p className="text-sm text-slate-600 max-w-2xl">
+                    <p className="text-sm text-slate-600 max-w-2xl dark:text-zinc-400">
                         Revise y exporte evaluaciones historicas del equipo para seguir el desempeno de cada asesor.
                     </p>
                 </div>
@@ -25,7 +25,7 @@ export default function AsesoresPage() {
                         Exportar a Excel
                     </Button>
                     <Link
-                        href={"/dashboard/"}
+                        href={"/dashboard/feedback/asesores/crear"}
                     >
                         <Button className="bg-blue-600 mt-1">
                             <h2>+</h2>

@@ -1,11 +1,10 @@
-import { AsesorHeaders } from "@/components/feedback/asesor/AsesorHeaders";
+import { AsesorHeaders } from "@/components/feedback/AsesorHeaders";
 import { Card } from "@/components/feedback/supervisor/Card";
 import { FiltersSupervisor } from "@/components/feedback/supervisor/FiltersSupervisor";
 import { SupervisorFila } from "@/components/feedback/supervisor/SupervisorFila";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { BrainIcon, CloudUploadIcon, EyeIcon, PencilIcon, SearchIcon, SheetIcon, Trash2Icon, UploadIcon } from "lucide-react";
+import { BrainIcon, SheetIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function SupervisoresPage() {
@@ -46,7 +45,7 @@ export default function SupervisoresPage() {
                     title="Total evaluados"
                     unidad="Supervisores"
                     cantidad={12}
-                    color="gray"
+                    color="white"
                 />
                 <Card
                     title="Listo para firmar"

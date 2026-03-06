@@ -4,21 +4,21 @@ import React from 'react'
 
 export const FiltersSupervisor = () => {
   return (
-    <div className="flex flex-row md:flex-row items-center gap-2 border border-gray-200 px-2 mx-2 py-1 bg-white shadow">
+    <div className="flex flex-row md:flex-row items-center gap-2 border border-gray-200 px-2 mx-2 py-1 bg-white shadow dark:bg-zinc-800 dark:border-zinc-600">
       <div className="w-full md:w-auto flex flex-row flex-initial">
         <h2 className="self-center mr-2 font-light text-[14px]">Mes - Año: </h2>
         <input
           type="month"
           id="mes-anio"
-          className="md:w-max bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-2.5 outline-none transition-all h-8"
+          className="dark:text-zinc-300 dark:bg-zinc-700 dark:border-zinc-600 md:w-max bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-2.5 outline-none transition-all h-8"
         />
       </div>
-      <hr className="border-gray-200 border h-10 w-0.5" />
+      <hr className="border-gray-200 border h-10 w-0.5 dark:border-zinc-500" />
       <div className="flex flex-row flex-initial">
         <h4 className="self-center mr-2 font-light text-[14px]">Estado:</h4>
         <div className="relative">
           <select
-            className="w-44 h-10 border  border-slate-200 bg-gray-50 pl-3 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:bg-gray-50 appearance-none cursor-pointer"
+            className="w-44 h-10 border dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-600 border-slate-200 bg-gray-50 pl-3 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:bg-gray-50 appearance-none cursor-pointer"
           >
             <option value="todos">Todos los estados</option>
             <option value="rutina">Rutina</option>
@@ -31,12 +31,12 @@ export const FiltersSupervisor = () => {
           </div>
         </div>
       </div>
-      <hr className="border-gray-200 border h-10 w-0.5" />
+      <hr className="border-gray-200 border h-10 w-0.5 dark:border-zinc-500" />
       <div className="flex-1">
-        <div className="flex flex-row bg-gray-50 border">
-          <SearchIcon className="self-center ml-2 mt-0.5" size={18} />
+        <div className="flex flex-row bg-gray-50 border dark:bg-zinc-600">
+          <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
           <Input
-            className="w-full bg-gray-50 border-0"
+              className="w-full bg-gray-50 border-0 "
             placeholder="Buscar supervisor..."
           />
         </div>

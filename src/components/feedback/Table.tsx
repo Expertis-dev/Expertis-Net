@@ -6,7 +6,7 @@ interface Props {
 
 export const Table = ({children}: Props) => {
     return (
-        <div className="w-full border border-gray-200 overflow-hidden mt-2">
+        <div className="border border-gray-200 dark:border-zinc-600 overflow-hidden mt-2 mx-2">
             {children}
         </div>
     )
