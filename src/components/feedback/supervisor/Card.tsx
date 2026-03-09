@@ -9,8 +9,8 @@ interface Props {
 
 export const Card = ({title, unidad, cantidad, color}: Props) => {
     return (
-        <div className="border h-auto flex-1 mx-2 flex flex-row">
-            <div className={`h-auto bg-${color}-500 w-1`} />
+        <div className="border h-auto flex-1 mx-2 flex flex-row rounded-sm">
+            <div className={`h-auto bg-${color}-500 w-1 rounded-l-4xl`} />
             <div className="flex flex-col ml-4 my-1">
                 <p className={`text-[15px] my-1 font-semibold text-${color}-500`}>{title}</p>
                 <div className="flex flex-row">

@@ -29,7 +29,7 @@ export default function SupervisoresPage() {
                         Exportar a Excel
                     </Button>
                     <Link
-                        href={"/dashboard/"}
+                        href={"/dashboard/feedback/supervisores/crear"}
                     >
                         <Button className="bg-blue-600 dark:text-gray-300 dark:hover:bg-blue-900 hover:bg-blue-500 text-xs h-8 mt-3">
                             <h2>+</h2>
@@ -45,7 +45,7 @@ export default function SupervisoresPage() {
                     title="Total evaluados"
                     unidad="Supervisores"
                     cantidad={12}
-                    color="white"
+                    color="gray"
                 />
                 <Card
                     title="Listo para firmar"

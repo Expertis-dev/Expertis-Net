@@ -3,7 +3,7 @@ import React from 'react'
 
 export const SideTable = () => {
     return (
-        <div className="flex flex-col flex-1/4">
+        <div className="flex flex-col flex-2/5 max-w-[28%]">
             <div className="flex flex-row">
                 <CalendarIcon className="text-blue-500 mr-1 mb-0.5" size={20} />
                 <h1 className="text-xs self-center text-blue-600 font-bold">Marzo 2026</h1>

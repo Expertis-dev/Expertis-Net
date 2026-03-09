@@ -11,7 +11,7 @@ export default function HistorialSupervisoresPage() {
         <>
             {/* //* NOTIFICACION */}
             <h1 className="font-semibold text-x ml-2"><span className="text-orange-700 font-semibold">!</span> Acción Pendiente</h1>
-            <div className="flex flex-row border dark:border-zinc-700 p-3 my-1 mx-2">
+            <div className="flex flex-row border dark:border-zinc-700 p-3 my-1 mx-2 rounded-sm">
                 <AlertCircleIcon className="mr-2 flex-initial text-blue-400" />
                 <div className="flex-2/3">
                     <h2 className="text-base font-semibold dark:text-zinc-200 text-black ">

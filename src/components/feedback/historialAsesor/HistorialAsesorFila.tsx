@@ -1,4 +1,5 @@
 import { EyeIcon } from 'lucide-react'
+import Link from 'next/link'
 import React from 'react'
 
 export const HistorialAsesorFila = () => {
@@ -14,9 +15,15 @@ export const HistorialAsesorFila = () => {
                 <span className="text-green-600 font-medium text-sm">Publicada</span>
             </div>
             <div className="flex justify-between md:block">
-                <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
-                    <EyeIcon />
-                </button>
+                <a 
+                    href="https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf"
+                    target='_blank'
+                    rel='noopener noreferrer'
+                >
+                    <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                        <EyeIcon />
+                    </button>
+                </a>
             </div>
         </div>
     )
