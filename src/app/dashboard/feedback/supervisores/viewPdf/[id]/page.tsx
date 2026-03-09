@@ -19,7 +19,7 @@ export default function ViewSupervisorPdfPage() {
 
     return (
         <div className="mx-auto w-full max-w-6xl space-y-4 pb-6">
-            <div className="rounded-sm border border-zinc-200 bg-gradient-to-r from-zinc-50 via-white to-zinc-100 p-6 shadow-sm dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
+            <div className="rounded-sm border border-zinc-200 p-6 shadow-sm dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800 dark:bg-zinc-900">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Feedback supervisor</p>
                 <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">Detalle del feedback</h1>
                 <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-300">
@@ -61,14 +61,14 @@ export default function ViewSupervisorPdfPage() {
                     </div>
                     <div className="mt-4 grid space-y-2">
                         <div className="flex flex-col pt-2 border dark:bg-zinc-800 rounded-sm">
-                            <p className="text-xl mb-2 border-b-2">&nbsp;&nbsp; Analisis de resultados</p>
+                            <p className="text-base font-semibold dark:text-zinc-100s p-2 mb-2 -mt-2 border-b-2">&nbsp;&nbsp; Analisis de resultados</p>
                             <p className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100">
                                 Lorem ipsum dolor sit, amet consectetur adipisicing elit. Atque repellendus consectetur quis veritatis numquam hic? Assumenda cupiditate aspernatur illum dolorum commodi distinctio. Accusantium officia fugiat assumenda, quos deleniti itaque dicta.
                                 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quos accusantium quas harum adipisci? Natus, assumenda nobis vitae non quibusdam eveniet similique minima reiciendis exercitationem mollitia cum maiores quia, libero dolor.
                             </p>
                         </div>
-                        <div className="flex flex-col p-2 border dark:bg-zinc-800 rounded-sm">
-                            <p className="text-xl mb-2 border-b-2">&nbsp;&nbsp;Compromiso de mejora</p>
+                        <div className="flex flex-col border dark:bg-zinc-800 rounded-sm">
+                            <p className="text-base font-semibold dark:text-zinc-100s p-2 mb-2 border-b-2">&nbsp;&nbsp;Compromiso de mejora</p>
                             <p className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100">No disponible</p>
                         </div>
                     </div>

@@ -45,7 +45,7 @@ export default function SupervisoresPage() {
                     title="Total evaluados"
                     unidad="Supervisores"
                     cantidad={12}
-                    color="gray"
+                    color={'gray'}
                 />
                 <Card
                     title="Listo para firmar"

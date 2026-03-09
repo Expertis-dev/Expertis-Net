@@ -1,7 +1,6 @@
 "use client"
 
 import { EyeIcon } from 'lucide-react'
-import Link from 'next/link'
 import React from 'react'
 
 export const AsesorFila = () => {
@@ -30,7 +29,7 @@ export const AsesorFila = () => {
                 <span>Rutina</span>
             </div>
             <div className="flex justify-between md:block">
-                <span>2026-1</span>
+                <span>01-2026</span>
             </div>
             <div className="flex justify-between md:block">
                 <span className="text-green-600 font-medium text-sm">Publicada</span>

@@ -1,4 +1,4 @@
-import { CloudUploadIcon, EyeIcon, PencilIcon, Trash2Icon } from 'lucide-react'
+import { EyeIcon, PencilIcon, Trash2Icon } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 

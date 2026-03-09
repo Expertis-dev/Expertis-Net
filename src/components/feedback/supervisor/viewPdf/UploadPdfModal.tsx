@@ -65,7 +65,7 @@ export const UploadPdfModal = ({
                 setIsUploadModalOpen(true);
             }}
         >
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="sm:max-w-2xl w-auto">
                 <DialogHeader>
                     <DialogTitle>Subir PDF firmado</DialogTitle>
                     <DialogDescription>

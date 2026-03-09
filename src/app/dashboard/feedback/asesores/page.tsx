@@ -20,14 +20,14 @@ export default function AsesoresPage() {
                     </p>
                 </div>
                 <div className="flex flex-auto justify-end">
-                    <Button className="mr-2.5 bg-green-600 mt-1 dark:text-gray-200" >
+                    <Button className="mr-2.5 dark:bg-green-700 bg-green-600 mt-1 dark:text-gray-200 dark:hover:bg-green-900" >
                         <SheetIcon />
                         Exportar a Excel
                     </Button>
                     <Link
                         href={"/dashboard/feedback/asesores/crear"}
                     >
-                        <Button className="bg-blue-600 mt-1 dark:text-gray-200">
+                        <Button className="dark:bg-blue-800 bg-blue-600  mt-1 dark:text-gray-200 dark:hover:bg-blue-900">
                             <h2>+</h2>
                             <h2>Nueva Entrada</h2>
                         </Button>

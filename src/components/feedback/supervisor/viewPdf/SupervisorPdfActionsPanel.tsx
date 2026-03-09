@@ -40,7 +40,7 @@ export const SupervisorPdfActionsPanel = () => {
                 <Button className="mt-4 w-full" onClick={() => openPdfInPopup(signedPdfUrl)}>
                     Ver PDF firmado
                 </Button>
-                <Button className="mt-4 w-full bg-blue-900 text-zinc-300 hover:bg-blue-800" onClick={() => setIsUploadModalOpen(true)}>
+                <Button className="mt-4 w-full bg-blue-900 hover:bg-blue-800 text-zinc-200" onClick={() => setIsUploadModalOpen(true)}>
                     Subir PDF firmado
                 </Button>
             </div>

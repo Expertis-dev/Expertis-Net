@@ -1,8 +1,17 @@
-import { Input } from '@/components/ui/input'
-import React from 'react'
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { useCombobox } from '@/hooks/feedback/combobox'
 
 export const FilterAsesor = () => {
-    const sharedHeightClass = 'h-[34px]'
+    const {
+        filteredSupervisors: filteredAsesores,
+        isSupervisorOpen: isAsesorOpen,
+        setIsSupervisorOpen: setIsAsesorOpen,
+        setSupervisorQuery: setAsesorQuery,
+        supervisorQuery: asesorQuery,
+        supervisorRef: asesorRef
+    } = useCombobox()
 
     return (
         <div className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 dark:border-zinc-700 px-2 py-2 bg-white shadow-sm dark:bg-zinc-800 mx-2 rounded-sm">
@@ -10,20 +19,50 @@ export const FilterAsesor = () => {
                 <input
                     type="month"
                     id="mes-anio"
-                    className={`rounded-sm w-full md:w-max bg-gray-50 border dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-500 border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-1.5 outline-none transition-all ${sharedHeightClass}`}
+                    className={`rounded-sm w-full md:w-max bg-gray-50 border dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-500 border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-1.5 outline-none transition-all h-8.5`}
                 />
             </div>
 
-            <div className="flex-2">
-                <Input
-                    className={`rounded-sm w-full border-gray-200 bg-gray-50 dark:border-zinc-500 ${sharedHeightClass}`}
-                    placeholder="Buscar Asesor..."
-                />
+            <div className="flex-2 w-full" ref={asesorRef}>
+                <div className="relative">
+                    <input
+                        value={asesorQuery}
+                        onChange={(e) => {
+                            setAsesorQuery(e.target.value)
+                            setIsAsesorOpen(true)
+                        }}
+                        onFocus={() => setIsAsesorOpen(true)}
+                        className="rounded-sm w-full border border-gray-200 bg-gray-50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-200 h-8.5 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="Buscar Asesor..."
+                    />
+
+                    {isAsesorOpen && (
+                        <div className="absolute z-20 mt-1 w-full max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
+                            {filteredAsesores.length > 0 ? (
+                                filteredAsesores.map((asesor) => (
+                                    <button
+                                        key={asesor}
+                                        type="button"
+                                        onClick={() => {
+                                            setAsesorQuery(asesor)
+                                            setIsAsesorOpen(false)
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                                    >
+                                        {asesor}
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="px-3 py-2 text-sm text-gray-500 dark:text-zinc-400">Sin resultados</p>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="w-full flex-1">
                 <div className="relative">
                     <select
-                        className={`rounded-sm dark:border-zinc-500 dark:bg-zinc-800 dark:text-gray-200 w-full bg-gray-50 text-slate-700 text-sm border border-gray-200 pl-4 pr-10 leading-normal transition-all appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none hover:bg-gray-100 ${sharedHeightClass}`}
+                        className={`rounded-sm dark:border-zinc-500 dark:bg-zinc-800 dark:text-gray-200 w-full bg-gray-50 text-slate-700 text-sm border border-gray-200 pl-4 pr-10 leading-normal transition-all appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none hover:bg-gray-100 h-8.5`}
                     >
                         <option value="todos">Todos los estados</option>
                         <option value="rutina">Rutina</option>
@@ -35,6 +74,11 @@ export const FilterAsesor = () => {
                         </svg>
                     </div>
                 </div>
+            </div>
+            <div className="w-full md:w-auto">
+                <Button className={`w-full rounded-sm h-8.5`}>
+                    Buscar
+                </Button>
             </div>
         </div>
     )
