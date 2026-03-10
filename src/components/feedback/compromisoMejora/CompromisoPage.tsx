@@ -1,8 +1,24 @@
+"use client"
+import { SuccessModal } from '@/components/success-modal'
 import { Button } from '@/components/ui/button'
 import { ArrowRightToLine, BarChartIcon, NotebookPenIcon } from 'lucide-react'
-import React from 'react'
+import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 
 export const CompromisoPage = () => {
+    const router = useRouter()
+    const [modal, setModal] = useState({
+        isOpen: false,
+        message: ""
+    })
+
+    const onClickSave = () => {
+        setModal({isOpen: true, message: "Compromiso guardado con éxito"})
+        setTimeout(() => {
+            router.back()
+        }, 1000);
+    }
+
     return (
         <div className="flex flex-col flex-3/4">
             <div className="flex flex-col p-4 mx-5 bg-blue-50 rounded-md dark:bg-blue-950/30">
@@ -42,12 +58,19 @@ export const CompromisoPage = () => {
                     placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
                 />
                 <div className="flex flex-row self-end">
-                    <Button className="mt-2 bg-blue-500 hover:bg-blue-900 rounded-md dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white">
+                    <Button 
+                        className="mt-2 bg-blue-500 hover:bg-blue-900 rounded-md dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
+                        onClick={onClickSave}
+                    >
                         Guardar y marcar listo
                         <ArrowRightToLine />
                     </Button>
                 </div>
             </div>
+            <SuccessModal
+                isOpen={modal.isOpen}
+                message={modal.message}
+            />
         </div>
     )
 }

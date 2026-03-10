@@ -6,16 +6,16 @@ export const SupervisorFila = () => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
             <div className="flex justify-between md:block">
-                <span>Ana Martinez</span>
+                <span className='text-[14px]'>Ana Martinez</span>
             </div>
             <div className="flex justify-between md:block">
-                <span>Rutina</span>
+                <span className='text-[14px]'>Rutina</span>
             </div>
             <div className="flex justify-between md:block">
-                <span>2026-1</span>
+                <span className='text-[14px]'>2026-1</span>
             </div>
             <div className="flex justify-between md:block">
-                <span className="text-green-600 dark:text-green-400 font-medium text-sm">Publicada</span>
+                <span className="text-green-600 dark:text-green-400 font-medium text-[14px]">Publicada</span>
             </div>
             <div className="flex items-center justify-center gap-2 md:justify-start">
                 <Link
@@ -23,14 +23,14 @@ export const SupervisorFila = () => {
                     className='-mb-1'
                 >
                     <button className="cursor-pointer p-0.5 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors dark:hover:bg-blue-950 dark:hover:text-blue-200">
-                        <EyeIcon />
+                        <EyeIcon size={17} className='self-center'/>
                     </button>
                 </Link>
-                <button className="p-0.5 cursor-pointer rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors dark:hover:bg-blue-950 dark:hover:text-blue-200">
-                    <PencilIcon />
+                <button className="p-0.5 cursor-pointer rounded-md text-green-600 hover:text-green-800 hover:bg-blue-50 transition-colors dark:hover:bg-blue-950 dark:hover:text-blue-200">
+                    <PencilIcon size={17}/>
                 </button>
                 <button className="p-0.5 cursor-pointer rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors dark:hover:bg-red-950 dark:hover:text-red-200">
-                    <Trash2Icon />
+                    <Trash2Icon size={17}/>
                 </button>
             </div>
         </div>
