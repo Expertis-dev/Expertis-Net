@@ -3,15 +3,9 @@
 import { useCombobox } from "@/hooks/feedback/combobox"
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react"
 
-interface Props {
-    tipoFeedback: string,
-    setTipoFeedback: Dispatch<SetStateAction<"rutina" | "negativo">>
-}
 
-export const HeaderCrearFbSupervisor = ({
-    tipoFeedback,
-    setTipoFeedback
-}: Props) => {
+
+export const HeaderCrearFbSupervisor = () => {
     const {
         filteredSupervisors,
         isSupervisorOpen,
@@ -70,19 +64,7 @@ export const HeaderCrearFbSupervisor = ({
                         <input type="month" className="w-full bg-transparent text-sm px-1 py-1 rounded-sm outline-none text-zinc-900 dark:text-gray-100" />
                     </div>
                 </div>
-                <div className="flex flex-col mb-0.5 flex-1">
-                    <h3 className="text-gray-500 dark:text-gray-400 py-2 px-1 font-semibold">Tipo</h3>
-                    <div className="border border-gray-200 dark:border-gray-700 p-1 rounded-sm focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-gray-600 bg-gray-50 dark:bg-zinc-800">
-                        <select
-                            value={tipoFeedback}
-                            onChange={(e) => setTipoFeedback(e.target.value as "rutina" | "negativo")}
-                            className="w-full bg-transparent text-sm px-1 py-1 rounded-sm outline-none cursor-pointer text-zinc-900 dark:text-gray-100"
-                        >
-                            <option value="rutina">Rutina</option>
-                            <option value="negativo">Negativo</option>
-                        </select>
-                    </div>
-                </div>
+                <div className="flex flex-col mb-0.5 flex-initial"/>
             </div>
         </>
     )

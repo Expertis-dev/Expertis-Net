@@ -1,6 +1,5 @@
 "use client";
 
-import { CrearFbNegativoSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbNegativoSupervisorForm";
 import { CrearFbSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbSupervisorForm";
 import { HeaderCrearFbSupervisor } from "@/components/feedback/supervisor/crear/HeaderCrearFbSupervisor";
 import { ArrowLeft } from "lucide-react";
@@ -8,7 +7,6 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function CrearFeedbackSupervisorPage() {
-    const [tipoFeedback, setTipoFeedback] = useState<"rutina" | "negativo">("rutina");
 
     return (
         <>
@@ -18,16 +16,9 @@ export default function CrearFeedbackSupervisorPage() {
             </Link>
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-gray-100">Creacion de evaluacion de supervisor</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 font-light">Ingrese los resultados de objetivos y desempeno operativo</p>
-            <HeaderCrearFbSupervisor
-                setTipoFeedback={setTipoFeedback}
-                tipoFeedback={tipoFeedback}
-            />
-            {
-                tipoFeedback === "rutina" ?
-                <CrearFbSupervisorForm/>
-                :
-                <CrearFbNegativoSupervisorForm/>
-            }
+            <HeaderCrearFbSupervisor/>
+            <CrearFbSupervisorForm />
+
         </>
     );
 }
