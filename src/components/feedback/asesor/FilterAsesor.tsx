@@ -4,6 +4,7 @@ import { Empleado } from '@/app/dashboard/feedback/asesores/page'
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
 import { useRouter } from 'next/navigation'
+import { useRef } from 'react'
 
 
 interface Props {
@@ -28,8 +29,12 @@ export const FilterAsesor = ({asesores}: Props) => {
     })
 
     const router = useRouter()
-
+    const monthRef = useRef<HTMLInputElement>(null)
+    const tipoRef = useRef<HTMLSelectElement>(null)
     const onClickSearch = async () => {
+        console.log(monthRef.current?.value)
+        console.log(tipoRef.current?.selectedOptions[0].value)
+        console.log(filteredAsesores[0].alias)
         router.refresh()
     }
 
@@ -40,6 +45,7 @@ export const FilterAsesor = ({asesores}: Props) => {
                     type="month"
                     id="mes-anio"
                     className={`rounded-sm w-full md:w-max bg-gray-50 border dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-500 border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-1.5 outline-none transition-all h-8.5`}
+                    ref={monthRef}
                 />
             </div>
 
@@ -82,8 +88,9 @@ export const FilterAsesor = ({asesores}: Props) => {
                 <div className="relative">
                     <select
                         className={`rounded-sm dark:border-zinc-500 dark:bg-zinc-800 dark:text-gray-200 w-full bg-gray-50 text-slate-700 text-sm border border-gray-200 pl-4 pr-10 leading-normal transition-all appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none hover:bg-gray-100 h-8.5`}
+                        ref={tipoRef}
                     >
-                        <option value="todos">Todos los estados</option>
+                        <option value="todos">Tipo evaluacion</option>
                         <option value="rutina">Rutina</option>
                         <option value="negativo">Negativo</option>
                     </select>
@@ -95,7 +102,7 @@ export const FilterAsesor = ({asesores}: Props) => {
                 </div>
             </div>
             <div className="w-full md:w-auto">
-                <Button className={`w-full rounded-sm h-8.5`}
+                <Button className={`w-full rounded-sm h-8.5 bg-blue-500 hover:bg-blue-600`}
                     onClick={onClickSearch}
                 >
                     Buscar
