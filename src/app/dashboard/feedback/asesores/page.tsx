@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/button";
 import { SheetIcon } from "lucide-react";
 import Link from "next/link";
 
-export default function AsesoresPage() {
+export interface Empleado {
+    alias:      string;
+    idEmpleado: number;
+}
+
+
+const fetchAsesores = async (): Promise<Empleado[]> => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asesores`).then(r => r.json())
+    return res
+}
+
+export default async function AsesoresPage() {
+    const asesores = await fetchAsesores()
     return (
         <>
             {/*//* HEADER */}
@@ -35,7 +47,9 @@ export default function AsesoresPage() {
                 </div>
             </div>
 
-            <FilterAsesor/>
+            <FilterAsesor
+                asesores={asesores}
+            />
             
             {/* Tabla */}
             <Table>

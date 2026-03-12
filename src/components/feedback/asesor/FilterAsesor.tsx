@@ -1,18 +1,31 @@
 'use client'
 
+import { Empleado } from '@/app/dashboard/feedback/asesores/page'
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
 import { useRouter } from 'next/navigation'
 
-export const FilterAsesor = () => {
+
+interface Props {
+    asesores: Array<Empleado>
+}
+
+export const FilterAsesor = ({asesores}: Props) => {
+    
     const {
-        filteredSupervisors: filteredAsesores,
-        isSupervisorOpen: isAsesorOpen,
-        setIsSupervisorOpen: setIsAsesorOpen,
-        setSupervisorQuery: setAsesorQuery,
-        supervisorQuery: asesorQuery,
-        supervisorRef: asesorRef
-    } = useCombobox()
+        filteredOptions: filteredAsesores,
+        isOpen: isAsesorOpen,
+        setIsOpen: setIsAsesorOpen,
+        setQuery: setAsesorQuery,
+        query: asesorQuery,
+        containerRef: asesorRef,
+        selectOption
+    } = useCombobox<Empleado>({
+        options: asesores,
+        getLabel: (asesor) => asesor.alias,
+        filterOption: (asesor, query) =>
+            asesor.alias.toLowerCase().includes(query)
+    })
 
     const router = useRouter()
 
@@ -48,15 +61,14 @@ export const FilterAsesor = () => {
                             {filteredAsesores.length > 0 ? (
                                 filteredAsesores.map((asesor) => (
                                     <button
-                                        key={asesor}
+                                        key={asesor.idEmpleado}
                                         type="button"
                                         onClick={() => {
-                                            setAsesorQuery(asesor)
-                                            setIsAsesorOpen(false)
+                                            selectOption(asesor)
                                         }}
                                         className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                     >
-                                        {asesor}
+                                        {asesor.alias}
                                     </button>
                                 ))
                             ) : (

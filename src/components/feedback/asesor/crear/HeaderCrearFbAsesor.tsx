@@ -3,6 +3,8 @@ import { useCombobox } from "@/hooks/feedback/combobox"
 import { LockIcon, SearchIcon } from "lucide-react"
 import { Dispatch, SetStateAction } from "react"
 
+const asesorOptions = ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
+
 interface Props {
     currentFeedback: string,
     setCurrentFeedback: Dispatch<SetStateAction<string>>
@@ -14,13 +16,14 @@ export const HeaderCrearFbAsesor = ({
     setCurrentFeedback
 }: Props) => {
     const {
-        filteredSupervisors,
-        isSupervisorOpen,
-        setSupervisorQuery,
-        supervisorRef,
-        supervisorQuery,
-        setIsSupervisorOpen
-    } = useCombobox();
+        filteredOptions,
+        isOpen,
+        setQuery,
+        containerRef,
+        query,
+        setIsOpen,
+        selectOption
+    } = useCombobox({ options: asesorOptions });
 
     return (
         <>
@@ -29,30 +32,29 @@ export const HeaderCrearFbAsesor = ({
                     <h1 className="font-bold text-xl text-gray-800 dark:text-zinc-100">Crear Nuevo Feedback</h1>
                     <p className="font-light text-gray-600 text-[14px] dark:text-zinc-300">Ingrese los datos de desempeño mensual y sus respectivas metas</p>
                     <p className="font-light text-gray-600 text-[12px] mt-2 dark:text-zinc-400">Seleccionar asesor</p>
-                    <div className="flex-1" ref={supervisorRef}>
+                    <div className="flex-1" ref={containerRef}>
                         <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                             <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                             <input
-                                value={supervisorQuery}
+                                value={query}
                                 onChange={(e) => {
-                                    setSupervisorQuery(e.target.value)
-                                    setIsSupervisorOpen(true)
+                                    setQuery(e.target.value)
+                                    setIsOpen(true)
                                 }}
-                                onFocus={() => setIsSupervisorOpen(true)}
+                                onFocus={() => setIsOpen(true)}
                                 className="w-full border-none bg-transparent px-2 py-2 text-sm outline-none dark:text-zinc-100 dark:placeholder:text-zinc-300"
                                 placeholder="Buscar supervisor..."
                             />
 
-                            {isSupervisorOpen && (
+                            {isOpen && (
                                 <div className="absolute left-0 right-0 top-[110%] z-20 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
-                                    {filteredSupervisors.length > 0 ? (
-                                        filteredSupervisors.map((name) => (
+                                    {filteredOptions.length > 0 ? (
+                                        filteredOptions.map((name) => (
                                             <button
                                                 key={name}
                                                 type="button"
                                                 onClick={() => {
-                                                    setSupervisorQuery(name)
-                                                    setIsSupervisorOpen(false)
+                                                    selectOption(name)
                                                 }}
                                                 className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                             >

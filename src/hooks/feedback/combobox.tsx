@@ -1,26 +1,52 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-export const useCombobox = () => {
-    
-    const supervisorOptions = useMemo(() => {
-        return ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
-    },[])
+type UseComboboxConfig<T> = {
+    options: T[]
+    getLabel?: (option: T) => string
+    filterOption?: (option: T, query: string) => boolean
+    initialQuery?: string
+    initialOpen?: boolean
+    closeOnSelect?: boolean
+}
 
-    const [supervisorQuery, setSupervisorQuery] = useState('')
-    const [isSupervisorOpen, setIsSupervisorOpen] = useState(false)
-    const supervisorRef = useRef<HTMLDivElement | null>(null)
+export const useCombobox = <T,>({
+    options,
+    getLabel,
+    filterOption,
+    initialQuery = '',
+    initialOpen = false,
+    closeOnSelect = true
+}: UseComboboxConfig<T>) => {
+    const [query, setQuery] = useState(initialQuery)
+    const [isOpen, setIsOpen] = useState(initialOpen)
+    const containerRef = useRef<HTMLDivElement | null>(null)
 
-    const filteredSupervisors = useMemo(() => {
-        const query = supervisorQuery.trim().toLowerCase()
-        if (!query) return supervisorOptions
-        return supervisorOptions.filter((name) => name.toLowerCase().includes(query))
-    }, [supervisorOptions, supervisorQuery])
+    const resolveLabel = (option: T) => {
+        if (getLabel) return getLabel(option)
+        return typeof option === 'string' ? option : String(option)
+    }
+
+    const filteredOptions = useMemo(() => {
+        const normalizedQuery = query.trim().toLowerCase()
+        if (!normalizedQuery) return options
+        if (filterOption) {
+            return options.filter((option) => filterOption(option, normalizedQuery))
+        }
+        return options.filter((option) =>
+            resolveLabel(option).toLowerCase().includes(normalizedQuery)
+        )
+    }, [options, query, filterOption, getLabel])
+
+    const selectOption = (option: T) => {
+        setQuery(resolveLabel(option))
+        if (closeOnSelect) setIsOpen(false)
+    }
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (!supervisorRef.current) return
-            if (!supervisorRef.current.contains(event.target as Node)) {
-                setIsSupervisorOpen(false)
+            if (!containerRef.current) return
+            if (!containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false)
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
@@ -28,11 +54,14 @@ export const useCombobox = () => {
     }, [])
 
     return {
-        setSupervisorQuery,
-        isSupervisorOpen,
-        filteredSupervisors,
-        supervisorRef,
-        supervisorQuery,
-        setIsSupervisorOpen
+        query,
+        setQuery,
+        isOpen,
+        setIsOpen,
+        options,
+        filteredOptions,
+        containerRef,
+        getLabel: resolveLabel,
+        selectOption,
     }
 }

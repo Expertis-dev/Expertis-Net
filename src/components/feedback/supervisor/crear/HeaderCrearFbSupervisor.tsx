@@ -1,16 +1,18 @@
 "use client"
 import { useCombobox } from "@/hooks/feedback/combobox"
 
+const supervisorOptions = ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
 
 export const HeaderCrearFbSupervisor = () => {
     const {
-        filteredSupervisors,
-        isSupervisorOpen,
-        setIsSupervisorOpen,
-        setSupervisorQuery,
-        supervisorQuery,
-        supervisorRef: supervisorContainerRef
-    } = useCombobox()
+        filteredOptions,
+        isOpen,
+        setIsOpen,
+        setQuery,
+        query,
+        containerRef,
+        selectOption
+    } = useCombobox({ options: supervisorOptions })
 
     return (
         <>
@@ -18,30 +20,29 @@ export const HeaderCrearFbSupervisor = () => {
                 <div className="flex flex-col mb-0.5 flex-1 self-start">
                     <h3 className="text-gray-500 dark:text-gray-400 py-2 px-1 font-semibold">Supervisor</h3>
                     <div
-                        ref={supervisorContainerRef}
+                        ref={containerRef}
                         className="relative border border-gray-200 dark:border-gray-700 p-1 rounded-sm focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-gray-600 bg-gray-50 dark:bg-zinc-800"
                     >
                         <input
                             type="text"
-                            value={supervisorQuery}
+                            value={query}
                             onChange={(e) => {
-                                setSupervisorQuery(e.target.value)
-                                setIsSupervisorOpen(true)
+                                setQuery(e.target.value)
+                                setIsOpen(true)
                             }}
-                            onFocus={() => setIsSupervisorOpen(true)}
+                            onFocus={() => setIsOpen(true)}
                             placeholder="Selecciona un supervisor"
                             className="w-full bg-transparent text-sm px-1 py-1 rounded-sm outline-none text-zinc-900 dark:text-gray-100 dark:placeholder:text-zinc-400"
                         />
-                        {isSupervisorOpen && (
+                        {isOpen && (
                             <div className="absolute left-0 right-0 z-20 mt-2 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
-                                {filteredSupervisors.length > 0 ? (
-                                    filteredSupervisors.map((name) => (
+                                {filteredOptions.length > 0 ? (
+                                    filteredOptions.map((name) => (
                                         <button
                                             key={name}
                                             type="button"
                                             onClick={() => {
-                                                setSupervisorQuery(name)
-                                                setIsSupervisorOpen(false)
+                                                selectOption(name)
                                             }}
                                             className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                         >

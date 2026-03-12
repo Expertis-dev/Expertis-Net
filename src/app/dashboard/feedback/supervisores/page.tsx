@@ -6,8 +6,15 @@ import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { BrainIcon, SheetIcon } from "lucide-react";
 import Link from "next/link";
+import { Empleado } from "../asesores/page";
 
-export default function SupervisoresPage() {
+const fetchSupervisores = async (): Promise<Array<Empleado>> => {
+    const result = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supervisores`).then(r => r.json())
+    return result
+}
+
+export default async function SupervisoresPage() {
+    const supervisores = await fetchSupervisores()
     return (
         <>
             <div className="flex flex-row justify-between mb-1">
@@ -61,7 +68,9 @@ export default function SupervisoresPage() {
                 />
             </div>
 
-            <FiltersSupervisor />
+            <FiltersSupervisor 
+                supervisores={supervisores}
+            />
 
             <Table>
                 <AsesorHeaders

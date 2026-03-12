@@ -1,19 +1,29 @@
 'use client'
 
+import { Empleado } from '@/app/dashboard/feedback/asesores/page'
 import { useCombobox } from '@/hooks/feedback/combobox'
 import { SearchIcon } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React from 'react'
 
-export const FiltersSupervisor = () => {
+interface Props {
+    supervisores: Array<Empleado>
+}
 
+export const FiltersSupervisor = ({supervisores}: Props) => {
     const {
-        filteredSupervisors,
-        isSupervisorOpen,
-        setIsSupervisorOpen,
-        setSupervisorQuery,
-        supervisorQuery,
-        supervisorRef
-    } = useCombobox();
+        filteredOptions,
+        isOpen,
+        setIsOpen,
+        setQuery,
+        query,
+        containerRef,
+        selectOption
+    } = useCombobox<Empleado>({ 
+        options: supervisores,
+        getLabel: (asesor) => asesor.alias,
+        filterOption: (asesor, query) =>
+            asesor.alias.toLowerCase().includes(query)
+    });
 
     return (
         <div className="rounded-sm flex flex-row md:flex-row items-center gap-2 border border-gray-200 px-2 mx-2 py-2 bg-white shadow dark:bg-zinc-800 dark:border-zinc-600">
@@ -44,34 +54,33 @@ export const FiltersSupervisor = () => {
                 </div>
             </div>
             <hr className="border-gray-200 border h-10 w-0.5 dark:border-zinc-500" />
-            <div className="flex-1" ref={supervisorRef}>
+            <div className="flex-1" ref={containerRef}>
                 <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                     <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                     <input
-                        value={supervisorQuery}
+                        value={query}
                         onChange={(e) => {
-                            setSupervisorQuery(e.target.value)
-                            setIsSupervisorOpen(true)
+                            setQuery(e.target.value)
+                            setIsOpen(true)
                         }}
-                        onFocus={() => setIsSupervisorOpen(true)}
+                        onFocus={() => setIsOpen(true)}
                         className="w-full border-none bg-transparent px-2 py-2 text-sm outline-none dark:text-zinc-100 dark:placeholder:text-zinc-300"
                         placeholder="Buscar supervisor..."
                     />
 
-                    {isSupervisorOpen && (
+                    {isOpen && (
                         <div className="absolute left-0 right-0 top-[110%] z-20 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
-                            {filteredSupervisors.length > 0 ? (
-                                filteredSupervisors.map((name) => (
+                            {filteredOptions.length > 0 ? (
+                                filteredOptions.map((sup) => (
                                     <button
-                                        key={name}
+                                        key={sup.idEmpleado}
                                         type="button"
                                         onClick={() => {
-                                            setSupervisorQuery(name)
-                                            setIsSupervisorOpen(false)
+                                            selectOption(sup)
                                         }}
                                         className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                     >
-                                        {name}
+                                        {sup.alias}
                                     </button>
                                 ))
                             ) : (
