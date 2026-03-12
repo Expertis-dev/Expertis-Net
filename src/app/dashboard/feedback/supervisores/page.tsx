@@ -64,7 +64,9 @@ export default function SupervisoresPage() {
             <FiltersSupervisor />
 
             <Table>
-                <AsesorHeaders/>
+                <AsesorHeaders
+                    esSupervisor
+                />
 
                 <SupervisorFila/>
                 <SupervisorFila/>

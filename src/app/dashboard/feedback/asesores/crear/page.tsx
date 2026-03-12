@@ -9,7 +9,10 @@ import { useState } from "react";
 export default function CrearFeedbackAsesorPage() {
     const [currentFeedback, setCurrentFeedback] = useState("rutina")
     const router = useRouter()
-    
+    const [modal, setModal] = useState({
+        isOpen: false,
+        message: ""
+    })
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
             <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.back()}>
@@ -19,9 +22,17 @@ export default function CrearFeedbackAsesorPage() {
             <HeaderCrearFbAsesor currentFeedback={currentFeedback} setCurrentFeedback={setCurrentFeedback}/>
             {
                 currentFeedback === "rutina" ? 
-                <CrearFbAsesorForm/>
+                <CrearFbAsesorForm
+                    modal={modal}
+                    router={router}
+                    setModal={setModal}
+                />
                 :
-                <CrearFbNegativoAsesorForm/>
+                <CrearFbNegativoAsesorForm
+                    modal={modal}
+                    router={router}
+                    setModal={setModal}
+                />
             }
         </div>
     );

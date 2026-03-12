@@ -1,41 +1,147 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, InfoIcon, SquareIcon } from "lucide-react"
 import { formatWithThousands } from "../../supervisor/crear/CrearFbSupervisorForm"
-import { useState } from "react"
+import { Dispatch, SetStateAction, useRef } from "react"
 import { FormattedNumberInput } from "../../FormattedNumberInput"
-import { useRouter } from "next/navigation"
 import { SuccessModal } from "@/components/success-modal"
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
+import { Controller, useForm } from "react-hook-form"
 
-export const CrearFbAsesorForm = () => {
-    const [values, setValues] = useState({
-        recupero: "", recuperoMeta: "",
-        calidadPdp: "", calidadPdpPromedio: "",
-        calidadCierre: "", calidadCierrePromedio: "",
-        produccionPdp: "", produccionPdpPromedio: "",
-        ticketPromedio: "", ticketPromedioMeta: "",
-        faltasInjustificadas: "",
-        tardanzasInjustificadas: "",
+interface Modal {
+    isOpen: boolean;
+    message: string;
+}
+
+interface Props {
+    modal: Modal,
+    setModal: Dispatch<SetStateAction<Modal>>,
+    router: AppRouterInstance
+}
+
+interface Form {
+    recupero: string,
+    recuperoMeta: string,
+    calidadPdp: string,
+    calidadPdpPromedio: string,
+    calidadCierre: string,
+    calidadCierrePromedio: string,
+    produccionPdp: string,
+    produccionPdpPromedio: string,
+    ticketDePdp: string,
+    ticketDePdpPromedio: string,
+    faltasInjustificadas: string,
+    tardanzasInjustificadas: string,
+    observacionesGenerales: string,
+}
+
+type MetricField = Exclude<keyof Form, "observacionesGenerales">
+
+const metricFields: Array<{
+    name: string
+    values: [{
+        name: MetricField
+        label: string
+        prefix: string
+        placeholder: string
+        decimals?: number
+    }, {
+        name: MetricField
+        label: string
+        prefix: string
+        placeholder: string
+        decimals?: number
+    }]
+}> = [
+        {
+            name: "Recupero",
+            values: [
+                { name: "recupero", label: "Actual", prefix: "S/", decimals: 2, placeholder: "Actual" },
+                { name: "recuperoMeta", label: "Meta", prefix: "S/", decimals: 2, placeholder: "Meta" },
+            ],
+        },
+        {
+            name: "Ticket de PDP",
+            values: [
+                { name: "ticketDePdp", label: "Actual", prefix: "S/", decimals: 2, placeholder: "Actual" },
+                { name: "ticketDePdpPromedio", label: "Meta", prefix: "S/", decimals: 2, placeholder: "Promedio por asesor" },
+            ],
+        },
+        {
+            name: "Calidad PDP (%)",
+            values: [
+                { name: "calidadPdp", label: "Actual", prefix: "%", decimals: 2, placeholder: "Actual" },
+                { name: "calidadPdpPromedio", label: "Promedio por asesor", prefix: "%", decimals: 2, placeholder: "Promedio por asesor" },
+            ],
+        },
+        {
+            name: "Calidad Cierre (%)",
+            values: [
+                { name: "calidadCierre", label: "Actual", prefix: "%", decimals: 2, placeholder: "Actual" },
+                { name: "calidadCierrePromedio", label: "Promedio por asesor", prefix: "%", decimals: 2, placeholder: "Promedio por asesor" },
+            ],
+        },
+        {
+            name: "Produccion PDP",
+            values: [
+                { name: "produccionPdp", label: "Actual", prefix: "S/", decimals: 0, placeholder: "Actual" },
+                { name: "produccionPdpPromedio", label: "Promedio por asesor", prefix: "S/", decimals: 0, placeholder: "Promedio por asesor" },
+            ],
+        },
+        {
+            name: "Asistencia (Faltas/Tardanzas)",
+            values: [
+                { name: "faltasInjustificadas", label: "Faltas injustificadas", prefix: "", decimals: 0, placeholder: "Actual" },
+                { name: "tardanzasInjustificadas", label: "Tardanzas injustificadas", prefix: "", decimals: 0, placeholder: "Promedio por asesor" },
+            ],
+        },
+    ]
+
+export const CrearFbAsesorForm = ({
+    modal,
+    setModal,
+    router
+}: Props) => {
+    const { control, register, handleSubmit, setError, clearErrors, formState: { errors } } = useForm<Form>({
+        defaultValues: {
+            recupero: "",
+            recuperoMeta: "",
+            calidadPdp: "",
+            calidadPdpPromedio: "",
+            calidadCierre: "",
+            calidadCierrePromedio: "",
+            produccionPdp: "",
+            produccionPdpPromedio: "",
+            ticketDePdp: "",
+            ticketDePdpPromedio: "",
+            faltasInjustificadas: "",
+            tardanzasInjustificadas: "",
+            observacionesGenerales: "",
+        }
     })
 
-    const router = useRouter()
-    const [modal, setModal] = useState({
-        isOpen: false,
-        message: ""
-    })
+    const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
 
-    const onClickSave = (type: string) => {
+    const requireIfPublishing = (message: string) => (value: string) =>
+        submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
+
+    const onClickSave = (type: string, data: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        setModal({isOpen: true, message: message})
+        console.log(data)
+        setModal({ isOpen: true, message: message })
         setTimeout(() => {
             router.back()
         }, 1500);
     }
 
-    const handleChange =
-        (key: keyof typeof values, maxDecimals = 2) => (e: React.ChangeEvent<HTMLInputElement>) => {
-            const formatted = formatWithThousands(e.target.value, maxDecimals)
-            setValues((prev) => ({ ...prev, [key]: formatted }))
-        }
+    const handleFormattedChange =
+        (onChange: (value: string) => void, maxDecimals = 2) =>
+            (e: React.ChangeEvent<HTMLInputElement>) => {
+                const formatted = formatWithThousands(e.target.value, maxDecimals)
+                onChange(formatted)
+            }
+
+    const hasAnyValue = (data: Form) =>
+        Object.values(data).some((value) => value.trim() !== "")
     return (
         <>
             <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
@@ -51,151 +157,54 @@ export const CrearFbAsesorForm = () => {
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 p-2">
-
-                    <div className="flex flex-col p-2">
-                        <h4>Recupero </h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.recupero}
-                                    onChange={handleChange("recupero", 2)}
-                                    placeholder="Actual"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.recuperoMeta}
-                                    onChange={handleChange("recuperoMeta", 2)}
-                                    placeholder="Meta"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col p-2">
-                        <h4>Ticket Promedio</h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.ticketPromedio}
-                                    onChange={handleChange("ticketPromedio", 2)}
-                                    placeholder="Actual"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.ticketPromedioMeta}
-                                    onChange={handleChange("ticketPromedioMeta", 2)}
-                                    placeholder="Meta"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col p-2">
-                        <h4>Calidad PDP (%)</h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <FormattedNumberInput
-                                    value={values.calidadPdp}
-                                    onChange={handleChange("calidadPdp", 2)}
-                                    placeholder="Actual"
-                                    inputAsesor={true}
-                                />
-                                <p className="self-center text-gray-800 dark:text-zinc-200">%</p>
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <FormattedNumberInput
-                                    value={values.calidadPdpPromedio}
-                                    onChange={handleChange("calidadPdpPromedio", 2)}
-                                    placeholder="Promedio por asesor"
-                                    inputAsesor={true}
-                                />
-                                <p className="self-center text-gray-800 dark:text-zinc-200">%</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col p-2">
-                        <h4>Calidad Cierre (%)</h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <FormattedNumberInput
-                                    value={values.calidadCierre}
-                                    onChange={handleChange("calidadCierre", 2)}
-                                    placeholder="Actual"
-                                    inputAsesor={true}
-                                />
-                                <p className="self-center text-gray-800 dark:text-zinc-200">%</p>
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <FormattedNumberInput
-                                    value={values.calidadCierrePromedio}
-                                    onChange={handleChange("calidadCierrePromedio", 2)}
-                                    placeholder="Promedio por asesor"
-                                    inputAsesor={true}
-                                />
-                                <p className="self-center text-gray-800 dark:text-zinc-200">%</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col p-2">
-                        <h4>Producción PDP</h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.produccionPdp}
-                                    onChange={handleChange("produccionPdp", 0)}
-                                    placeholder="Actual"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <p className="self-center text-gray-800 dark:text-zinc-200">S/</p>
-                                <FormattedNumberInput
-                                    value={values.produccionPdpPromedio}
-                                    onChange={handleChange("produccionPdpPromedio", 0)}
-                                    placeholder="Promedio por asesor"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col p-2">
-                        <h4>Asistencia (Faltas/Tardanzas)</h4>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm dark:border-zinc-600 dark:bg-zinc-900">
-                                <FormattedNumberInput
-                                    value={values.faltasInjustificadas}
-                                    onChange={handleChange("faltasInjustificadas", 0)}
-                                    placeholder="Faltas injustificadas"
-                                    inputAsesor={true}
-                                />
-                            </div>
-                            <div className="flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm bg-gray-300 dark:border-zinc-600 dark:bg-zinc-700">
-                                <FormattedNumberInput
-                                    value={values.tardanzasInjustificadas}
-                                    onChange={handleChange("tardanzasInjustificadas", 0)}
-                                    placeholder="Tardanzas injustificadas"
-                                    inputAsesor={true}
-                                />
-                            </div>
-
-                        </div>
-                    </div>
+                    {
+                        metricFields.map((field) => {
+                            return (
+                                <div className="flex flex-col p-2" key={field.name}>
+                                    <h4>{field.name} </h4>
+                                    {errors[field.values[0].name] && <span className="text-red-600 text-xs">{errors[field.values[0].name]!.message}</span>}
+                                    {errors[field.values[1].name] && <span className="text-red-600 text-xs">{errors[field.values[1].name]!.message}</span>}
+                                    <div className="mt-1 flex flex-wrap gap-2">
+                                        {field.values.map((input, i) => {
+                                            return (
+                                                <div className={`flex min-w-[140px] flex-1 flex-row items-center border border-gray-300 p-1 rounded-sm ${i === 1 ? "bg-gray-300" : ""} dark:border-zinc-600 dark:bg-zinc-900`} key={input.name}>
+                                                    {input.prefix === "S/" ? <p className="self-center text-gray-800 dark:text-zinc-200">S/</p> : <></>}
+                                                    <Controller
+                                                        rules={{ validate: requireIfPublishing(`El ${input.label} es un campo obligatorio`) }}
+                                                        control={control}
+                                                        name={input.name}
+                                                        render={({ field }) => (
+                                                            <FormattedNumberInput
+                                                            value={field.value}
+                                                            onChange={handleFormattedChange(field.onChange, input.decimals)}
+                                                            onBlur={field.onBlur}
+                                                            name={field.name}
+                                                            placeholder={input.placeholder}
+                                                            inputAsesor={true}
+                                                            />
+                                                        )}
+                                                    />
+                                                    {input.prefix === "%" ? <p className="self-center text-gray-800 dark:text-zinc-200">%</p> : <></>}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        })
+                    }
                 </div>
             </div>
             <div className="flex flex-col rounded-sm dark:text-zinc-100">
                 <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
                     <h2 className="text-xl px-2 font-semibold">Observaciones Generales</h2>
+                    {errors.observacionesGenerales && <span className="text-red-600 text-xs ml-4">{errors.observacionesGenerales.message}</span>}
                     <textarea
-                        name="Compromiso de mejora" id="1" rows={6}
+                        id="observacionesGenerales"
+                        rows={6}
+                        {...register("observacionesGenerales", {
+                            validate: requireIfPublishing("Las observaciones generales son obligatorias")
+                        })}
                         className="border text-[13px] border-gray-200 rounded-sm px-2 py-1 mx-2 mt-1 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400 dark:focus:ring-blue-500/30"
                         placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
                     />
@@ -208,13 +217,32 @@ export const CrearFbAsesorForm = () => {
                         <InfoIcon className="self-center text-gray-500 dark:text-zinc-400" size={15} />
                         <p className="text-gray-500 ml-1 text-xs self-center dark:text-zinc-400">Los campos vacios se guardarán con valor 0</p>
                     </div>
+                    {errors.root?.message && (
+                        <p className="text-red-600 text-xs self-center">{errors.root.message}</p>
+                    )}
                     <div className="flex flex-row justify-between">
-                        <Button 
-                            onClick={() => onClickSave("BORRADOR")}
+                        <Button
+                            onClick={() => {
+                                submitModeRef.current = "BORRADOR"
+                                handleSubmit((data) => {
+                                    if (!hasAnyValue(data)) {
+                                        setError("root", { type: "manual", message: "Completa al menos un campo para guardar borrador." })
+                                        return
+                                    }
+                                    clearErrors("root")
+                                    onClickSave("BORRADOR", data)
+                                })()
+                            }}
                             className="flex-1 bg-white text-black border border-gray-400 hover:bg-gray-100 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700">
                             Guardar Borrador
                         </Button>
-                        <Button className="flex-1 ml-4 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white" onClick={() => onClickSave("PUBLICAR")}>
+                        <Button className="flex-1 ml-4 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
+                            onClick={() => {
+                                submitModeRef.current = "PUBLICAR"
+                                clearErrors("root")
+                                handleSubmit((data) => onClickSave("PUBLICAR", data))()
+                            }
+                            }>
                             Publicar Feedback
                             <ArrowRight />
                         </Button>

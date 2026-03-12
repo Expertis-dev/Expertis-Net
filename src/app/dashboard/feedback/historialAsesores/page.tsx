@@ -1,6 +1,6 @@
 import { FilterHistorialAsesor } from "@/components/feedback/historialAsesor/FilterHistorialAsesor";
 import { HistorialAsesorFila } from "@/components/feedback/historialAsesor/HistorialAsesorFila";
-import { HistorialAsesorHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
+import { HistorialHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
 import { Table } from "@/components/feedback/Table";
 
 export default function HistorialAsesoresPage() {
@@ -17,7 +17,7 @@ export default function HistorialAsesoresPage() {
             <FilterHistorialAsesor />
             {/* Tabla */}
             <Table>
-                <HistorialAsesorHeaders />
+                <HistorialHeaders />
                 <HistorialAsesorFila />
                 <HistorialAsesorFila />
             </Table>

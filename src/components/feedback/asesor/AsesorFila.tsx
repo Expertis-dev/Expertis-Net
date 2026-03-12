@@ -21,7 +21,7 @@ export const AsesorFila = () => {
         if (popup) popup.focus();
     };
     return (
-        <div className="grid grid-cols-1 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
+        <div className="grid grid-cols-5 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
             <div className="flex justify-between md:block">
                 <span className='text-[14px]'>Ana Martinez</span>
             </div>

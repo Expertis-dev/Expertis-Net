@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
+import { useRouter } from 'next/navigation'
 
 export const FilterAsesor = () => {
     const {
@@ -12,6 +13,12 @@ export const FilterAsesor = () => {
         supervisorQuery: asesorQuery,
         supervisorRef: asesorRef
     } = useCombobox()
+
+    const router = useRouter()
+
+    const onClickSearch = async () => {
+        router.refresh()
+    }
 
     return (
         <div className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 dark:border-zinc-700 px-2 py-2 bg-white shadow-sm dark:bg-zinc-800 mx-2 rounded-sm">
@@ -76,7 +83,9 @@ export const FilterAsesor = () => {
                 </div>
             </div>
             <div className="w-full md:w-auto">
-                <Button className={`w-full rounded-sm h-8.5`}>
+                <Button className={`w-full rounded-sm h-8.5`}
+                    onClick={onClickSearch}
+                >
                     Buscar
                 </Button>
             </div>

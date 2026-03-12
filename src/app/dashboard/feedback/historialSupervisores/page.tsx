@@ -1,6 +1,6 @@
 import { FilterHistorialAsesor } from "@/components/feedback/historialAsesor/FilterHistorialAsesor";
 import { HistorialAsesorFila } from "@/components/feedback/historialAsesor/HistorialAsesorFila";
-import { HistorialAsesorHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
+import { HistorialHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { AlertCircleIcon, Edit2Icon } from "lucide-react";
@@ -14,12 +14,11 @@ export default function HistorialSupervisoresPage() {
 
 
             <Table>
-                <HistorialAsesorHeaders />
+                <HistorialHeaders 
+                    esSupervisor
+                />
                 {/* //* Fila con boton */}
-                <div className="grid grid-cols-1 md:grid-cols-4 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
-                    <div className="flex justify-between md:block">
-                        <span>Rutina</span>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
                     <div className="flex justify-between md:block">
                         <span>2026-1</span>
                     </div>
@@ -34,7 +33,7 @@ export default function HistorialSupervisoresPage() {
                         </Link>
                     </div>
                 </div>
-                <HistorialAsesorFila />
+                <HistorialAsesorFila esSupervisor/>
             </Table>
         </>
     );

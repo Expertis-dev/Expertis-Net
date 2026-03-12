@@ -1,10 +1,8 @@
-"use client";
 
 import { CrearFbSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbSupervisorForm";
 import { HeaderCrearFbSupervisor } from "@/components/feedback/supervisor/crear/HeaderCrearFbSupervisor";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 export default function CrearFeedbackSupervisorPage() {
 
@@ -18,7 +16,6 @@ export default function CrearFeedbackSupervisorPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 font-light">Ingrese los resultados de objetivos y desempeno operativo</p>
             <HeaderCrearFbSupervisor/>
             <CrearFbSupervisorForm />
-
         </>
     );
 }

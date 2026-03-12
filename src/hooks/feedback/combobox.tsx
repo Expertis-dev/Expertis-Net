@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 export const useCombobox = () => {
-    const supervisorOptions = useMemo(
-        () => ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar'],
-        []
-    )
+    
+    const supervisorOptions = useMemo(() => {
+        return ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
+    },[])
+
     const [supervisorQuery, setSupervisorQuery] = useState('')
     const [isSupervisorOpen, setIsSupervisorOpen] = useState(false)
     const supervisorRef = useRef<HTMLDivElement | null>(null)

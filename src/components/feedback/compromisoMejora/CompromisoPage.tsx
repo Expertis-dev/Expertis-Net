@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button'
 import { ArrowRightToLine, BarChartIcon, NotebookPenIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+
+interface CompromisoMejora {compromisoMejora: string};
 
 export const CompromisoPage = () => {
     const router = useRouter()
@@ -11,8 +14,10 @@ export const CompromisoPage = () => {
         isOpen: false,
         message: ""
     })
+    const {register, handleSubmit, formState: {errors}} = useForm<CompromisoMejora>()
 
-    const onClickSave = () => {
+    const onClickSave = (data: CompromisoMejora) => {
+        console.log(data)
         setModal({isOpen: true, message: "Compromiso guardado con éxito"})
         setTimeout(() => {
             router.back()
@@ -52,15 +57,17 @@ export const CompromisoPage = () => {
                 <p className="text-gray-700 dark:text-zinc-300">Basado en los resultados y el análisis superior, detalla  tu plan de acción para que el próximo periodo. Define objetivos accionables para las métricas que requieren atencion</p>
                 <hr className="border-none py-2" />
                 <p className="text-gray-700 dark:text-zinc-300">Plan de acción detallado: </p>
+                <p className='text-red-700 text-xs font-semibold ml-2'>{errors.compromisoMejora?.message}</p>
                 <textarea
-                    name="Compromiso de mejora" id="1" rows={6}
+                    id="1" rows={6}
+                    {...register("compromisoMejora", {required: "Tienes que redactar el compromiso"})}
                     className="border-2 text-[13px] border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400"
                     placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
                 />
                 <div className="flex flex-row self-end">
                     <Button 
                         className="mt-2 bg-blue-500 hover:bg-blue-900 rounded-md dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
-                        onClick={onClickSave}
+                        onClick={handleSubmit(onClickSave)}
                     >
                         Guardar y marcar listo
                         <ArrowRightToLine />
