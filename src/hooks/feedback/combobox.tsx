@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type UseComboboxConfig<T> = {
     options: T[]
@@ -21,10 +21,10 @@ export const useCombobox = <T,>({
     const [isOpen, setIsOpen] = useState(initialOpen)
     const containerRef = useRef<HTMLDivElement | null>(null)
 
-    const resolveLabel = (option: T) => {
+    const resolveLabel = useCallback((option: T) => {
         if (getLabel) return getLabel(option)
         return typeof option === 'string' ? option : String(option)
-    }
+    }, [getLabel])
 
     const filteredOptions = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase()
@@ -35,7 +35,7 @@ export const useCombobox = <T,>({
         return options.filter((option) =>
             resolveLabel(option).toLowerCase().includes(normalizedQuery)
         )
-    }, [options, query, filterOption, getLabel])
+    }, [options, query, filterOption, resolveLabel])
 
     const selectOption = (option: T) => {
         setQuery(resolveLabel(option))

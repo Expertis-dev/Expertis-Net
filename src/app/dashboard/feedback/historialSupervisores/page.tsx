@@ -2,8 +2,6 @@ import { FilterHistorialAsesor } from "@/components/feedback/historialAsesor/Fil
 import { HistorialAsesorFila } from "@/components/feedback/historialAsesor/HistorialAsesorFila";
 import { HistorialHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
 import { Table } from "@/components/feedback/Table";
-import { Button } from "@/components/ui/button";
-import { AlertCircleIcon, Edit2Icon } from "lucide-react";
 import Link from "next/link";
 
 export default function HistorialSupervisoresPage() {

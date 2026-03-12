@@ -19,7 +19,10 @@ export const formatWithThousands = (input: string, maxDecimals = 2) => {
     }
 
     const endsWithDot = cleaned.endsWith(".")
-    let [intPart, decPart] = cleaned.split(".")
+    const parts = cleaned.split(".")
+
+    let intPart = parts[0]
+    const decPart = parts[1]
 
     intPart = intPart.replace(/^0+(?=\d)/, "")
     const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
