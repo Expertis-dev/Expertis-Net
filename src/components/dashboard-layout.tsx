@@ -159,6 +159,12 @@ const MENU_CONFIG: MenuItem[] = [
         modulo: "Asistencia",
         permiso: "ReporteStaff-ver",
       },
+      {
+        title: "Alertas",
+        href: "/dashboard/asistencia/alertas",
+        modulo: "Asistencia",
+        permiso: "Alertas-ver",
+      },
 
     ],
   },

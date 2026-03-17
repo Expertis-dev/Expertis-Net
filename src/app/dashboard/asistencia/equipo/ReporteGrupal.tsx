@@ -225,6 +225,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     const [error, setError] = useState<string | null>(null);
     const [currentDate] = useState(new Date());
     const [colabIdMap, setColabIdMap] = useState<Record<string, number>>({});
+    const [fechaIngresoMap, setFechaIngresoMap] = useState<Record<string, string>>({});
     const [vacacionesMap, setVacacionesMap] = useState<Record<string, string[]>>({});
     const [descansosMap, setDescansosMap] = useState<Record<string, string[]>>({});
     const lastFetchedIds = React.useRef<string>("");
@@ -333,15 +334,20 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     body: JSON.stringify({ alias: c.usuario })
                 });
                 const res = await resp.json();
-                return { usuario: c.usuario, idMov: res.data };
+                return { usuario: c.usuario, idMov: res.data, fecIngreso: res.fechaIngreso };
             });
 
             const results = await Promise.all(idMovPromises);
 
-            // Crear mapa de relación: usuario -> idMov
+            // Crear mapa de relación: usuario -> idMov e ingreso
             const mapper: Record<string, number> = {};
-            results.forEach(r => { if (r.idMov) mapper[r.usuario] = r.idMov; });
+            const fechaMapper: Record<string, string> = {};
+            results.forEach(r => { 
+                if (r.idMov) mapper[r.usuario] = r.idMov; 
+                if (r.fecIngreso) fechaMapper[r.usuario] = r.fecIngreso;
+            });
             setColabIdMap(mapper);
+            setFechaIngresoMap(fechaMapper);
 
             const idsList = Object.values(mapper);
             if (idsList.length === 0) {
@@ -566,7 +572,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                     const salidaMatch = salidaRaw.match(/(\d{2}:\d{2})/);
                     const salidaLimpia = salidaMatch ? salidaMatch[1] : null;
 
-                    
+
                     if (ingresoLimpio) {
                         const [h, m] = ingresoLimpio.split(':').map(Number);
                         const [baseH, baseM] = config.entrada.split(':').map(Number);
@@ -598,6 +604,27 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 }
                 // --- CASO 3: FALTA (Día laborable pasado sin marcación) ---
                 else if (!weekend && isPast) {
+                    const fecIngresoRaw = fechaIngresoMap[colab.usuario];
+                    if (fecIngresoRaw) {
+                        let fecIngresoStr = fecIngresoRaw.split('T')[0];
+                        // Si la fecha viene en formato DD/MM/YYYY o DD-MM-YYYY
+                        if (fecIngresoStr.includes('/') || (fecIngresoStr.includes('-') && fecIngresoStr.split('-')[0].length === 2)) {
+                            const separator = fecIngresoStr.includes('/') ? '/' : '-';
+                            const parts = fecIngresoStr.split(separator);
+                            if (parts.length === 3) {
+                                // parts[0] = DD, parts[1] = MM, parts[2] = YYYY
+                                fecIngresoStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                        }
+
+                        if (dayStr < fecIngresoStr) {
+                            matrix[colab.usuario].asistencias[dayStr] = {
+                                type: 'preIngreso'
+                            };
+                            return; // Ignorar el día porque aún no había ingresado
+                        }
+                    }
+
                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: 'falta',
                         ...withJustificacion
@@ -618,7 +645,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         });
 
         return matrix;
-    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, vacacionesMap, descansosMap, homeOffice, justificacionesIndex, user?.usuario, user?.id_grupo]);
+    }, [colaboradores, asistenciaData, daysInMonth, colabIdMap, fechaIngresoMap, vacacionesMap, descansosMap, homeOffice, justificacionesIndex, user?.usuario, user?.id_grupo]);
 
     // 4. Filtrado por búsqueda
     const filteredColabs = useMemo(() => {
@@ -669,6 +696,8 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                         excelVal = "FERIADO";
                     } else if (record.type === 'falta') {
                         excelVal = "FALTA";
+                    } else if (record.type === 'preIngreso') {
+                        excelVal = "N/A";
                     }
 
                     const justExcel = record.detalleJustificacion
@@ -878,6 +907,10 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                                                                 <div className="flex flex-col items-center bg-rose-50/50 dark:bg-rose-900/20 w-full h-full justify-center">
                                                                     <XCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 mb-0.5" />
                                                                     <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase">Falta</span>
+                                                                </div>
+                                                            ) : record?.type === 'preIngreso' ? (
+                                                                <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-800 w-full h-full justify-center border border-slate-200 dark:border-slate-700/50">
+                                                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N/A</span>
                                                                 </div>
                                                             ) : (
                                                                 !weekend ? <span className="text-slate-200 dark:text-slate-700 text-xs text-center w-full">--</span> : null
