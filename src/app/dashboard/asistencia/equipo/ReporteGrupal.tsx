@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useUser } from "@/Provider/UserProvider";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import * as XLSX from "xlsx";
@@ -409,7 +409,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     useEffect(() => {
         if (user?.idEmpleado) {
             fetchJustificacionesGrupo(user.idEmpleado).then(r => {
-                const list = Array.isArray(r) ? r : [];
+                const list = r?.data || (Array.isArray(r) ? r : []);
                 setJustificaciones(list);
             });
         } else {
@@ -422,9 +422,10 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
     const justificacionesIndex = useMemo(() => {
         const index: Record<string, Record<string, JustificacionRegistro[]>> = {};
         (justificaciones || []).forEach(j => {
-            const dateObj = j.fecha;
+            if (!j.fecha) return;
+            const dateObj = parseISO(j.fecha);
             if (!isSameMonth(dateObj, currentDate)) return;
-            const dayKey = dateObj.split("T")[0]
+            const dayKey = j.fecha.split("T")[0].split(" ")[0];
             const keys = [normalizeKey(j.asesor), normalizeKey(j.codigoEmpleado)];
             keys.forEach(key => {
                 if (!key) return;
