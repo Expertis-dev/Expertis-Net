@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { AlertCircleIcon, SaveIcon, ShieldCheckIcon, ShieldPlusIcon, UploadCloudIcon, UserSearchIcon, XIcon } from "lucide-react";
-import Link from "next/link";
+import { FormRegistroAmonestacion } from "@/components/amonestaciones/registroAmonestacion/FormRegistroAmonestacion";
+import { AlertCircleIcon, ShieldCheckIcon, UserSearchIcon } from "lucide-react";
 
 export default function RegistroAmonestacionPage() {
     return (
@@ -11,9 +10,9 @@ export default function RegistroAmonestacionPage() {
             </div>
             <div className="grid grid-cols-1 gap-5 mt-4 lg:grid-cols-3">
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <div className="border border-gray-200 flex flex-col p-4 rounded-2xl shadow dark:border-gray-700 dark:bg-gray-900">
+                    <div className="border border-gray-200 flex flex-col p-4 rounded-2xl shadow dark:border-zinc-700 dark:bg-zinc-900">
                         <p className="font-semibold text-lg rounded-2xl text-gray-900 dark:text-gray-100">Empleado Implicado</p>
-                        <div className="flex flex-row mt-4 p-3 border rounded-lg gap-2 shadow-xs dark:border-gray-700 dark:bg-gray-950">
+                        <div className="flex flex-row mt-4 p-3 border rounded-lg gap-2 shadow-xs dark:border-zinc-700 dark:bg-zinc-950">
                             <UserSearchIcon className="text-sky-400" />
                             <p className="text-gray-900 dark:text-gray-100">Sebastian Guzman</p>
                         </div>
@@ -24,10 +23,10 @@ export default function RegistroAmonestacionPage() {
                                         <h2 className="text-lg flex-initial self-center text-gray-900 dark:text-gray-100">Sebastian Guzmán</h2>
                                         <p className="flex-initial text-green-600 bg-green-500/20 p-1 self-center text-xs rounded-2xl px-2">ACTIVO</p>
                                     </div>
-                                    <Button className="text-xs flex-initial bg-white shadow text-red-500 hover:bg-red-100 w-full sm:w-auto dark:bg-gray-900 dark:text-red-300 dark:hover:bg-red-500/10 dark:border dark:border-red-400/30">
+                                    {/* <Button className="text-xs flex-initial bg-white shadow text-red-500 hover:bg-red-100 w-full sm:w-auto dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-500/10 dark:border dark:border-red-400/30">
                                         <XIcon className="text-xs" />
                                         Eliminar Empleado
-                                    </Button>
+                                    </Button> */}
                                 </div>
                                 <p className="font-light text-sm text-gray-800 dark:text-gray-200">Asesor de cobranza</p>
                                 <p className="text-gray-400 text-xs dark:text-gray-400">Agencia BPO</p>
@@ -35,46 +34,7 @@ export default function RegistroAmonestacionPage() {
                         </div>
                     </div>
 
-                    <div className="p-4 border shadow rounded-2xl dark:border-gray-700 dark:bg-gray-900">
-                        <h1 className="font-semibold mb-3 text-gray-900 dark:text-gray-100">Detalle del incidente</h1>
-                        <div className="flex flex-col gap-4 md:flex-row md:gap-8">
-                            <div className="flex flex-col flex-1 gap-2">
-                                <p className="text-gray-900 dark:text-gray-100">Tipo de Amonestacion</p>
-                                <select name="tipoAmonestacion" id="1" className="py-2 px-4 border border-gray-300 rounded-lg w-full dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100">
-                                    <option value="tardanza">Tardanza injustificada</option>
-                                    <option value="tardanza justificada">Tardamza justificada</option>
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-gray-900 dark:text-gray-100">Fecha del incidente</p>
-                                <input type="month" className="mt-2 border border-gray-300 rounded-lg py-1.5 px-2 w-full dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100" />
-                            </div>
-                        </div>
-                        <div className="flex flex-col mt-2 gap-2">
-                            <p className="text-gray-900 dark:text-gray-100">Descripcion de los Hechos</p>
-                            <textarea name="Descripcion" id="desc" cols={10} className="border border-gray-300 rounded-lg py-1 px-2 min-h-[120px] dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100" placeholder="Describa detalladamente lo sucedido..." />
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Sea objetivo y preciso. Evite opinciones personales</p>
-                            <p className="text-gray-900 dark:text-gray-100">Evidencia adjunta</p>
-                            <label
-                                htmlFor="evidencia"
-                                className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600 transition hover:border-blue-400 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:bg-blue-500/10"
-                            >
-                                <UploadCloudIcon className="text-blue-500" />
-                                <span className="font-medium text-gray-700 dark:text-gray-100">Arrastra y suelta un archivo</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">o haz clic para seleccionar</span>
-                                <input id="evidencia" type="file" accept="image/*,.pdf" className="sr-only" />
-                            </label>
-                            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-2">
-                                <Button className="bg-white border border-gray text-black hover:bg-gray-300 w-full sm:w-auto dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">Cancelar</Button>
-                                <Link href={"/dashboard/amonestaciones/generacionAmonestacion"}>
-                                    <Button className="bg-blue-500 hover:bg-blue-800 w-full sm:w-auto">
-                                        <SaveIcon />
-                                        Registrar Amonestacion
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    <FormRegistroAmonestacion/>
                 </div>
                 <div className="lg:col-span-1 flex flex-col gap-3">
                     <div className="flex flex-col border-2 border-amber-200 bg-amber-100/30 rounded-lg p-4 gap-2 shadow dark:border-amber-400/30 dark:bg-amber-500/10">
@@ -86,7 +46,7 @@ export default function RegistroAmonestacionPage() {
                         <p className="text-sm text-gray-800 dark:text-gray-200">
                             Se detectó un caso abierto. Esta entrada se vinculará como reincidencia
                         </p>
-                        <div className="flex flex-col border bg-white rounded-sm px-3 py-3 border-amber-100 dark:border-amber-400/20 dark:bg-gray-950">
+                        <div className="flex flex-col border bg-white rounded-sm px-3 py-3 border-amber-100 dark:border-amber-400/20 dark:bg-zinc-950">
                             <div className="flex flex-row justify-between">
                                 <p className="text-xs font-light text-gray-800 dark:text-gray-200">Numero de incidencias</p>
                                 <p className="text-xs text-amber-600 dark:text-amber-300"> Medio-Alto</p>
@@ -96,14 +56,14 @@ export default function RegistroAmonestacionPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col border-2 shadow rounded-lg p-4 gap-8 flex-1 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="flex flex-col border-2 shadow rounded-lg p-4 gap-8 flex-1 dark:border-zinc-700 dark:bg-zinc-900">
                         <h1 className="mb-1">
                             <p className="text-gray-400 font-semibold dark:text-gray-400">
                                 HISTORIAL DEL CASO
                             </p>
                         </h1>
                         <div className="flex flex-row">
-                            <div className="border w-6 h-6 rounded-full border-gray-300 flex justify-center dark:border-gray-600">
+                            <div className="border w-6 h-6 rounded-full border-gray-300 flex justify-center dark:border-zinc-600">
                                 <div className="w-3 h-3 bg-blue-600 rounded-full self-center" />
                             </div>
 
@@ -131,7 +91,7 @@ export default function RegistroAmonestacionPage() {
                         </div>
                         <div className="flex flex-row items-center">
                             <div className="w-6 h-6 flex justify-center">
-                                <div className="w-3 h-3 bg-gray-400 rounded-full self-center dark:bg-gray-500" />
+                                <div className="w-3 h-3 bg-gray-400 rounded-full self-center dark:bg-zinc-500" />
                             </div>
                             <div className="flex-1 flex items-center justify-between">
                                 <div className="self-center">
@@ -143,7 +103,7 @@ export default function RegistroAmonestacionPage() {
                         </div>
                         <div className="flex flex-row items-center">
                             <div className="w-6 h-6 flex justify-center">
-                                <div className="w-3 h-3 bg-gray-400 rounded-full self-center dark:bg-gray-500" />
+                                <div className="w-3 h-3 bg-gray-400 rounded-full self-center dark:bg-zinc-500" />
                             </div>
                             <div className="flex-1 flex items-center justify-between">
                                 <div className="self-center">
