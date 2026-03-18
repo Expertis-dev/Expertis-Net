@@ -11,7 +11,7 @@ export const useJustificaciones = () => {
     const fetchJustificaciones = useCallback(async () => {
         setIsLoadingJustificaciones(true);
         const data = await getJustificaciones({ idUsuario: user?.idEmpleado });
-        if (user?.usuario === "GINA GEORFFINO") {
+        if (user?.usuario === "GINA GEORFFINO" || user?.usuario === "DIANA DAVILA") {
             const jutificacionesFiltradas = data.filter((justificacion: Justificaciones) =>
                 justificacion.fecha >= "2025-11-01" && (justificacion.id_grupo === 14)
             );

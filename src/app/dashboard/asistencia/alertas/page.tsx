@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Loading } from "@/components/Loading" 
 import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout"
+import { useUser } from "@/Provider/UserProvider"
 
 export interface AsistenciaRecord {
   fecha: string;
@@ -40,6 +41,7 @@ export interface AsistenciaRecord {
 }
 
 export default function AlertasPage() {
+    const { user } = useUser();
     const [tardanzas, setTardanzas] = useState<AsistenciaRecord[]>([]);
     const [faltas, setFaltas] = useState<AsistenciaRecord[]>([]);
     const [loading, setLoading] = useState(false);
@@ -115,7 +117,12 @@ export default function AlertasPage() {
     // --- PROCESAMIENTO TARDANZAS ---
     const tardanzasProcesadas = useMemo(() => {
         // Calcular incidencia global PRIMERO, antes de aplicar filtros
-        const ordenadoTotal = [...tardanzas].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
+        // Filtro base para Diana Davila
+        const base = user?.usuario?.toUpperCase() === "DIANA DAVILA"
+            ? tardanzas.filter(t => (t.agencia || "").toUpperCase() === "EXPERTIS BPO")
+            : tardanzas;
+
+        const ordenadoTotal = [...base].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
         const contadores: Record<string, number> = {};
         
         type RecordWithIncidence = AsistenciaRecord & { incidencia: number };
@@ -175,12 +182,17 @@ export default function AlertasPage() {
             }
             return 0;
         });
-    }, [tardanzas, filtroAgencia, filtroGrupo, filtroNombre, filtroColor, sortTardanzas]);
+    }, [tardanzas, filtroAgencia, filtroGrupo, filtroNombre, filtroColor, sortTardanzas, user?.usuario]);
 
     // --- PROCESAMIENTO FALTAS ---
     const faltasProcesadas = useMemo(() => {
         // Calcular incidencia global PRIMERO, antes de aplicar filtros
-        const ordenadoTotal = [...faltas].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
+        // Filtro base para Diana Davila
+        const base = user?.usuario?.toUpperCase() === "DIANA DAVILA"
+            ? faltas.filter(f => (f.agencia || "").toUpperCase() === "EXPERTIS BPO")
+            : faltas;
+
+        const ordenadoTotal = [...base].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
         const contadores: Record<string, number> = {};
         
         type RecordWithIncidence = AsistenciaRecord & { incidencia: number };
@@ -234,7 +246,7 @@ export default function AlertasPage() {
             }
             return 0;
         });
-    }, [faltas, filtroAgencia, filtroGrupo, filtroNombre, filtroColor, sortFaltas]);
+    }, [faltas, filtroAgencia, filtroGrupo, filtroNombre, filtroColor, sortFaltas, user?.usuario]);
 
     // Handlers para Ordenamiento
     const toggleSortTardanzas = (field: "fecha" | "alias" | "incidencia" | "minutosTardanza") => {

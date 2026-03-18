@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useUser } from "@/Provider/UserProvider"
 import { motion } from "framer-motion"
 import {
     Search,
@@ -25,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout"
 
 export default function ReporteGeneralVacaciones() {
+    const { user } = useUser()
     const [solicitudes, setSolicitudes] = useState<SolicitudesTotales[]>([])
     const [loading, setLoading] = useState(true)
     const [hasPermission, setHasPermission] = useState<boolean | null>(null)
@@ -62,6 +64,12 @@ export default function ReporteGeneralVacaciones() {
         return solicitudes.filter((sol) => {
             const matchesSearch = (sol.ALIAS_EMPLEADO || "").toLowerCase().includes(searchTerm.toLowerCase())
 
+            // Filtro especial para Diana Davila (se evalúa siempre, antes del return)
+            if (user?.usuario?.toUpperCase() === "DIANA DAVILA") {
+                const agencia = (sol.agencia || sol.AGENCIA || "").toUpperCase();
+                if (agencia !== "EXPERTIS BPO") return false;
+            }
+
             if (!startDate && !endDate) return matchesSearch;
 
             // Lógica de solapamiento (Overlap):
@@ -79,7 +87,7 @@ export default function ReporteGeneralVacaciones() {
 
             return matchesSearch && matchesStartDate && matchesEndDate
         }).sort((a, b) => new Date(b.FECHA_INCIO_VACACIONES).getTime() - new Date(a.FECHA_INCIO_VACACIONES).getTime())
-    }, [solicitudes, searchTerm, startDate, endDate])
+    }, [solicitudes, searchTerm, startDate, endDate, user?.usuario])
 
     const aprobadas = useMemo(() => filteredSolicitudes.filter(s => s.ESTADO_VACACIONES === "APROBADO"), [filteredSolicitudes])
     const pendientes = useMemo(() => filteredSolicitudes.filter(s => s.ESTADO_VACACIONES === "PENDIENTE"), [filteredSolicitudes])

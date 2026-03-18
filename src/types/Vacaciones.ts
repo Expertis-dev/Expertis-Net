@@ -81,5 +81,7 @@ export type SolicitudesTotales = {
     ESTADO_VACACIONES: string;
     FECHA_FIN_VACACIONES: string;
     FECHA_INCIO_VACACIONES: string;
+    AGENCIA?: string;
+    agencia?: string;
 };
 export type ArraySolicitudesTotales = Array<SolicitudesTotales>;
