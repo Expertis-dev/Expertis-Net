@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2Icon, DownloadIcon, FileIcon, FileTextIcon, MaximizeIcon, PrinterIcon, SendHorizonalIcon } from "lucide-react";
+import { CheckCircle2Icon, FileIcon, FileTextIcon, SendHorizonalIcon } from "lucide-react";
 
 export default function GeneracionAmonestacionPage() {
     const pdfUrl = "https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf";

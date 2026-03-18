@@ -1,7 +1,7 @@
 "use client"
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Incidencia } from "../alertaIncidencias/page";
+import { Incidencia } from "@/types/Incidencias";
 import { CasosTable } from "@/components/amonestaciones/casos/CasosTable";
 import { useEffect, useState } from "react";
 import { DetalleIncidencia } from "@/components/amonestaciones/detalleIncidencias/DetalleIncidencia";

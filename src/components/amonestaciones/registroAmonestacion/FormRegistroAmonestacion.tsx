@@ -14,7 +14,7 @@ interface RegistroAmonestacion {
 }
 
 export const FormRegistroAmonestacion = () => {
-    const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<RegistroAmonestacion>();
+    const { register, handleSubmit, watch, reset } = useForm<RegistroAmonestacion>();
     const router = useRouter()
     const onSubmit: SubmitHandler<RegistroAmonestacion> = (data) => {
         console.log(data)

@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangleIcon, BellIcon, CalendarIcon, DownloadIcon, FilterIcon } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangleIcon, BellIcon, CalendarIcon, DownloadIcon } from "lucide-react";
 
 export default function AmonestacionesDashboardPage() {
     return (

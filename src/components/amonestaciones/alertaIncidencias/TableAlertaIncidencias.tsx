@@ -1,5 +1,5 @@
 "use client"
-import { Incidencia } from '@/app/dashboard/amonestaciones/alertaIncidencias/page'
+import { Incidencia } from '@/types/Incidencias'
 import { DetailIncidenciaModal } from '@/components/amonestaciones/alertaIncidencias/detail-modal'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/Provider/UserProvider'
@@ -174,7 +174,7 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
                                     <p className="font-bold">
                                         {j.alias}
                                     </p>
-                                    <p>{user.user?.usuario!}</p>
+                                    <p>{user.user?.usuario || "null"}</p>
                                 </div>
                                 <p className="self-center justify-self-center text-black dark:text-gray-100">{fecha.toLocaleDateString("es-ES")}</p>
                                 {

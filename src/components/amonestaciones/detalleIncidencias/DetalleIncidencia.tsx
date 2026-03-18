@@ -1,4 +1,4 @@
-import { Incidencia } from '@/app/dashboard/amonestaciones/alertaIncidencias/page';
+import { Incidencia } from '@/types/Incidencias';
 import { AlertTriangleIcon, ArrowLeft, ChartNoAxesCombinedIcon, EyeIcon, Gavel, LucideCalendarDays, TimerOffIcon } from 'lucide-react';
 import React, { useState } from 'react'
 import { DetailIncidenciaModal } from '../alertaIncidencias/detail-modal';
@@ -31,6 +31,10 @@ const formatFechaCorta = (fecha: string) => {
 }
 
 export const DetalleIncidencia = ({ selectedAmo, setSelectedAmo }: Props) => {
+    const [incidenciaModalOpen, setIncidenciaModalOpen] = useState<{isOpen: boolean, incidencia: Incidencia | null}>({
+        isOpen: false,
+        incidencia: null,
+    })
     if (!selectedAmo || selectedAmo.length === 0) return null
 
     const total = selectedAmo.length
@@ -40,13 +44,9 @@ export const DetalleIncidencia = ({ selectedAmo, setSelectedAmo }: Props) => {
     const percent = Math.min(100, Math.round((total / limit) * 100))
     const justificadas = selectedAmo.filter((inc) => inc.hayJustificacion === 1).length
     const injustificadas = total - justificadas
-    const lastFecha = formatFechaCorta(selectedAmo[selectedAmo.length - 1].fecha)
+    // const lastFecha = formatFechaCorta(selectedAmo[selectedAmo.length - 1].fecha)
     const mesRevision = getFechaToDate(first.fecha).toLocaleDateString("es-ES", { month: "long", year: "numeric" })
 
-    const [incidenciaModalOpen, setIncidenciaModalOpen] = useState<{isOpen: boolean, incidencia: Incidencia | null}>({
-        isOpen: false,
-        incidencia: null,
-    })
 
     return (
         <>

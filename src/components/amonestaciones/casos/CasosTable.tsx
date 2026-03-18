@@ -1,7 +1,7 @@
 "use client"
-import { Incidencia } from '@/app/dashboard/amonestaciones/alertaIncidencias/page'
+import { Incidencia } from '@/types/Incidencias'
 import { useUser } from '@/Provider/UserProvider'
-import { AlertTriangleIcon, DownloadIcon, FilterIcon, NotebookPen, ScrollIcon, TimerIcon } from 'lucide-react'
+import { AlertTriangleIcon, NotebookPen, ScrollIcon, TimerIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Colaborador } from '../alertaIncidencias/TableAlertaIncidencias'
 
@@ -84,7 +84,7 @@ export const CasosTable = ({ incidencias, setSelectedAmo }: Props) => {
     const { user } = useUser()
     const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
 
-    const { incidenciasGroupedByAsesorEntries, filteredIncidencias, resumen } = useMemo(() => {
+    const { incidenciasGroupedByAsesorEntries, resumen } = useMemo(() => {
         const filteredIncidencias = incidencias
             .filter(i => colaboradores.some((c) => c.usuario === i.alias))
             .map(v => ({ ...v, tipoIncidencia: v.hayJustificacion === 1 ? "JUSTIFICADO" : "DETECTADA" }));

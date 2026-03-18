@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
-import type { Incidencia } from "@/app/dashboard/amonestaciones/alertaIncidencias/page";
+import type { Incidencia } from "@/types/Incidencias";
 
 interface DetailIncidenciaModalProps {
   readonly isOpen: boolean;
