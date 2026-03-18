@@ -1,7 +1,27 @@
 import { FormRegistroAmonestacion } from "@/components/amonestaciones/registroAmonestacion/FormRegistroAmonestacion";
+import { Incidencia } from "@/types/Incidencias";
 import { AlertCircleIcon, ShieldCheckIcon, UserSearchIcon } from "lucide-react";
 
-export default function RegistroAmonestacionPage() {
+const incidenciasPorAlias = async (alias: string): Promise<Incidencia[]> => {
+    const fecha = new Date()
+    const month = fecha.getMonth() + 1
+    const data: Incidencia[] = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteCruzadoPorEmp/${month}/${decodeURIComponent(alias)}`).then(res => res.json())
+    const response = data.filter((v) => (v.esFalta === 1 || v.esTardanza === 1))
+    return response;
+}
+
+interface Props {
+    alias: string
+}
+
+export default async function RegistroAmonestacionPage({
+    params,
+}: {
+    params: Promise<Props>
+}) {
+    const {alias} = await params
+    const incidencias = await incidenciasPorAlias(alias)
+    const nombreAsesor = decodeURIComponent(alias)
     return (
         <>
             <div>
@@ -10,17 +30,12 @@ export default function RegistroAmonestacionPage() {
             </div>
             <div className="grid grid-cols-1 gap-5 mt-4 lg:grid-cols-3">
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <div className="border border-gray-200 flex flex-col p-4 rounded-2xl shadow dark:border-zinc-700 dark:bg-zinc-900">
-                        <p className="font-semibold text-lg rounded-2xl text-gray-900 dark:text-gray-100">Empleado Implicado</p>
-                        <div className="flex flex-row mt-4 p-3 border rounded-lg gap-2 shadow-xs dark:border-zinc-700 dark:bg-zinc-950">
-                            <UserSearchIcon className="text-sky-400" />
-                            <p className="text-gray-900 dark:text-gray-100">Sebastian Guzman</p>
-                        </div>
-                        <div className="flex flex-col my-4 p-3 border-2 border-blue-300/40 bg-blue-200/10 rounded-lg gap-2 shadow-xs dark:border-blue-400/30 dark:bg-blue-500/10">
+
+                        <div className="flex flex-col p-3 border-2 border-blue-300/40 bg-blue-200/10 rounded-lg gap-2 shadow-xs dark:border-blue-400/30 dark:bg-blue-500/10">
                             <div>
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                        <h2 className="text-lg flex-initial self-center text-gray-900 dark:text-gray-100">Sebastian Guzmán</h2>
+                                        <h2 className="text-lg flex-initial self-center text-gray-900 dark:text-gray-100">{nombreAsesor}</h2>
                                         <p className="flex-initial text-green-600 bg-green-500/20 p-1 self-center text-xs rounded-2xl px-2">ACTIVO</p>
                                     </div>
                                     {/* <Button className="text-xs flex-initial bg-white shadow text-red-500 hover:bg-red-100 w-full sm:w-auto dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-500/10 dark:border dark:border-red-400/30">
@@ -29,10 +44,9 @@ export default function RegistroAmonestacionPage() {
                                     </Button> */}
                                 </div>
                                 <p className="font-light text-sm text-gray-800 dark:text-gray-200">Asesor de cobranza</p>
-                                <p className="text-gray-400 text-xs dark:text-gray-400">Agencia BPO</p>
+                                <p className="text-gray-400 text-xs dark:text-gray-400">{incidencias[0].agencia}</p>
                             </div>
                         </div>
-                    </div>
 
                     <FormRegistroAmonestacion/>
                 </div>

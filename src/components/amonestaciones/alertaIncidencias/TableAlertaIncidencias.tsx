@@ -19,8 +19,8 @@ export interface Colaborador {
 
 enum TipoIncidencia {
     TODOS = "TODOS",
-    DETECTADA = "DETECTADA", 
-    JUSTIFICADO = "JUSTIFICADO", 
+    DETECTADA = "DETECTADA",
+    JUSTIFICADO = "JUSTIFICADO",
     CERRADO = "CERRADO"
 }
 
@@ -49,7 +49,7 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
             .map(v => ({ ...v, tipoIncidencia: v.hayJustificacion === 1 ? "JUSTIFICADO" : "DETECTADA" }))
             .filter((v) => v.alias.includes(form.nombreAsesor))
             .filter((v) => form.tipoIncidencia === "TODOS" || v.tipoIncidencia === form.tipoIncidencia)
-            ,
+        ,
         [incidencias, colaboradores, form])
 
     const [selectedRow, setSelectedRow] = useState<Incidencia | null>(null)
@@ -97,6 +97,11 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
         incidencia: null,
     })
 
+    const transFormFecha = (fecha: string) => {
+        const [dia, mes, ano] = fecha.split("-");
+        return `${mes}-${dia}-${ano}`
+    }
+
     return (
         <>
             <div className="flex flex-col gap-4 sm:flex-row lg:items-center sm:justify-between">
@@ -108,7 +113,7 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
                 </div>
                 {
                     (selectedRow) ?
-                        <Link href={"/dashboard/amonestaciones/registroAmonestacion"}>
+                        <Link href={`/dashboard/amonestaciones/registroAmonestacion/${selectedRow.alias}`}>
                             <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm text-white">+ Registrar amonestacion</Button>
                         </Link>
                         :
@@ -125,23 +130,30 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
                             type="text"
                             name="nombreAsesor"
                             value={form.nombreAsesor}
-                            className='w-[20%] border border-neutral-300 py-1 px-3 rounded-xl'
+                            className='w-[25%] border border-neutral-300 py-1 px-3 rounded-xl'
                         />
-                        <div className='flex flex-row gap-5 ml-5'>
+                        <span className='flex-1'/>
+                        <div className='flex flex-row flex-wrap gap-2 ml-4 rounded-2xl bg-gray-100 p-1 dark:bg-zinc-800'>
                             {
-                            Object.keys(TipoIncidencia).map((v) => (
-                            <button
-                                key={v}
-                                name={v}
-                                className={`px-2 border rounded-xl ${form.tipoIncidencia === v ? "bg-zinc-300 dark:bg-zinc-500" : "dark:bg-zinc-800"} dark:hover:bg-zinc-500 cursor-pointer `}
-                                onClick={(e) => {
-                                        setPagination({starts: 0, end: 10})
-                                        setForm({ ...form, tipoIncidencia: e.currentTarget.name })
-                                    }}
-                            >
-                                {v}
-                            </button>
-                            ))
+                                Object.keys(TipoIncidencia).map((v) => (
+                                    <button
+                                        key={v}
+                                        name={v}
+                                        type="button"
+                                        aria-pressed={form.tipoIncidencia === v}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60
+                                    ${form.tipoIncidencia === v
+                                                ? "bg-white text-gray-900 border-gray-200 shadow-sm dark:bg-zinc-900 dark:text-gray-100 dark:border-zinc-700"
+                                                : "bg-transparent text-gray-600 border-transparent hover:text-gray-900 hover:bg-white/70 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700"
+                                            }`}
+                                        onClick={(e) => {
+                                            setPagination({ starts: 0, end: 10 })
+                                            setForm({ ...form, tipoIncidencia: e.currentTarget.name })
+                                        }}
+                                    >
+                                        {v}
+                                    </button>
+                                ))
                             }
                         </div>
                     </div>
@@ -155,53 +167,57 @@ export const TableAlertaIncidencias = ({ incidencias }: Props) => {
                 </div>
 
                 {
-                    incidenciasGrupo.filter((v) => v.alias.includes(form.nombreAsesor)).filter((j, i) => pagination.starts <= i && i < pagination.end).map((j, i) => {
-                        const fecha = new Date();
-                        const [dia, mes, anio] = j.fecha.split("-")
-                        fecha.setDate(+dia)
-                        fecha.setMonth(+mes - 1)
-                        fecha.setFullYear(+anio)
-                        return (
-                            <div
-                                key={`${j.alias}_${j.agencia}_${j.fecha}_${i}`}
-                                className={`grid grid-cols-5 px-6 py-2 text-sm text-gray-500 dark:text-gray-300 border-b ${selectedRow !== j ? "hover:dark:bg-neutral-800 hover:bg-gray-300" : ""} ${selectedRow === j ? "dark:bg-slate-900 bg-blue-200" : ""}`}
-                                onClick={() => {
-                                    if (j.hayJustificacion === 1) return;
-                                    setSelectedRow(j)
-                                }}
-                            >
-                                <div className="flex flex-col text-black dark:text-gray-100">
-                                    <p className="font-bold">
-                                        {j.alias}
-                                    </p>
-                                    <p>{user.user?.usuario || "null"}</p>
-                                </div>
-                                <p className="self-center justify-self-center text-black dark:text-gray-100">{fecha.toLocaleDateString("es-ES")}</p>
-                                {
-                                    j.esTardanza === 1 ?
-                                        <p className='justify-self-center self-center'>TARDANZA</p> : j.esFalta === 1 ? <p className='justify-self-center self-center font-bold'>FALTA</p> : <></>
-                                }
-                                <div className="px-1 self-center justify-self-center">
-                                    <p className={`py-1 px-2 
-                                    ${(j.hayJustificacion === 1) ?
-                                            "bg-green-200 text-green-700 dark:bg-green-400/20 dark:text-green-200" : "bg-orange-200 text-orange-700 dark:bg-orange-400/20 dark:text-orange-200"}
-                                    rounded-xl`
-                                    }>{(j.hayJustificacion === 1) ? "JUSTIFICADO" : "DETECTADA"}</p>
-                                </div>
-                                <Button
-                                    className="bg-transparent hover:bg-transparent dark:bg-zinc-900 shadow-none text-blue-500 hover:underline self-center dark:text-blue-300 justify-self-center"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        setModal({ isOpen: true, incidencia: j })
+                    incidenciasGrupo
+                        .sort((a,b) => new Date(transFormFecha(b.fecha)).getTime() - new Date(transFormFecha(a.fecha)).getTime())
+                        .filter((v) => v.alias.includes(form.nombreAsesor))
+                        .filter((j, i) => pagination.starts <= i && i < pagination.end)
+                        .map((j, i) => {
+                            const fecha = new Date();
+                            const [dia, mes, anio] = j.fecha.split("-")
+                            fecha.setDate(+dia)
+                            fecha.setMonth(+mes - 1)
+                            fecha.setFullYear(+anio)
+                            return (
+                                <div
+                                    key={`${j.alias}_${j.agencia}_${j.fecha}_${i}`}
+                                    className={`grid grid-cols-5 px-6 py-2 text-sm text-gray-500 dark:text-gray-300 border-b ${selectedRow !== j ? "hover:dark:bg-neutral-800 hover:bg-gray-300" : ""} ${selectedRow === j ? "dark:bg-slate-900 bg-blue-200" : ""}`}
+                                    onClick={() => {
                                         if (j.hayJustificacion === 1) return;
                                         setSelectedRow(j)
                                     }}
                                 >
-                                    Ver Detalle
-                                </Button>
-                            </div>
-                        )
-                    })
+                                    <div className="flex flex-col text-black dark:text-gray-100">
+                                        <p className="font-bold">
+                                            {j.alias}
+                                        </p>
+                                        <p>{user.user?.usuario || "null"}</p>
+                                    </div>
+                                    <p className="self-center justify-self-center text-black dark:text-gray-100">{fecha.toLocaleDateString("es-ES")}</p>
+                                    {
+                                        j.esTardanza === 1 ?
+                                            <p className='justify-self-center self-center'>TARDANZA</p> : j.esFalta === 1 ? <p className='justify-self-center self-center font-bold'>FALTA</p> : <></>
+                                    }
+                                    <div className="px-1 self-center justify-self-center">
+                                        <p className={`py-1 px-2 
+                                    ${(j.hayJustificacion === 1) ?
+                                                "bg-green-200 text-green-700 dark:bg-green-400/20 dark:text-green-200" : "bg-orange-200 text-orange-700 dark:bg-orange-400/20 dark:text-orange-200"}
+                                    rounded-xl`
+                                        }>{(j.hayJustificacion === 1) ? "JUSTIFICADO" : "DETECTADA"}</p>
+                                    </div>
+                                    <Button
+                                        className="bg-transparent hover:bg-transparent dark:bg-zinc-900 shadow-none text-blue-500 hover:underline self-center dark:text-blue-300 justify-self-center"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setModal({ isOpen: true, incidencia: j })
+                                            if (j.hayJustificacion === 1) return;
+                                            setSelectedRow(j)
+                                        }}
+                                    >
+                                        Ver Detalle
+                                    </Button>
+                                </div>
+                            )
+                        })
                 }
 
                 <div className="flex flex-row px-6 py-4 text-sm text-gray-500 bg-gray-100 justify-items-center dark:bg-zinc-950 dark:text-gray-400">
