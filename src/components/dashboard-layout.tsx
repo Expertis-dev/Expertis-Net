@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, HammerIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -345,6 +345,38 @@ const MENU_CONFIG: MenuItem[] = [
       },
 
     ]
+  },
+  {
+    id: "amonestaciones",
+    title: "Amonestaciones",
+    icon: HammerIcon,
+    href: "/dashboards/amonestaciones",
+    subItems: [
+      {
+        title: "Dashboard",
+        href: "/dashboard/amonestaciones/dashboard",
+        // modulo: "",
+        // permiso: "EncuestasActivas-ver",
+      },
+      {
+        title: "Mis Amonestaciones",
+        href: "/dashboard/amonestaciones/mis-amonestaciones",
+        // modulo: "",
+        // permiso: "EncuestasActivas-ver",
+      },
+      {
+        title: "Alerta Incidencias",
+        href: "/dashboard/amonestaciones/alertaIncidencias",
+        // modulo: "",
+        // permiso: "EncuestasActivas-ver",
+      },
+      {
+        title: "Casos",
+        href: "/dashboard/amonestaciones/casos",
+        // modulo: "",
+        // permiso: "EncuestasActivas-ver",
+      },
+    ]
   }
   /*{
     id: "mcp",
@@ -605,8 +637,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* Contenido */}
-          <main className="flex-1 overflow-hidden">
-            <div className="p-4 h-[calc(100vh-4rem)] overflow-y-auto sidebar-scroll">
+          <main className="flex-1">
+            <div className="p-4">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: 20 }}
