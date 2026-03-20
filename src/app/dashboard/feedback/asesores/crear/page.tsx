@@ -1,7 +1,7 @@
 "use client"
 import { CrearFbAsesorForm } from "@/components/feedback/asesor/crear/CrearFbAsesorForm";
 import { CrearFbNegativoAsesorForm } from "@/components/feedback/asesor/crear/CrearFbNegativoAsesorForm";
-import { HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
+import { Colaborador, HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,16 +13,20 @@ export default function CrearFeedbackAsesorPage() {
         isOpen: false,
         message: ""
     })
+
+    const [asesor, setAsesor] = useState<Colaborador>()
+
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
             <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.back()}>
                 <ArrowLeft size={15}/>
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>
-            <HeaderCrearFbAsesor currentFeedback={currentFeedback} setCurrentFeedback={setCurrentFeedback}/>
+            <HeaderCrearFbAsesor currentFeedback={currentFeedback} setCurrentFeedback={setCurrentFeedback} setAsesor={setAsesor}/>
             {
                 currentFeedback === "rutina" ? 
                 <CrearFbAsesorForm
+                    asesor={asesor!}
                     modal={modal}
                     router={router}
                     setModal={setModal}
@@ -32,6 +36,7 @@ export default function CrearFeedbackAsesorPage() {
                     modal={modal}
                     router={router}
                     setModal={setModal}
+                    asesor={asesor!}
                 />
             }
         </div>

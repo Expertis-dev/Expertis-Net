@@ -7,8 +7,15 @@ import { SheetIcon } from "lucide-react";
 import Link from "next/link";
 
 export interface Empleado {
-    alias:      string;
+    alias: string;
     idEmpleado: number;
+}
+
+export interface HistFeedback {
+    idFeedback: string;
+    tipoEvaluacion: string;
+    periodo: string;
+    estadoFeedback: string;
 }
 
 
@@ -17,8 +24,41 @@ const fetchAsesores = async (): Promise<Empleado[]> => {
     return res
 }
 
-export default async function AsesoresPage() {
+const fetchFeedbacksAsesores = async (
+    idAsesor = "",
+    filtroMes = "",
+    tipoEvaluacion = "",
+    userName = "",
+    tipoEmpleado = "ASESOR",
+): Promise<HistFeedback[]> => {
+    const urlParams = new URLSearchParams()
+    idAsesor !== "" ? urlParams.set("idAsesor", idAsesor) : null
+    filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
+    tipoEvaluacion !== "" ? urlParams.set("tipoEvaluacion", tipoEvaluacion.toUpperCase()) : null
+    urlParams.set("tipoEmpleado", tipoEmpleado)
+    userName !== "" ? urlParams.set("usrInsert", userName) : null
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks?${urlParams.toString()}`).then(r => r.json())
+    return res
+}
+
+export default async function AsesoresPage({
+    searchParams
+}: {
+    searchParams: Promise<{ [key: string]: string | undefined }>
+}) {
+    const {
+        idAsesor,
+        filtroMes,
+        tipoEvaluacion,
+        userName,
+    } = (await searchParams)
     const asesores = await fetchAsesores()
+    const feedbacks = await fetchFeedbacksAsesores(
+        idAsesor,
+        filtroMes,
+        tipoEvaluacion,
+        userName
+    )
     return (
         <>
             {/*//* HEADER */}
@@ -50,13 +90,20 @@ export default async function AsesoresPage() {
             <FilterAsesor
                 asesores={asesores}
             />
-            
+
             {/* Tabla */}
             <Table>
-                <AsesorHeaders/>
-                <AsesorFila/>
-                <AsesorFila/>
-                <AsesorFila/>
+                <AsesorHeaders />
+                {
+                    feedbacks.map((v) => (
+                        <AsesorFila key={v.idFeedback}
+                            idFeedback={v.idFeedback}
+                            estadoFeedback={v.estadoFeedback}
+                            periodo={v.periodo}
+                            tipoEvaluacion={v.tipoEvaluacion}
+                        />
+                    ))
+                }
             </Table>
         </>
     );

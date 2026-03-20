@@ -1,20 +1,44 @@
 "use client"
 import { useCombobox } from "@/hooks/feedback/combobox"
+import { useUser } from "@/Provider/UserProvider"
 import { LockIcon, SearchIcon } from "lucide-react"
-import { Dispatch, SetStateAction } from "react"
-
-const asesorOptions = ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
+import { Dispatch, SetStateAction, useEffect, useState } from "react"
 
 interface Props {
     currentFeedback: string,
     setCurrentFeedback: Dispatch<SetStateAction<string>>
+    setAsesor: (asesor: Colaborador) => void
+}
 
+export interface Colaborador {
+    Id: number,
+    usuario: string,
+    idEmpleado: number,
+    dni: string
 }
 
 export const HeaderCrearFbAsesor = ({
     currentFeedback,
-    setCurrentFeedback
+    setCurrentFeedback,
+    setAsesor
 }: Props) => {
+
+    const [asesorOptions, setAsesorOptions] = useState<Array<Colaborador>>([])
+    const {user} = useUser()
+    useEffect(() => {
+        const fetchAsesores = async ():Promise<Colaborador[]> => {
+            const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`,{
+                method: "POST",
+                "headers": {"Content-Type": "application/json"},
+                body: JSON.stringify({usuario: user?.usuario!})
+            }).then(r => r.json())
+            return asesores
+        }
+        fetchAsesores().then((r) => {
+            setAsesorOptions(r)
+        })
+    }, [])
+    
     const {
         filteredOptions,
         isOpen,
@@ -23,7 +47,12 @@ export const HeaderCrearFbAsesor = ({
         query,
         setIsOpen,
         selectOption
-    } = useCombobox({ options: asesorOptions });
+    } = useCombobox({ options: asesorOptions.map((v) => v.usuario) });
+
+    useEffect(() => {
+        const colaborador  = asesorOptions.filter((v) => v.usuario.includes(query))
+        if(colaborador.length === 1) setAsesor(colaborador[0])
+    },[query])
 
     return (
         <>
@@ -49,16 +78,16 @@ export const HeaderCrearFbAsesor = ({
                             {isOpen && (
                                 <div className="absolute left-0 right-0 top-[110%] z-20 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
                                     {filteredOptions.length > 0 ? (
-                                        filteredOptions.map((name) => (
+                                        filteredOptions.map((a) => (
                                             <button
-                                                key={name}
+                                                key={a}
                                                 type="button"
                                                 onClick={() => {
-                                                    selectOption(name)
+                                                    selectOption(a)
                                                 }}
                                                 className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                             >
-                                                {name}
+                                                {a}
                                             </button>
                                         ))
                                     ) : (

@@ -6,6 +6,9 @@ import { FormattedNumberInput } from "../../FormattedNumberInput"
 import { SuccessModal } from "@/components/success-modal"
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
 import { Controller, useForm } from "react-hook-form"
+import { useUser } from "@/Provider/UserProvider"
+import { Colaborador } from "./HeaderCrearFbAsesor"
+import { ResponseModal } from "@/Encuesta/components/resultados/ResponseModal"
 
 interface Modal {
     isOpen: boolean;
@@ -15,7 +18,8 @@ interface Modal {
 interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
-    router: AppRouterInstance
+    router: AppRouterInstance,
+    asesor: Colaborador
 }
 
 interface Form {
@@ -99,7 +103,8 @@ const metricFields: Array<{
 export const CrearFbAsesorForm = ({
     modal,
     setModal,
-    router
+    router,
+    asesor
 }: Props) => {
     const { control, register, handleSubmit, setError, clearErrors, formState: { errors } } = useForm<Form>({
         defaultValues: {
@@ -118,19 +123,35 @@ export const CrearFbAsesorForm = ({
             observacionesGenerales: "",
         }
     })
-
+    const {user} = useUser()
     const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
 
     const requireIfPublishing = (message: string) => (value: string) =>
         submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
 
-    const onClickSave = (type: string, data: Form) => {
+    const onClickSave = async (type: string, {observacionesGenerales, ...data}: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        console.log(data)
-        setModal({ isOpen: true, message: message })
-        setTimeout(() => {
-            router.back()
-        }, 1500);
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+            headers: {"Content-Type": "application/json"},
+            method: "POST",
+            body: JSON.stringify({
+                idEmpleado: asesor.idEmpleado,
+                periodo: (new Date()).toISOString(),
+                tipoEvaluacion: "RUTINA",
+                estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                observacionesGenerales: observacionesGenerales,
+                resultadoEvaluacion: data,
+                usrInsert: user?.usuario!,
+                tipoEmpleado: "ASESOR"
+            })
+        }).then(() => {
+            setModal({ isOpen: true, message: message })
+            setTimeout(() => {
+                router.push("/dashboard/feedback/asesores")
+            }, 1500);
+        }).catch(() => {
+            alert("Ocurrio un error, contactar con soporte si el error persiste")
+        })
     }
 
     const handleFormattedChange =

@@ -4,6 +4,8 @@ import { ArrowRight } from 'lucide-react'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { Dispatch, SetStateAction, useRef } from 'react'
 import { useForm } from 'react-hook-form';
+import { Colaborador } from './HeaderCrearFbAsesor';
+import { useUser } from '@/Provider/UserProvider';
 
 interface Modal {
     isOpen: boolean;
@@ -13,7 +15,8 @@ interface Modal {
 interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
-    router: AppRouterInstance
+    router: AppRouterInstance,
+    asesor: Colaborador
 }
 
 interface Form {
@@ -57,7 +60,8 @@ const metricFields: Array<{ name: MetricField, label: string, placeholder: strin
 export const CrearFbNegativoAsesorForm = ({
     modal,
     setModal,
-    router
+    router,
+    asesor
 }: Props) => {
     const { register, handleSubmit, formState: { errors }, setError, clearErrors } = useForm<Form>()
     const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
@@ -65,13 +69,30 @@ export const CrearFbNegativoAsesorForm = ({
         (message: string) =>
             (value: string) =>
                 submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
-    const onClickSave = (type: string, data: Form) => {
-        console.log(data)
+    const {user} = useUser()
+    const onClickSave = async (type: string, {observaciones,...data}: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        setModal({ isOpen: true, message: message })
-        setTimeout(() => {
-            router.back()
-        }, 1500);
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+            headers: {"Content-Type": "application/json"},
+            method: "POST",
+            body: JSON.stringify({
+                idEmpleado: asesor.idEmpleado,
+                periodo: (new Date()).toISOString(),
+                tipoEvaluacion: "NEGATIVO",
+                estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                observacionesGenerales: observaciones,
+                resultadoEvaluacion: data,
+                usrInsert: user?.usuario!,
+                tipoEmpleado: "ASESOR"
+            })
+        }).then(() => {
+            setModal({ isOpen: true, message: message })
+            setTimeout(() => {
+                router.push("/dashboard/feedback/asesores")
+            }, 1500);
+        }).catch(() => {
+            alert("Ocurrio un error, contactar con soporte si el error persiste")
+        })
     }
 
     const hasAnyValue = (data: Form) =>
