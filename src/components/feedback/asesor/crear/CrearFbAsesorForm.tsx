@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, InfoIcon, SquareIcon } from "lucide-react"
 import { formatWithThousands } from "../../supervisor/crear/CrearFbSupervisorForm"
-import { Dispatch, SetStateAction, useRef } from "react"
+import { Dispatch, SetStateAction, useEffect, useRef } from "react"
 import { FormattedNumberInput } from "../../FormattedNumberInput"
 import { SuccessModal } from "@/components/success-modal"
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form"
 import { useUser } from "@/Provider/UserProvider"
 import { Colaborador } from "./HeaderCrearFbAsesor"
 import { ResponseModal } from "@/Encuesta/components/resultados/ResponseModal"
+import { useParams } from "next/navigation"
 
 interface Modal {
     isOpen: boolean;
@@ -19,10 +20,11 @@ interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
-    asesor: Colaborador
+    asesor: Colaborador,
+    defaultValues?: Form
 }
 
-interface Form {
+export interface Form {
     recupero: string,
     recuperoMeta: string,
     calidadPdp: string,
@@ -104,54 +106,83 @@ export const CrearFbAsesorForm = ({
     modal,
     setModal,
     router,
-    asesor
+    asesor,
+    defaultValues
 }: Props) => {
-    const { control, register, handleSubmit, setError, clearErrors, formState: { errors } } = useForm<Form>({
-        defaultValues: {
-            recupero: "",
-            recuperoMeta: "",
-            calidadPdp: "",
-            calidadPdpPromedio: "",
-            calidadCierre: "",
-            calidadCierrePromedio: "",
-            produccionPdp: "",
-            produccionPdpPromedio: "",
-            ticketDePdp: "",
-            ticketDePdpPromedio: "",
-            faltasInjustificadas: "",
-            tardanzasInjustificadas: "",
-            observacionesGenerales: "",
-        }
+    const {id: idFeedback} = useParams<{id: string}>()
+    const buildDefaults = (fields?: Form): Form => ({
+        recupero: fields === undefined ? "" : fields.recupero,
+        recuperoMeta: fields === undefined ? "" : fields.recuperoMeta,
+        calidadPdp: fields === undefined ? "" : fields.calidadPdp,
+        calidadPdpPromedio: fields === undefined ? "" : fields.calidadPdpPromedio,
+        calidadCierre: fields === undefined ? "" : fields.calidadCierre,
+        calidadCierrePromedio: fields === undefined ? "" : fields.calidadCierrePromedio,
+        produccionPdp: fields === undefined ? "" : fields.produccionPdp,
+        produccionPdpPromedio: fields === undefined ? "" : fields.produccionPdpPromedio,
+        ticketDePdp: fields === undefined ? "" : fields.ticketDePdp,
+        ticketDePdpPromedio: fields === undefined ? "" : fields.ticketDePdpPromedio,
+        faltasInjustificadas: fields === undefined ? "" : fields.faltasInjustificadas,
+        tardanzasInjustificadas: fields === undefined ? "" : fields.tardanzasInjustificadas,
+        observacionesGenerales: fields === undefined ? "" : fields.observacionesGenerales,
     })
-    const {user} = useUser()
+
+    const { control, register, handleSubmit, setError, clearErrors, formState: { errors }, reset } = useForm<Form>({
+        defaultValues: buildDefaults(defaultValues)
+    })
+    const { user } = useUser()
     const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
 
     const requireIfPublishing = (message: string) => (value: string) =>
         submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
 
-    const onClickSave = async (type: string, {observacionesGenerales, ...data}: Form) => {
+    const onClickSave = async (type: string, { observacionesGenerales, ...data }: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
-            headers: {"Content-Type": "application/json"},
-            method: "POST",
-            body: JSON.stringify({
-                idEmpleado: asesor.idEmpleado,
-                periodo: (new Date()).toISOString(),
-                tipoEvaluacion: "RUTINA",
-                estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
-                observacionesGenerales: observacionesGenerales,
-                resultadoEvaluacion: data,
-                usrInsert: user?.usuario!,
-                tipoEmpleado: "ASESOR"
+        if (!defaultValues){
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                body: JSON.stringify({
+                    idEmpleado: asesor.idEmpleado,
+                    periodo: (new Date()).toISOString(),
+                    tipoEvaluacion: "RUTINA",
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    observacionesGenerales: observacionesGenerales,
+                    resultadoEvaluacion: data,
+                    usrInsert: user?.usuario!,
+                    tipoEmpleado: "ASESOR"
+                })
+            }).then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`)
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
-        }).then(() => {
-            setModal({ isOpen: true, message: message })
-            setTimeout(() => {
-                router.push("/dashboard/feedback/asesores")
-            }, 1500);
-        }).catch(() => {
-            alert("Ocurrio un error, contactar con soporte si el error persiste")
-        })
+        }else{
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+                headers: { "Content-Type": "application/json" },
+                method: "PUT",
+                body: JSON.stringify({
+                    idFeedback,
+                    idEmpleado: asesor.idEmpleado,
+                    periodo: (new Date()).toISOString(),
+                    tipoEvaluacion: "RUTINA",
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    observacionesGenerales: observacionesGenerales,
+                    resultadoEvaluacion: data,
+                    usrInsert: user?.usuario!,
+                    tipoEmpleado: "ASESOR"
+                })
+            }).then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
+            })
+        }
     }
 
     const handleFormattedChange =
@@ -163,6 +194,12 @@ export const CrearFbAsesorForm = ({
 
     const hasAnyValue = (data: Form) =>
         Object.values(data).some((value) => value.trim() !== "")
+
+    useEffect(() => {
+        if (defaultValues) {
+            reset(buildDefaults(defaultValues))
+        }
+    }, [defaultValues, reset])
     return (
         <>
             <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
@@ -196,12 +233,12 @@ export const CrearFbAsesorForm = ({
                                                         name={input.name}
                                                         render={({ field }) => (
                                                             <FormattedNumberInput
-                                                            value={field.value}
-                                                            onChange={handleFormattedChange(field.onChange, input.decimals)}
-                                                            onBlur={field.onBlur}
-                                                            name={field.name}
-                                                            placeholder={input.placeholder}
-                                                            inputAsesor={true}
+                                                                value={field.value}
+                                                                onChange={handleFormattedChange(field.onChange, input.decimals)}
+                                                                onBlur={field.onBlur}
+                                                                name={field.name}
+                                                                placeholder={input.placeholder}
+                                                                inputAsesor={true}
                                                             />
                                                         )}
                                                     />

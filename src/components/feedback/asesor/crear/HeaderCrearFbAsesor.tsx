@@ -7,7 +7,8 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react"
 interface Props {
     currentFeedback: string,
     setCurrentFeedback: Dispatch<SetStateAction<string>>
-    setAsesor: (asesor: Colaborador) => void
+    setAsesor: (asesor: Colaborador) => void,
+    idEmpleado?: number
 }
 
 export interface Colaborador {
@@ -20,17 +21,18 @@ export interface Colaborador {
 export const HeaderCrearFbAsesor = ({
     currentFeedback,
     setCurrentFeedback,
-    setAsesor
+    setAsesor,
+    idEmpleado
 }: Props) => {
 
     const [asesorOptions, setAsesorOptions] = useState<Array<Colaborador>>([])
-    const {user} = useUser()
+    const { user } = useUser()
     useEffect(() => {
-        const fetchAsesores = async ():Promise<Colaborador[]> => {
-            const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`,{
+        const fetchAsesores = async (): Promise<Colaborador[]> => {
+            const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`, {
                 method: "POST",
-                "headers": {"Content-Type": "application/json"},
-                body: JSON.stringify({usuario: user?.usuario!})
+                "headers": { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario: user?.usuario! })
             }).then(r => r.json())
             return asesores
         }
@@ -38,7 +40,7 @@ export const HeaderCrearFbAsesor = ({
             setAsesorOptions(r)
         })
     }, [])
-    
+
     const {
         filteredOptions,
         isOpen,
@@ -49,23 +51,39 @@ export const HeaderCrearFbAsesor = ({
         selectOption
     } = useCombobox({ options: asesorOptions.map((v) => v.usuario) });
 
+    const selectedById = idEmpleado
+        ? asesorOptions.find((v) => v.idEmpleado === idEmpleado)
+        : undefined;
+
     useEffect(() => {
-        const colaborador  = asesorOptions.filter((v) => v.usuario.includes(query))
-        if(colaborador.length === 1) setAsesor(colaborador[0])
-    },[query])
+        const colaborador = asesorOptions.filter((v) => v.usuario.includes(query))
+        if (colaborador.length === 1) setAsesor(colaborador[0])
+
+    }, [query])
+
+    useEffect(() => {
+        const colaborador = asesorOptions.filter((v) => v.usuario === selectedById?.usuario)
+        if (colaborador.length === 1) setAsesor(colaborador[0])
+    }, [selectedById])
+
 
     return (
         <>
             <div className="flex flex-row bg-zinc-50 p-2 border shadow rounded-sm dark:bg-zinc-900 dark:border-zinc-700">
                 <div className="flex flex-col px-2 flex-3/4">
-                    <h1 className="font-bold text-xl text-gray-800 dark:text-zinc-100">Crear Nuevo Feedback</h1>
+                    <h1 className="font-bold text-xl text-gray-800 dark:text-zinc-100">{
+                        !!idEmpleado ?
+                            "Editar feedback"
+                            :
+                            "Crear Nuevo Feedback"
+                    }</h1>
                     <p className="font-light text-gray-600 text-[14px] dark:text-zinc-300">Ingrese los datos de desempeño mensual y sus respectivas metas</p>
                     <p className="font-light text-gray-600 text-[12px] mt-2 dark:text-zinc-400">Seleccionar asesor</p>
                     <div className="flex-1" ref={containerRef}>
                         <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                             <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                             <input
-                                value={query}
+                                value={selectedById ? selectedById.usuario : query}
                                 onChange={(e) => {
                                     setQuery(e.target.value)
                                     setIsOpen(true)
@@ -113,7 +131,10 @@ export const HeaderCrearFbAsesor = ({
                                 ? "text-zinc-900 dark:text-zinc-100"
                                 : "text-gray-600 dark:text-zinc-300"
                                 }`}
-                            onClick={() => setCurrentFeedback("rutina")}
+                            onClick={() => {
+                                if (!!idEmpleado) return;
+                                setCurrentFeedback("rutina")
+                            }}
                         >
                             Rutina
                         </button>
@@ -124,49 +145,55 @@ export const HeaderCrearFbAsesor = ({
                                 ? "text-zinc-900 dark:text-zinc-100"
                                 : "text-gray-600 dark:text-zinc-300"
                                 }`}
-                            onClick={() => setCurrentFeedback("negativa")}
+                            onClick={() => {
+                                if (!!idEmpleado) return;
+                                setCurrentFeedback("negativa")
+                            }}
                         >
                             Negativa
                         </button>
                     </div>
                 </div>
             </div>
-            <div className="flex flex-col p-2 mt-2 border shadow bg-zinc-200 rounded-sm dark:bg-zinc-800 dark:border-zinc-700">
-                <div className="flex flex-row px-4 justify-between">
-                    <div>
-                        <p className="dark:text-zinc-100">
-                            Datos del Asesor
-                        </p>
+            {
+
+                <div className="flex flex-col p-2 mt-2 border shadow bg-zinc-200 rounded-sm dark:bg-zinc-800 dark:border-zinc-700">
+                    <div className="flex flex-row px-4 justify-between">
+                        <div>
+                            <p className="dark:text-zinc-100">
+                                Datos del Asesor
+                            </p>
+                        </div>
+                        <div className="flex flex-row text-gray-400 dark:text-zinc-400">
+                            <LockIcon size={12} className="self-center mb-0.5 mr-1" />
+                            <p className="text-xs self-center">
+                                Auto-Completado
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex flex-row text-gray-400 dark:text-zinc-400">
-                        <LockIcon size={12} className="self-center mb-0.5 mr-1" />
-                        <p className="text-xs self-center">
-                            Auto-Completado
-                        </p>
+                    <div className="flex flex-row bg-white -mx-2 -mb-2 mt-2 justify-evenly dark:bg-zinc-900">
+                        <div className="flex-1 p-2">
+                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Nombre completo</p>
+                            <p className="text-[15px] dark:text-zinc-100">{filteredOptions.length === 1 ? filteredOptions[0] : selectedById?.usuario}</p>
+                        </div>
+                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <div className="flex-1 p-2">
+                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Cargo</p>
+                            <p className="text-[15px] dark:text-zinc-100">Asesor</p>
+                        </div>
+                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <div className="flex-1 p-2">
+                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Mes Evaluacion</p>
+                            <p className="text-[15px] dark:text-zinc-100">{(new Date()).toLocaleString("es-ES", { month: "long", year: "numeric" })}</p>
+                        </div>
+                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <div className="flex-1 p-2">
+                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Equipo</p>
+                            <p className="text-[15px] dark:text-zinc-100">{user?.nombre}</p>
+                        </div>
                     </div>
                 </div>
-                <div className="flex flex-row bg-white -mx-2 -mb-2 mt-2 justify-evenly dark:bg-zinc-900">
-                    <div className="flex-1 p-2">
-                        <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Nombre completo</p>
-                        <p className="text-[15px] dark:text-zinc-100">Sebastian Guzmán</p>
-                    </div>
-                    <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
-                    <div className="flex-1 p-2">
-                        <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Cargo</p>
-                        <p className="text-[15px] dark:text-zinc-100">Asesor</p>
-                    </div>
-                    <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
-                    <div className="flex-1 p-2">
-                        <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Mes Evaluacion</p>
-                        <p className="text-[15px] dark:text-zinc-100">Enero 2024</p>
-                    </div>
-                    <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
-                    <div className="flex-1 p-2">
-                        <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Equipo</p>
-                        <p className="text-[15px] dark:text-zinc-100">Jorge</p>
-                    </div>
-                </div>
-            </div>
+            }
         </>
     )
 }

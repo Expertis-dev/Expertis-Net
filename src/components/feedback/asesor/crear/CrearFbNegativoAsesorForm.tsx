@@ -2,7 +2,7 @@ import { SuccessModal } from '@/components/success-modal'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { Dispatch, SetStateAction, useRef } from 'react'
+import { Dispatch, SetStateAction, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form';
 import { Colaborador } from './HeaderCrearFbAsesor';
 import { useUser } from '@/Provider/UserProvider';
@@ -16,10 +16,11 @@ interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
-    asesor: Colaborador
+    asesor: Colaborador,
+    defaultFields?: Form
 }
 
-interface Form {
+export interface Form {
     puntualidad: string,
     indicadoresPurecloud: string,
     indicadoresGestion: string,
@@ -61,42 +62,83 @@ export const CrearFbNegativoAsesorForm = ({
     modal,
     setModal,
     router,
-    asesor
+    asesor,
+    defaultFields
 }: Props) => {
-    const { register, handleSubmit, formState: { errors }, setError, clearErrors } = useForm<Form>()
+    const buildDefaults = (fields?: Form): Form => ({
+        calidadLlamadas: fields === undefined ? "" : fields.calidadLlamadas,
+        indicadoresGestion: fields === undefined ? "" : fields.indicadoresGestion,
+        indicadoresPurecloud: fields === undefined ? "" : fields.indicadoresPurecloud,
+        observaciones: fields === undefined ? "" : fields.observaciones,
+        puntualidad: fields === undefined ? "" : fields.puntualidad,
+    })
+
+    const { register, handleSubmit, formState: { errors }, setError, clearErrors, reset } = useForm<Form>({
+        defaultValues: buildDefaults(defaultFields)
+    })
     const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
     const requireIfPublishing =
         (message: string) =>
             (value: string) =>
                 submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
-    const {user} = useUser()
-    const onClickSave = async (type: string, {observaciones,...data}: Form) => {
+    const { user } = useUser()
+    const onClickSave = async (type: string, { observaciones, ...data }: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
-            headers: {"Content-Type": "application/json"},
-            method: "POST",
-            body: JSON.stringify({
-                idEmpleado: asesor.idEmpleado,
-                periodo: (new Date()).toISOString(),
-                tipoEvaluacion: "NEGATIVO",
-                estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
-                observacionesGenerales: observaciones,
-                resultadoEvaluacion: data,
-                usrInsert: user?.usuario!,
-                tipoEmpleado: "ASESOR"
+        if (!defaultFields){
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                body: JSON.stringify({
+                    idEmpleado: asesor.idEmpleado,
+                    periodo: (new Date()).toISOString(),
+                    tipoEvaluacion: "NEGATIVO",
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    observacionesGenerales: observaciones,
+                    resultadoEvaluacion: data,
+                    usrInsert: user?.usuario!,
+                    tipoEmpleado: "ASESOR"
+                })
+            }).then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`)
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
-        }).then(() => {
-            setModal({ isOpen: true, message: message })
-            setTimeout(() => {
-                router.push("/dashboard/feedback/asesores")
-            }, 1500);
-        }).catch(() => {
-            alert("Ocurrio un error, contactar con soporte si el error persiste")
-        })
+        }else {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+                headers: { "Content-Type": "application/json" },
+                method: "PUT",
+                body: JSON.stringify({
+                    idEmpleado: asesor.idEmpleado,
+                    periodo: (new Date()).toISOString(),
+                    tipoEvaluacion: "NEGATIVO",
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    observacionesGenerales: observaciones,
+                    resultadoEvaluacion: data,
+                    usrInsert: user?.usuario!,
+                    tipoEmpleado: "ASESOR"
+                })
+            }).then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
+            })
+        }
     }
 
     const hasAnyValue = (data: Form) =>
         Object.values(data).some((value) => value.trim() !== "")
+
+    useEffect(() => {
+        if (defaultFields) {
+            reset(buildDefaults(defaultFields))
+        }
+    }, [defaultFields, reset])
 
     return (
         <>

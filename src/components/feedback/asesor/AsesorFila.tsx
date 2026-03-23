@@ -1,6 +1,7 @@
 "use client"
 
-import { EyeIcon } from 'lucide-react'
+import { EyeIcon, PencilIcon } from 'lucide-react'
+import Link from 'next/link';
 import React from 'react'
 
 interface Props {
@@ -32,6 +33,7 @@ export const AsesorFila = ({
 
         if (popup) popup.focus();
     };
+
     return (
         <div className="grid grid-cols-5 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
             <div className="flex justify-between md:block">
@@ -41,15 +43,28 @@ export const AsesorFila = ({
                 <span className='text-[14px]'>{tipoEvaluacion}</span>
             </div>
             <div className="flex justify-between md:block">
-                <span className='text-[14px]'>{periodo.slice(0,7)}</span>
+                <span className='text-[14px]'>{periodo.slice(0, 7)}</span>
             </div>
             <div className="flex justify-between md:block">
                 <span className={`${estadoFeedback === "PUBLICADO" ? "text-green-600" : "text-amber-700"} font-medium text-[14px]`}>{estadoFeedback}</span>
             </div>
-            <div className="flex justify-between md:block">
+            <div className="flex flex-row justify-between md:block">
                 <button className="text-blue-600 hover:text-blue-800 cursor-pointer" onClick={handleOpenPopup}>
-                    <EyeIcon size={17}/>
+                    <EyeIcon size={17} />
                 </button>
+                {
+                    estadoFeedback === "BORRADOR" ?
+                        <Link
+                            href={`/dashboard/feedback/asesores/crear/${idFeedback}`}
+                            className="text-orange-600 ml-3 hover:text-orange-800">
+                            <button className='cursor-pointer'>
+                                <PencilIcon size={15} />
+
+                            </button>
+                        </Link>
+                        :
+                        <></>
+                }
             </div>
         </div>
     )
