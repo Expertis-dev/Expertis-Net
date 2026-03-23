@@ -5,19 +5,7 @@ import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { SheetIcon } from "lucide-react";
 import Link from "next/link";
-
-export interface Empleado {
-    alias: string;
-    idEmpleado: number;
-}
-
-export interface HistFeedback {
-    idFeedback: string;
-    tipoEvaluacion: string;
-    periodo: string;
-    estadoFeedback: string;
-}
-
+import { Empleado, HistFeedback } from "@/types/feedback/interfaces";
 
 const fetchAsesores = async (): Promise<Empleado[]> => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asesores`).then(r => r.json())

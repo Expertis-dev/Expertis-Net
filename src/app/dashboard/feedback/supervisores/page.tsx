@@ -6,7 +6,7 @@ import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { BrainIcon, SheetIcon } from "lucide-react";
 import Link from "next/link";
-import { Empleado } from "../asesores/page";
+import { Empleado } from "@/types/feedback/interfaces";
 
 const fetchSupervisores = async (): Promise<Array<Empleado>> => {
     const result = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supervisores`).then(r => r.json())

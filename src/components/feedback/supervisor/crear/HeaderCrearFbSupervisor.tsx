@@ -1,9 +1,14 @@
 "use client"
 import { useCombobox } from "@/hooks/feedback/combobox"
+import { Empleado } from "@/types/feedback/interfaces"
 
-const supervisorOptions = ['Sebastian Guzman', 'Gonzalo Navarro', 'Luis Paredes', 'Camila Rojas', 'Diego Salazar']
+interface Props {
+    supervisores: Array<Empleado>,
+    setSupervisor: (empleado: Empleado) => void,
+    setPeriodo: (undefined: undefined) => void
+}
 
-export const HeaderCrearFbSupervisor = () => {
+export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor}: Props) => {
     const {
         filteredOptions,
         isOpen,
@@ -12,7 +17,11 @@ export const HeaderCrearFbSupervisor = () => {
         query,
         containerRef,
         selectOption
-    } = useCombobox({ options: supervisorOptions })
+    } = useCombobox({ 
+        options: supervisores,
+        getLabel: (asesor) => asesor.alias,
+        filterOption: (asesor, query) => asesor.alias.toLowerCase().includes(query)
+    })
 
     return (
         <>
@@ -37,16 +46,17 @@ export const HeaderCrearFbSupervisor = () => {
                         {isOpen && (
                             <div className="absolute left-0 right-0 z-20 mt-2 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
                                 {filteredOptions.length > 0 ? (
-                                    filteredOptions.map((name) => (
+                                    filteredOptions.map((sup) => (
                                         <button
-                                            key={name}
+                                            key={sup.idEmpleado}
                                             type="button"
                                             onClick={() => {
-                                                selectOption(name)
+                                                selectOption(sup)
+                                                setSupervisor(sup)
                                             }}
                                             className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                         >
-                                            {name}
+                                            {sup.alias}
                                         </button>
                                     ))
                                 ) : (

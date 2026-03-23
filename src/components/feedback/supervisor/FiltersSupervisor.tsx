@@ -1,6 +1,6 @@
 'use client'
 
-import { Empleado } from '@/app/dashboard/feedback/asesores/page'
+import { Empleado } from '@/types/feedback/interfaces'
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
 import { SearchIcon } from 'lucide-react'
