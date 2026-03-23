@@ -109,29 +109,10 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
     })
     const onClickSave = async (type: string, {analisisResultados, ...data}: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de supervisor publicado con éxito" : "Borrador guardado con éxito"
-        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
-        //     method: "POST",
-        //     headers: { "Content-Type": "application/json" },
-        //     body: JSON.stringify({
-        //         idEmpleado: supervisor?.idEmpleado,
-        //         periodo,
-        //         tipoEvaluacion: "RUTINA",
-        //         estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
-        //         analisisResultados: analisisResultados,
-        //         compromisoMejora: "",
-        //         resultadoEvaluacion: data,
-        //         usrInsert: user?.usuario,
-        //         tipoEmpleado: "SUPERVISOR"
-        //     })
-        // }).then(() => {
-        //     setModal({ isOpen: true, message: message })
-        //     setTimeout(() => {
-        //         router.back()
-        //     }, 1500);
-        // }).catch((e) => {
-        //     alert("Ocurrio un error, contactar con soporte si el error persiste")
-        // })
-        console.log({
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
                 idEmpleado: supervisor?.idEmpleado,
                 periodo,
                 tipoEvaluacion: "RUTINA",
@@ -142,6 +123,15 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
                 usrInsert: user?.usuario,
                 tipoEmpleado: "SUPERVISOR"
             })
+        })
+        // .then(() => {
+        //     setModal({ isOpen: true, message: message })
+        //     setTimeout(() => {
+        //         router.back()
+        //     }, 1500);
+        // }).catch((e) => {
+        //     alert("Ocurrio un error, contactar con soporte si el error persiste")
+        // })
     }
     const handleChange =
         (onChange: (value: string) => void, maxDecimals = 2) =>
