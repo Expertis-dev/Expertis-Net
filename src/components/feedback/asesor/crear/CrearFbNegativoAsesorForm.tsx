@@ -6,6 +6,7 @@ import { Dispatch, SetStateAction, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form';
 import { Colaborador } from './HeaderCrearFbAsesor';
 import { useUser } from '@/Provider/UserProvider';
+import { useParams } from 'next/navigation';
 
 interface Modal {
     isOpen: boolean;
@@ -65,6 +66,7 @@ export const CrearFbNegativoAsesorForm = ({
     asesor,
     defaultFields
 }: Props) => {
+    const {id: idFeedback} = useParams<{id: string}>()
     const buildDefaults = (fields?: Form): Form => ({
         calidadLlamadas: fields === undefined ? "" : fields.calidadLlamadas,
         indicadoresGestion: fields === undefined ? "" : fields.indicadoresGestion,
@@ -111,6 +113,7 @@ export const CrearFbNegativoAsesorForm = ({
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
                 body: JSON.stringify({
+                    idFeedback,
                     idEmpleado: asesor.idEmpleado,
                     periodo: (new Date()).toISOString(),
                     tipoEvaluacion: "NEGATIVO",

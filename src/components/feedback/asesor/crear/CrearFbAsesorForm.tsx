@@ -8,7 +8,6 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 import { Controller, useForm } from "react-hook-form"
 import { useUser } from "@/Provider/UserProvider"
 import { Colaborador } from "./HeaderCrearFbAsesor"
-import { ResponseModal } from "@/Encuesta/components/resultados/ResponseModal"
 import { useParams } from "next/navigation"
 
 interface Modal {
