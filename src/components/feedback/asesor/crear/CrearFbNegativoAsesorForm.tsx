@@ -97,13 +97,13 @@ export const CrearFbNegativoAsesorForm = ({
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observaciones,
                     resultadoEvaluacion: data,
-                    usrInsert: user?.usuario!,
+                    usrInsert: user?.usuario || "",
                     tipoEmpleado: "ASESOR"
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
-                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`)
+                    router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)
                 }, 1500);
             }).catch(() => {
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
@@ -120,13 +120,13 @@ export const CrearFbNegativoAsesorForm = ({
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observaciones,
                     resultadoEvaluacion: data,
-                    usrInsert: user?.usuario!,
+                    usrInsert: user?.usuario || "",
                     tipoEmpleado: "ASESOR"
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
-                    router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
+                    router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
                 }, 1500);
             }).catch(() => {
                 alert("Ocurrio un error, contactar con soporte si el error persiste")

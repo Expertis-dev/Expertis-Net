@@ -32,14 +32,14 @@ export const HeaderCrearFbAsesor = ({
             const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`, {
                 method: "POST",
                 "headers": { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario: user?.usuario! })
+                body: JSON.stringify({ usuario: user?.usuario || "" })
             }).then(r => r.json())
             return asesores
         }
         fetchAsesores().then((r) => {
             setAsesorOptions(r)
         })
-    }, [])
+    }, [user?.usuario])
 
     const {
         filteredOptions,
@@ -59,12 +59,12 @@ export const HeaderCrearFbAsesor = ({
         const colaborador = asesorOptions.filter((v) => v.usuario.includes(query))
         if (colaborador.length === 1) setAsesor(colaborador[0])
 
-    }, [query])
+    }, [query, asesorOptions, setAsesor])
 
     useEffect(() => {
         const colaborador = asesorOptions.filter((v) => v.usuario === selectedById?.usuario)
         if (colaborador.length === 1) setAsesor(colaborador[0])
-    }, [selectedById])
+    }, [selectedById, asesorOptions, setAsesor])
 
 
     return (

@@ -2,7 +2,6 @@ import { FilterHistorialAsesor } from "@/components/feedback/historialAsesor/Fil
 import { HistorialAsesorFila } from "@/components/feedback/historialAsesor/HistorialAsesorFila";
 import { HistorialHeaders } from "@/components/feedback/historialAsesor/HistorialAsesorHeaders";
 import { Table } from "@/components/feedback/Table";
-import Link from "next/link";
 
 
 interface HistorialSupervisor {
@@ -17,7 +16,7 @@ interface HistorialSupervisor {
 
 const fetchHistorialSupervisores = async (idEmpleado: number, filtroMes: string = ""): Promise<HistorialSupervisor[]> => {
     const urlParams = new URLSearchParams()
-    filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
+    if(filtroMes !== "") urlParams.set("filtroMes", filtroMes)
     const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/historialSupervisor/${idEmpleado}?${urlParams.toString()}`).then(r => r.json())
     return data
 }

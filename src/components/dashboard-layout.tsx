@@ -348,7 +348,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     subItems: [
       {
         title: "Feedback Asesores",
-        href: `/dashboard/feedback/asesores?${usrInsert ? `usrInsert=${usrInsert}` : ""}`,
+        href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
         modulo: "Encuesta"
       },
       {

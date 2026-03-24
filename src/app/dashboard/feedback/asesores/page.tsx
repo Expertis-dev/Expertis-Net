@@ -13,20 +13,20 @@ const fetchAsesores = async (): Promise<Empleado[]> => {
 }
 
 const fetchFeedbacksAsesores = async (
-    usuario = "",
+    asesor = "",
     filtroMes = "",
     tipoEvaluacion = "",
     userName = "",
-    usrInsert: string = "",
+    usuario: string = "",
     tipoEmpleado = "ASESOR",
 ): Promise<HistFeedback[]> => {
     const urlParams = new URLSearchParams()
-    usuario !== "" ? urlParams.set("usuario", usuario) : null
-    filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
-    tipoEvaluacion !== "" ? urlParams.set("tipoEvaluacion", tipoEvaluacion.toUpperCase()) : null
+    if (usuario !== "") urlParams.set("asesor", asesor)
+    if (filtroMes !== "") urlParams.set("filtroMes", filtroMes)
+    if (tipoEvaluacion !== "") urlParams.set("tipoEvaluacion", tipoEvaluacion.toUpperCase())
     urlParams.set("tipoEmpleado", tipoEmpleado)
-    urlParams.set("usrInsert", usrInsert)
-    userName !== "" ? urlParams.set("usrInsert", userName) : null
+    urlParams.set("usuario", usuario)
+    if (userName !== "") urlParams.set("usrInsert", userName)
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/asesor?${urlParams.toString()}`).then(r => r.json())
     return res
 }
@@ -37,19 +37,19 @@ export default async function AsesoresPage({
     searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
     const {
-        usuario,
+        asesor,
         filtroMes,
         tipoEvaluacion,
         userName,
-        usrInsert
+        usuario
     } = (await searchParams)
     const asesores = await fetchAsesores()
     const feedbacks = await fetchFeedbacksAsesores(
-        usuario,
+        asesor,
         filtroMes,
         tipoEvaluacion,
         userName,
-        usrInsert,
+        usuario,
     )
     return (
         <>

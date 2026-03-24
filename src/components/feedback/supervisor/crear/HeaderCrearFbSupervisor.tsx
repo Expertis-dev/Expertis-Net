@@ -5,7 +5,7 @@ import { Empleado } from "@/types/feedback/interfaces"
 interface Props {
     supervisores: Array<Empleado>,
     setSupervisor: (empleado: Empleado) => void,
-    setPeriodo: (periodo: any) => void
+    setPeriodo: (periodo: string) => void
 }
 
 export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor}: Props) => {

@@ -110,11 +110,11 @@ export default function EditarFeedbackAsesorPage({params}: {
             setCurrentFeedback(data.tipoEvaluacion === "RUTINA" ? "rutina" : "negativa")
         })
         
-    }, [])
+    }, [idFeedback])
     
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
-            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario!}`)}>
+            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario || ""}`)}>
                 <ArrowLeft size={15}/>
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>
@@ -122,7 +122,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                 currentFeedback={currentFeedback} 
                 setCurrentFeedback={setCurrentFeedback} 
                 setAsesor={setAsesor}
-                idEmpleado={+data?.idEmpleado!}
+                idEmpleado={data?.idEmpleado != null ? +data.idEmpleado : undefined}
             />
             {
                 (currentFeedback === "rutina" && form) ? 

@@ -1,6 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { CloudUpload, SaveIcon } from "lucide-react"
 import { FormattedNumberInput } from "../../FormattedNumberInput"
 import { useRouter } from "next/navigation"
@@ -83,7 +83,7 @@ const metricFields: Array<{
 
 export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
     const [supervisor, setSupervisor] = useState<Empleado>()
-    const [periodo, setPeriodo] = useState()
+    const [periodo, setPeriodo] = useState<string>()
     
     const { user } = useUser()
     const { control, register, handleSubmit, formState: { errors }, clearErrors, setError, } = useForm<Form>({
@@ -109,7 +109,7 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
     })
     const onClickSave = async (type: string, {analisisResultados, ...data}: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de supervisor publicado con éxito" : "Borrador guardado con éxito"
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -127,7 +127,7 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
             setTimeout(() => {
                 router.push("/dashboard/feedback/supervisores")
             }, 1500);
-        }).catch((e) => {
+        }).catch(() => {
             alert("Ocurrio un error, contactar con soporte si el error persiste")
         })
     }

@@ -19,8 +19,12 @@ const fetchFeedbacksSupervisores = async (
     estadoFeedback = "",
 ): Promise<Array<HistFeedback>> => {
     const urlParams = new URLSearchParams()
-    usuario !== "" ? urlParams.set("usuario", usuario) : null
-    filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
+    if (usuario !== "") {
+        urlParams.set("usuario", usuario)
+     }
+    if (filtroMes !== "") {
+        urlParams.set("filtroMes", filtroMes)
+    }
     urlParams.set("estadoFeedback", estadoFeedback)
     const fbSupervisores = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/supervisor?${urlParams.toString()}`).then(r => r.json())
     return fbSupervisores
