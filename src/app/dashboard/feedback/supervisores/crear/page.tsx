@@ -1,6 +1,5 @@
 
 import { CrearFbSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbSupervisorForm";
-import { HeaderCrearFbSupervisor } from "@/components/feedback/supervisor/crear/HeaderCrearFbSupervisor";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Empleado } from "@/types/feedback/interfaces";

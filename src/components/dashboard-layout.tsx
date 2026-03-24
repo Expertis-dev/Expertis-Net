@@ -95,7 +95,7 @@ export const tienePermiso = (
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
-const MENU_CONFIG = (usrInsert: string | null): MenuItem[] => [
+const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuItem[] => [
   {
     id: "home",
     title: "Home",
@@ -358,12 +358,12 @@ const MENU_CONFIG = (usrInsert: string | null): MenuItem[] => [
       },
       {
         title: "Historial Feedback Supervisor",
-        href: "/dashboard/feedback/historialSupervisores",
+        href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
         modulo: "Encuesta"
       },
       {
         title: "Historial Feedback Asesor",
-        href: "/dashboard/feedback/historialAsesores",
+        href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
         modulo: "Encuesta"
       },
     ]
@@ -480,7 +480,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {
-      return MENU_CONFIG(user) .filter((item) => item.id === "home")
+      return MENU_CONFIG(user, user) .filter((item) => item.id === "home")
     }
     const permisos = getPermisosFromStorage()
     const speechPermisos = getSpeechPermisos()
@@ -489,7 +489,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return required.some((permiso) => speechPermisos.includes(permiso))
     }
     return (
-      MENU_CONFIG(user.usuario)
+      MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
           if (!menu.subItems || menu.subItems.length === 0) {

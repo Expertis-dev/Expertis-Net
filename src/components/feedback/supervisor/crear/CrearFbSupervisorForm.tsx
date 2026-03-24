@@ -115,23 +115,21 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
             body: JSON.stringify({
                 idEmpleado: supervisor?.idEmpleado,
                 periodo,
-                tipoEvaluacion: "RUTINA",
                 estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                 analisisResultados: analisisResultados,
-                compromisoMejora: "",
                 resultadoEvaluacion: data,
                 usrInsert: user?.usuario,
                 tipoEmpleado: "SUPERVISOR"
             })
         })
-        // .then(() => {
-        //     setModal({ isOpen: true, message: message })
-        //     setTimeout(() => {
-        //         router.back()
-        //     }, 1500);
-        // }).catch((e) => {
-        //     alert("Ocurrio un error, contactar con soporte si el error persiste")
-        // })
+        .then(() => {
+            setModal({ isOpen: true, message: message })
+            setTimeout(() => {
+                router.push("/dashboard/feedback/supervisores")
+            }, 1500);
+        }).catch((e) => {
+            alert("Ocurrio un error, contactar con soporte si el error persiste")
+        })
     }
     const handleChange =
         (onChange: (value: string) => void, maxDecimals = 2) =>

@@ -13,7 +13,7 @@ const fetchAsesores = async (): Promise<Empleado[]> => {
 }
 
 const fetchFeedbacksAsesores = async (
-    idAsesor = "",
+    usuario = "",
     filtroMes = "",
     tipoEvaluacion = "",
     userName = "",
@@ -21,13 +21,13 @@ const fetchFeedbacksAsesores = async (
     tipoEmpleado = "ASESOR",
 ): Promise<HistFeedback[]> => {
     const urlParams = new URLSearchParams()
-    idAsesor !== "" ? urlParams.set("idAsesor", idAsesor) : null
+    usuario !== "" ? urlParams.set("usuario", usuario) : null
     filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
     tipoEvaluacion !== "" ? urlParams.set("tipoEvaluacion", tipoEvaluacion.toUpperCase()) : null
     urlParams.set("tipoEmpleado", tipoEmpleado)
     urlParams.set("usrInsert", usrInsert)
     userName !== "" ? urlParams.set("usrInsert", userName) : null
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks?${urlParams.toString()}`).then(r => r.json())
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/asesor?${urlParams.toString()}`).then(r => r.json())
     return res
 }
 
@@ -37,7 +37,7 @@ export default async function AsesoresPage({
     searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
     const {
-        idAsesor,
+        usuario,
         filtroMes,
         tipoEvaluacion,
         userName,
@@ -45,7 +45,7 @@ export default async function AsesoresPage({
     } = (await searchParams)
     const asesores = await fetchAsesores()
     const feedbacks = await fetchFeedbacksAsesores(
-        idAsesor,
+        usuario,
         filtroMes,
         tipoEvaluacion,
         userName,
@@ -88,11 +88,12 @@ export default async function AsesoresPage({
                 <AsesorHeaders />
                 {
                     feedbacks.map((v) => (
-                        <AsesorFila key={v.idFeedback}
-                            idFeedback={v.idFeedback}
-                            estadoFeedback={v.estadoFeedback}
+                        <AsesorFila key={v.idFeedBack}
+                            asesor={v.USUARIO}
+                            idFeedback={v.idFeedBack}
+                            estadoFeedback={v.estadoFeedBack}
                             periodo={v.periodo}
-                            tipoEvaluacion={v.tipoEvaluacion}
+                            tipoEvaluacion={v.tipoEvaluacion!}
                         />
                     ))
                 }

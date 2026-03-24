@@ -1,4 +1,30 @@
-export const FilterHistorialAsesor = () => {
+"use client"
+
+import { useUser } from "@/Provider/UserProvider"
+import { useRouter } from "next/navigation"
+import { useRef } from "react"
+
+interface Props {
+    esSupervisor?: boolean
+}
+
+export const FilterHistorialAsesor = ({esSupervisor = false}: Props) => {
+
+    const {user} = useUser()
+    const inputMonthRef = useRef<HTMLInputElement>(null)
+    const router = useRouter()
+    
+    const onChange = () => {
+        console.log(inputMonthRef.current?.value)
+        const searchParams = new URLSearchParams()
+        if (!!inputMonthRef.current?.value){
+            searchParams.append("filtroMes", inputMonthRef.current?.value)
+            router.push(`/dashboard/feedback/${esSupervisor ? "historialSupervisores" : "historialAsesores"}/${user?.idEmpleado}?${searchParams.toString()}`)
+        }else{
+            router.push(`/dashboard/feedback/${esSupervisor ? "historialSupervisores" : "historialAsesores"}/${user?.idEmpleado}`)
+        }
+    }
+
     return (
         <div className="flex flex-row items-center justify-between gap-2 border border-gray-200 dark:border-zinc-700 px-4 mx-2 bg-white shadow-sm dark:bg-zinc-800 rounded-sm">
             <div className="flex items-center gap-3">
@@ -19,9 +45,11 @@ export const FilterHistorialAsesor = () => {
                     Mes y año:
                 </label>
                 <input
+                    ref={inputMonthRef}
                     type="month"
                     id="mes-anio"
                     className="w-full rounded-sm dark:bg-zinc-500 dark:text-gray-200 dark:border-zinc-700 sm:w-64 bg-gray-50 border border-gray-200 text-gray-800 text-sm px-4 py-2 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 my-2 transition-all cursor-pointer font-medium"
+                    onChange={onChange}
                 />
             </div>
         </div>

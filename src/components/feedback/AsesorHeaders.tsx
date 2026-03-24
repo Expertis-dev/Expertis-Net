@@ -14,7 +14,7 @@ export const AsesorHeaders = ({esSupervisor}: Props) => {
                 :
                 <div>Tipo Evaluación</div>
             }
-            <div>Tipo Periodo</div>
+            <div>Periodo</div>
             <div>Estado</div>
             <div>Acciones</div>
         </div>

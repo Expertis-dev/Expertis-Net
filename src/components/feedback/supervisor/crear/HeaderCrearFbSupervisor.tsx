@@ -1,7 +1,6 @@
 "use client"
 import { useCombobox } from "@/hooks/feedback/combobox"
 import { Empleado } from "@/types/feedback/interfaces"
-import { ChangeEvent, ChangeEventHandler, InputHTMLAttributes } from "react"
 
 interface Props {
     supervisores: Array<Empleado>,
@@ -25,7 +24,8 @@ export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor
     })
 
     const onInputChange = (e: string) => {
-        setPeriodo(e)
+        const fecha = new Date(e)
+        setPeriodo(fecha.toISOString())
     }
 
     return (

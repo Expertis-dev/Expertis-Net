@@ -4,8 +4,9 @@ export interface Empleado {
 }
 
 export interface HistFeedback {
-    idFeedback: string;
-    tipoEvaluacion: string;
+    idFeedBack: string;
+    USUARIO: string;
+    tipoEvaluacion?: string;
     periodo: string;
-    estadoFeedback: string;
+    estadoFeedBack: string;
 }

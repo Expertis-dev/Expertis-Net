@@ -1,6 +1,6 @@
 'use client'
 
-import { Empleado } from '@/app/dashboard/feedback/asesores/page'
+import { Empleado } from '@/types/feedback/interfaces'
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
 import { useUser } from '@/Provider/UserProvider'
@@ -39,7 +39,7 @@ export const FilterAsesor = ({ asesores }: Props) => {
             urlParams.set("filtroMes", codMes)
         }
         if (!!tipoRef.current?.selectedOptions[0].value && tipoRef.current?.selectedOptions[0].value !== "todos") urlParams.set("tipoEvaluacion", tipoRef.current?.selectedOptions[0].value );
-        if (filteredAsesores.length === 1) urlParams.set("idAsesor", String(filteredAsesores[0].idEmpleado));
+        if (filteredAsesores.length === 1) urlParams.set("usuario", String(filteredAsesores[0].alias));
         urlParams.set("usrInsert", user?.usuario!);
         router.push(`/dashboard/feedback/asesores?${urlParams.toString()}`)
     }

@@ -3,8 +3,8 @@
 import { Empleado } from '@/types/feedback/interfaces'
 import { Button } from '@/components/ui/button'
 import { useCombobox } from '@/hooks/feedback/combobox'
-import { SearchIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { RefreshCwIcon, SearchIcon } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useRef } from 'react'
 
 interface Props {
@@ -29,13 +29,49 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
     const monthRef = useRef<HTMLInputElement>(null);
     const estadoRef = useRef<HTMLSelectElement>(null)
     const router = useRouter()
-
+    const searchParams = useSearchParams()
+    const params = searchParams.entries()
+    
     const onClickSearch = () => {
-        console.log(monthRef.current?.value)
-        console.log(estadoRef.current?.selectedOptions[0].value)
-        console.log(filteredOptions[0].alias)
-        router.refresh()
+        const urlParams = new URLSearchParams()
+        if (!!monthRef.current?.value) {
+            const codMes = (new Date(monthRef.current?.value)).toISOString()
+            urlParams.set("filtroMes", codMes)
+        }
+        if (!!estadoRef.current?.selectedOptions[0].value && estadoRef.current?.selectedOptions[0].value !== "todos") urlParams.set("estadoFeedback", estadoRef.current?.selectedOptions[0].value );
+        if (filteredOptions.length === 1) urlParams.set("usuario", String(filteredOptions[0].alias));
+        router.push(`/dashboard/feedback/supervisores?${urlParams.toString()}`)
     }
+
+    const onChangeMonth = () => {
+        const urlParams = new URLSearchParams(params.toArray())
+        if (!!monthRef.current?.value) {
+            const codMes = (new Date(monthRef.current?.value)).toISOString()
+            urlParams.set("filtroMes", codMes)
+        }else {
+            urlParams.set("filtroMes", "")
+        }
+        router.push(`/dashboard/feedback/supervisores?${urlParams.toString()}`)
+    }
+    const onChangeEstado = () => {
+        const urlParams = new URLSearchParams(params.toArray())
+        if (!!estadoRef.current?.selectedOptions[0].value && estadoRef.current?.selectedOptions[0].value !== "todos") {
+            urlParams.set("estadoFeedback", estadoRef.current?.selectedOptions[0].value )
+        }else {
+            urlParams.set("estadoFeedback", "")
+        }
+        router.push(`/dashboard/feedback/supervisores?${urlParams.toString()}`)
+    }
+    const onChangeSupervisor = (value: string) => {
+        const urlParams = new URLSearchParams(params.toArray())
+        if (!!value) {
+            urlParams.set("usuario", String(value))
+        } else {
+            urlParams.set("usuario", "")
+        }
+        router.push(`/dashboard/feedback/supervisores?${urlParams.toString()}`)
+    }
+
     return (
         <div className="rounded-sm flex flex-row md:flex-row items-center gap-2 border border-gray-200 px-2 mx-2 py-2 bg-white shadow dark:bg-zinc-800 dark:border-zinc-600">
             <div className="w-full md:w-auto flex flex-row flex-initial">
@@ -45,6 +81,7 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                     id="mes-anio"
                     className="rounded-sm dark:text-zinc-300 dark:bg-zinc-700 dark:border-zinc-600 md:w-max bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-2.5 outline-none transition-all h-8"
                     ref={monthRef}
+                    onChange={onChangeMonth}
                 />
             </div>
             <hr className="border-gray-200 border h-10 w-0.5 dark:border-zinc-500" />
@@ -54,6 +91,7 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                     <select
                         className="rounded-sm w-44 h-10 border dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-600 border-slate-200 bg-gray-50 pl-3 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:bg-gray-50 appearance-none cursor-pointer"
                         ref={estadoRef}
+                        onChange={onChangeEstado}
                     >
                         <option value="todos">Todos los estados</option>
                         <option value="BORRADOR">Borrador</option>
@@ -75,8 +113,10 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                     <input
                         value={query}
                         onChange={(e) => {
-                            setQuery(e.target.value)
+                            const nextValue = e.target.value
+                            setQuery(nextValue)
                             setIsOpen(true)
+                            onChangeSupervisor(nextValue)
                         }}
                         onFocus={() => setIsOpen(true)}
                         className="w-full border-none bg-transparent px-2 py-2 text-sm outline-none dark:text-zinc-100 dark:placeholder:text-zinc-300"
@@ -92,6 +132,7 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                                         type="button"
                                         onClick={() => {
                                             selectOption(sup)
+                                            onChangeSupervisor(sup.alias)
                                         }}
                                         className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                     >
@@ -107,7 +148,8 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
             </div>
                 <Button className='bg-blue-500 hover:bg-blue-600 '
                     onClick={onClickSearch}
-                >Buscar
+                >
+                    <RefreshCwIcon/>
                 </Button>
         </div>
     )

@@ -1,20 +1,49 @@
 import { AsesorHeaders } from "@/components/feedback/AsesorHeaders";
-import { Card } from "@/components/feedback/supervisor/Card";
 import { FiltersSupervisor } from "@/components/feedback/supervisor/FiltersSupervisor";
 import { SupervisorFila } from "@/components/feedback/supervisor/SupervisorFila";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
 import { BrainIcon, SheetIcon } from "lucide-react";
 import Link from "next/link";
-import { Empleado } from "@/types/feedback/interfaces";
+import { Empleado, HistFeedback } from "@/types/feedback/interfaces";
+
 
 const fetchSupervisores = async (): Promise<Array<Empleado>> => {
     const result = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supervisores`).then(r => r.json())
     return result
 }
 
-export default async function SupervisoresPage() {
+const fetchFeedbacksSupervisores = async (
+    usuario = "",
+    filtroMes = "",
+    estadoFeedback = "",
+): Promise<Array<HistFeedback>> => {
+    const urlParams = new URLSearchParams()
+    usuario !== "" ? urlParams.set("usuario", usuario) : null
+    filtroMes !== "" ? urlParams.set("filtroMes", filtroMes) : null
+    urlParams.set("estadoFeedback", estadoFeedback)
+    const fbSupervisores = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/supervisor?${urlParams.toString()}`).then(r => r.json())
+    return fbSupervisores
+}
+
+export default async function SupervisoresPage({
+    searchParams
+}: {
+    searchParams: Promise<{ [key: string]: string | undefined }>
+}) {
+    const {
+        usuario,
+        filtroMes,
+        estadoFeedback,
+    } = await searchParams
     const supervisores = await fetchSupervisores()
+
+    const feedbacks = await fetchFeedbacksSupervisores(
+        usuario,
+        filtroMes,
+        estadoFeedback
+    )
+
     return (
         <>
             <div className="flex flex-row justify-between mb-1">
@@ -47,7 +76,7 @@ export default async function SupervisoresPage() {
             </div>
 
             {/* //* CARDS */}
-            <div className="flex flex-row mb-2">
+            {/* <div className="flex flex-row mb-2">
                 <Card
                     title="Total evaluados"
                     unidad="Supervisores"
@@ -66,9 +95,9 @@ export default async function SupervisoresPage() {
                     cantidad={20}
                     color="green"
                 />
-            </div>
+            </div> */}
 
-            <FiltersSupervisor 
+            <FiltersSupervisor
                 supervisores={supervisores}
             />
 
@@ -76,11 +105,14 @@ export default async function SupervisoresPage() {
                 <AsesorHeaders
                     esSupervisor
                 />
-
-                <SupervisorFila/>
-                <SupervisorFila/>
-                <SupervisorFila/>
-                <SupervisorFila/>
+                {
+                    feedbacks.map((v) => (
+                        <SupervisorFila
+                            feedback={v}
+                            key={v.idFeedBack}
+                        />
+                    ))
+                }
             </Table>
         </>
     );
