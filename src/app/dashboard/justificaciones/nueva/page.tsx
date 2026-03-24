@@ -48,10 +48,10 @@ const nivel2Options = {
 // NIVEL 3 (detalles según el nivel2)
 const nivel3Options = {
   FALTA_JUSTIFICADA: [
-    { value: "LICENCIA CON GH- CERTIFICADO DE INCAPACIDAD (DM mayor a 21 dias)", label: "LICENCIA CON GH - CERTIFICADO DE INCAPACIDAD (DM mayor a 21 días)" },
-    { value: "LICENCIA CON GH- VARIAS", label: "LICENCIA CON GH - VARIAS" },
-    { value: "LICENCIAS SIN GH", label: "LICENCIAS SIN GH" },
-    { value: "MATERNIDAD (PRE Y POST)", label: "MATERNIDAD (PRE Y POST)" },
+    // { value: "LICENCIA CON GH- CERTIFICADO DE INCAPACIDAD (DM mayor a 21 dias)", label: "LICENCIA CON GH - CERTIFICADO DE INCAPACIDAD (DM mayor a 21 días)" },
+    // { value: "LICENCIA CON GH- VARIAS", label: "LICENCIA CON GH - VARIAS" },
+    // { value: "LICENCIAS SIN GH", label: "LICENCIAS SIN GH" },
+    // { value: "MATERNIDAD (PRE Y POST)", label: "MATERNIDAD (PRE Y POST)" },
     { value: "LICENCIA APROBADA POR GERENCIA", label: "LICENCIA APROBADA POR GERENCIA" },
     { value: "CAPACITACION", label: "CAPACITACIÓN" }
     // { value: "DESCANSO MEDICO", label: "Descanso Médico" },
