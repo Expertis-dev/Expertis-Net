@@ -1,5 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { SocketProvider } from "@/Provider/SocketProvider"
+import { Suspense } from "react"
+import Loading from "./loading"
 export default function RootLayout({
     children,
 }: {
@@ -10,7 +12,9 @@ export default function RootLayout({
         <SocketProvider>
             <DashboardLayout>
                 <div>
-                    {children}
+                    <Suspense fallback={<Loading/>}>
+                        {children}
+                    </Suspense>
                 </div>
             </DashboardLayout>
         </SocketProvider>

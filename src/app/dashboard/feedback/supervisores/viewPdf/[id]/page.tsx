@@ -3,17 +3,17 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 const feedbackMetrics = [
-    { key: "recupero", label: "Recupero" },
-    { key: "meta", label: "Meta" },
-    { key: "alcance", label: "Alcance" },
-    { key: "efectividad", label: "Efectividad" },
-    { key: "montoPdp", label: "Monto PDP" },
-    { key: "cierre", label: "% Cierre" },
-    { key: "calidad", label: "% Calidad (Monto)" },
-    { key: "pagoDkPpc", label: "Pago / DK PPC" },
-    { key: "puntualidad", label: "% Puntualidad" },
-    { key: "puntualidadEquipo", label: "% Puntualidad - Equipo" },
-    { key: "ausentismoEquipo", label: "% Ausentismo Equipo" },
+    { key: "recupero", label: "Recupero", unit: "S/" },
+    { key: "meta", label: "Meta", unit: "S/" },
+    { key: "alcance", label: "Alcance", unit: "%" },
+    { key: "efectividad", label: "Efectividad", unit: "%" },
+    { key: "montoPdp", label: "Monto PDP", unit: "S/" },
+    { key: "cierre", label: "% Cierre", unit: "%" },
+    { key: "calidad", label: "% Calidad (Monto)", unit: "%" },
+    { key: "pagoDkPpc", label: "Pago / DK PPC", unit: "%" },
+    { key: "puntualidad", label: "% Puntualidad", unit: "%" },
+    { key: "puntualidadEquipo", label: "% Puntualidad - Equipo", unit: "%" },
+    { key: "ausentismoEquipo", label: "% Ausentismo Equipo", unit: "%" },
 ];
 
 interface Feedback {
@@ -27,7 +27,7 @@ interface Feedback {
     analisisResultados: string;
     tipoEmpleado: string;
     compromisoMejora: string;
-    resultadoEvaluacion: ResultadoEvaluacion;
+    resultadoEvaluacion: string;
     usrInsert: string;
 }
 
@@ -56,6 +56,7 @@ export default async function ViewSupervisorPdfPage({ params }: {
 }) {
     const { id } = await params
     const feedback = await fetchFeedback(+id)
+    const resultadoEvaluacion: ResultadoEvaluacion = JSON.parse(feedback.resultadoEvaluacion)
     return (
         <div className="mx-auto w-full max-w-6xl space-y-4 pb-6">
             <Link href={"/dashboard/feedback/supervisores"} className="flex flex-row mb-2 text-gray-500">
@@ -110,7 +111,11 @@ export default async function ViewSupervisorPdfPage({ params }: {
                                 className="flex items-center justify-between rounded-sm border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/60"
                             >
                                 <p className="text-sm text-zinc-600 dark:text-zinc-300">{metric.label}</p>
-                                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{feedback.resultadoEvaluacion[metric.key as keyof ResultadoEvaluacion]}</p>
+                                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                    {metric.unit === "S/" ? metric.unit : ""} 
+                                    {resultadoEvaluacion[metric.key as keyof ResultadoEvaluacion]} 
+                                    {metric.unit === "%" ? metric.unit : ""}
+                                </p>
                             </div>
                         ))}
                     </div>

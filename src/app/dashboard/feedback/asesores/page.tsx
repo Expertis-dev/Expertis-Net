@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SheetIcon } from "lucide-react";
 import Link from "next/link";
 import { Empleado, HistFeedback } from "@/types/feedback/interfaces";
+import { DownloadExcelButton } from "@/components/feedback/asesor/DownloadExcelButton";
 
 const fetchAsesores = async (): Promise<Empleado[]> => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asesores`).then(r => r.json())
@@ -64,10 +65,9 @@ export default async function AsesoresPage({
                     </p>
                 </div>
                 <div className="flex flex-auto justify-end">
-                    <Button className="mr-2.5 dark:bg-green-700 bg-green-500 mt-1 dark:text-gray-200 dark:hover:bg-green-900 hover:bg-green-600" >
-                        <SheetIcon />
-                        Exportar a Excel
-                    </Button>
+                    <DownloadExcelButton
+                        feedbacks={feedbacks}
+                    />
                     <Link
                         href={"/dashboard/feedback/asesores/crear"}
                     >

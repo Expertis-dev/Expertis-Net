@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form"
 import { HeaderCrearFbSupervisor } from "./HeaderCrearFbSupervisor"
 import { Empleado } from "@/types/feedback/interfaces"
 import { useUser } from "@/Provider/UserProvider"
+import { Colaborador } from "../../asesor/crear/HeaderCrearFbAsesor"
 
 export const formatWithThousands = (input: string, maxDecimals = 2) => {
     if (!input) return ""
@@ -44,7 +45,11 @@ export const formatWithThousands = (input: string, maxDecimals = 2) => {
 
 interface Props {
     supervisores: Array<Empleado>
+    defaultValues?: Form
+    supervisorName?: string
+    periodoDefault?: Date
 }
+
 interface Form {
     recupero: string,
     meta: string,
@@ -81,25 +86,39 @@ const metricFields: Array<{
         { name: "ausentismoEquipo", label: "% Ausentismo Equipo", prefix: "%", decimals: 2 },
     ]
 
-export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
+export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorName, periodoDefault }: Props) => {
     const [supervisor, setSupervisor] = useState<Empleado>()
     const [periodo, setPeriodo] = useState<string>()
     
     const { user } = useUser()
+    const safeDefaults: Form = defaultValues ?? {
+        recupero: "",
+        meta: "",
+        alcance: "",
+        efectividad: "",
+        montoPdp: "",
+        cierre: "",
+        calidad: "",
+        pagoDkPpc: "",
+        puntualidad: "",
+        puntualidadEquipo: "",
+        ausentismoEquipo: "",
+        analisisResultados: "",
+    }
     const { control, register, handleSubmit, formState: { errors }, clearErrors, setError, } = useForm<Form>({
         defaultValues: {
-            recupero: "",
-            meta: "",
-            alcance: "",
-            efectividad: "",
-            montoPdp: "",
-            cierre: "",
-            calidad: "",
-            pagoDkPpc: "",
-            puntualidad: "",
-            puntualidadEquipo: "",
-            ausentismoEquipo: "",
-            analisisResultados: "",
+            recupero: safeDefaults.recupero || "",
+            meta: safeDefaults.meta || "",
+            alcance: safeDefaults.alcance || "",
+            efectividad: safeDefaults.efectividad || "",
+            montoPdp: safeDefaults.montoPdp || "",
+            cierre: safeDefaults.cierre || "",
+            calidad: safeDefaults.calidad || "",
+            pagoDkPpc: safeDefaults.pagoDkPpc || "",
+            puntualidad: safeDefaults.puntualidad || "",
+            puntualidadEquipo: safeDefaults.puntualidadEquipo || "",
+            ausentismoEquipo: safeDefaults.ausentismoEquipo || "",
+            analisisResultados: safeDefaults.analisisResultados || "",
         },
     })
     const router = useRouter()
@@ -149,6 +168,8 @@ export const CrearFbSupervisorForm = ({ supervisores }: Props) => {
                 supervisores={supervisores}
                 setSupervisor={setSupervisor}
                 setPeriodo={setPeriodo}
+                defaultSup={supervisorName}
+                defaultPeriodo={periodoDefault}
             />
             <div className="flex flex-row py-2 m-2">
                 <div className="flex-2/3 border border-gray-200 dark:border-zinc-700 px-3 flex flex-col rounded-sm mr-2 border-b-2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">

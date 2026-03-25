@@ -19,7 +19,7 @@ export default function CrearFeedbackAsesorPage() {
 
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
-            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario || ""}`)}>
+            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)}>
                 <ArrowLeft size={15} />
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>

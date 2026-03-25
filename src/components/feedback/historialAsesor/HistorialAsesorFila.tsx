@@ -11,6 +11,7 @@ interface Props {
 }
 
 export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo, tipoFeedback }: Props) => {
+    console.log(tipoFeedback)
     return (
         <div className={`grid grid-cols-${esSupervisor ? 3 : 4} px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center`}>
             {
@@ -37,7 +38,7 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
                         </Link>
                         :
                         <a
-                            href="https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf"
+                            href={`${process.env.NEXT_PUBLIC_API_URL}/api/${esSupervisor ? "generateFbRutinaSupervisorPdf" : tipoFeedback === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`}
                             target='_blank'
                             rel='noopener noreferrer'
                         >

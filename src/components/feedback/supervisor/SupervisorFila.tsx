@@ -80,9 +80,12 @@ export const SupervisorFila = ({ feedback }: Props) => {
                 {
                     feedback.estadoFeedBack === "BORRADOR" ?
                         <>
-                            <button className="p-0.5 cursor-pointer rounded-md text-green-600 hover:text-green-800 hover:bg-blue-50 transition-colors dark:hover:bg-blue-950 dark:hover:text-blue-200">
+                            <Link
+                                href={`/dashboard/feedback/supervisores/crear/${feedback.idFeedBack}`} 
+                                className="p-0.5 cursor-pointer rounded-md text-green-600 hover:text-green-800 hover:bg-blue-50 transition-colors dark:hover:bg-blue-950 dark:hover:text-blue-200"
+                            >
                                 <PencilIcon size={17} />
-                            </button>
+                            </Link>
                             <button
                                 onClick={onClickTrash}
                                 className="p-0.5 cursor-pointer rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors dark:hover:bg-red-950 dark:hover:text-red-200">

@@ -114,14 +114,9 @@ export const CrearFbNegativoAsesorForm = ({
                 method: "PUT",
                 body: JSON.stringify({
                     idFeedback,
-                    idEmpleado: asesor.idEmpleado,
-                    periodo: (new Date()).toISOString(),
-                    tipoEvaluacion: "NEGATIVO",
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observaciones,
                     resultadoEvaluacion: data,
-                    usrInsert: user?.usuario || "",
-                    tipoEmpleado: "ASESOR"
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })

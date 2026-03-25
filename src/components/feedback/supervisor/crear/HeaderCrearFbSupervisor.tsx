@@ -1,14 +1,17 @@
 "use client"
 import { useCombobox } from "@/hooks/feedback/combobox"
 import { Empleado } from "@/types/feedback/interfaces"
+import { useEffect, useMemo, useState } from "react"
 
 interface Props {
     supervisores: Array<Empleado>,
+    defaultSup?: string
+    defaultPeriodo?: string | Date
     setSupervisor: (empleado: Empleado) => void,
     setPeriodo: (periodo: string) => void
 }
 
-export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor}: Props) => {
+export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor, defaultSup, defaultPeriodo}: Props) => {
     const {
         filteredOptions,
         isOpen,
@@ -23,7 +26,38 @@ export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor
         filterOption: (asesor, query) => asesor.alias.toLowerCase().includes(query)
     })
 
+    useEffect(() => {
+        if (!defaultSup || supervisores.length === 0) return
+        const matched = supervisores.find(
+            (sup) => sup.alias.toLowerCase() === defaultSup.toLowerCase()
+        )
+        if (!matched) return
+        selectOption(matched)
+        setSupervisor(matched)
+    }, [defaultSup, supervisores, selectOption, setSupervisor])
+
+    const toMonthValue = (value?: string | Date) => {
+        if (!value) return ""
+        const date = typeof value === "string" ? new Date(value) : value
+        if (Number.isNaN(date.getTime())) return ""
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
+
+    const initialPeriodo = useMemo(() => toMonthValue(defaultPeriodo), [defaultPeriodo])
+    const [periodValue, setPeriodValue] = useState<string>(initialPeriodo)
+
+    useEffect(() => {
+        const next = toMonthValue(defaultPeriodo)
+        if (!next) return
+        setPeriodValue(next)
+        const fecha = new Date(next)
+        setPeriodo(fecha.toISOString())
+    }, [defaultPeriodo, setPeriodo])
+
     const onInputChange = (e: string) => {
+        setPeriodValue(e)
         const fecha = new Date(e)
         setPeriodo(fecha.toISOString())
     }
@@ -76,6 +110,7 @@ export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor
                     <div className="border border-gray-200 dark:border-gray-700 p-1 rounded-sm -mt-1 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-gray-600 bg-gray-50 dark:bg-zinc-800">
                         <input 
                             type="month" 
+                            value={periodValue}
                             className="w-full bg-transparent text-sm px-1 py-1 rounded-sm outline-none text-zinc-900 dark:text-gray-100" 
                             onChange={(e) => onInputChange(e.target.value)}    
                         />

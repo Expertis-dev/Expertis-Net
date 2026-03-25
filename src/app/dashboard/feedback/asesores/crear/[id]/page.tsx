@@ -9,7 +9,7 @@ import { use, useEffect, useState } from "react";
 
 interface DataFbBase {
     idFeedback:             string;
-    created_at:             Date;
+    fecInsert:             Date;
     idEmpleado:             string;
     periodo:                Date;
     estadoFeedback:         string;
@@ -21,8 +21,8 @@ interface DataFbBase {
 }
 
 type DataFb =
-    | (DataFbBase & { tipoEvaluacion: "RUTINA"; resultadoEvaluacion: DataFbRutina })
-    | (DataFbBase & { tipoEvaluacion: "NEGATIVO"; resultadoEvaluacion: DataFbNegativo })
+    | (DataFbBase & { tipoEvaluacion: "RUTINA"; resultadoEvaluacion: string })
+    | (DataFbBase & { tipoEvaluacion: "NEGATIVO"; resultadoEvaluacion: string })
 
 interface DataFbNegativo {
     puntualidad:          string;
@@ -71,29 +71,30 @@ export default function EditarFeedbackAsesorPage({params}: {
     
     const parseFeedback = (data: DataFb): FormNegativo | FormRutina => {
         if (data.tipoEvaluacion === "RUTINA") {
+            const resultadoEvaluacion: DataFbRutina = JSON.parse(data.resultadoEvaluacion)
             return {
-                calidadCierre: data.resultadoEvaluacion.calidadCierre,
-                calidadCierrePromedio: data.resultadoEvaluacion.calidadCierrePromedio,
-                calidadPdp: data.resultadoEvaluacion.calidadPdp,
-                calidadPdpPromedio: data.resultadoEvaluacion.calidadPdpPromedio,
-                faltasInjustificadas: data.resultadoEvaluacion.faltasInjustificadas,
+                calidadCierre: resultadoEvaluacion.calidadCierre,
+                calidadCierrePromedio: resultadoEvaluacion.calidadCierrePromedio,
+                calidadPdp: resultadoEvaluacion.calidadPdp,
+                calidadPdpPromedio: resultadoEvaluacion.calidadPdpPromedio,
+                faltasInjustificadas: resultadoEvaluacion.faltasInjustificadas,
                 observacionesGenerales: data.observacionesGenerales,
-                produccionPdp: data.resultadoEvaluacion.produccionPdp,
-                produccionPdpPromedio: data.resultadoEvaluacion.produccionPdpPromedio,
-                recupero: data.resultadoEvaluacion.recupero,
-                recuperoMeta: data.resultadoEvaluacion.recuperoMeta,
-                tardanzasInjustificadas: data.resultadoEvaluacion.tardanzasInjustificadas,
-                ticketDePdp: data.resultadoEvaluacion.ticketDePdp,
-                ticketDePdpPromedio: data.resultadoEvaluacion.ticketDePdpPromedio
+                produccionPdp: resultadoEvaluacion.produccionPdp,
+                produccionPdpPromedio: resultadoEvaluacion.produccionPdpPromedio,
+                recupero: resultadoEvaluacion.recupero,
+                recuperoMeta: resultadoEvaluacion.recuperoMeta,
+                tardanzasInjustificadas: resultadoEvaluacion.tardanzasInjustificadas,
+                ticketDePdp: resultadoEvaluacion.ticketDePdp,
+                ticketDePdpPromedio: resultadoEvaluacion.ticketDePdpPromedio
             }
         }
-
+        const resultadoEvaluacion: DataFbNegativo = JSON.parse(data.resultadoEvaluacion)
         return {
-            calidadLlamadas: data.resultadoEvaluacion.calidadLlamadas,
-            indicadoresGestion: data.resultadoEvaluacion.indicadoresGestion,
-            indicadoresPurecloud: data.resultadoEvaluacion.indicadoresPurecloud,
+            calidadLlamadas: resultadoEvaluacion.calidadLlamadas,
+            indicadoresGestion: resultadoEvaluacion.indicadoresGestion,
+            indicadoresPurecloud: resultadoEvaluacion.indicadoresPurecloud,
             observaciones: data.observacionesGenerales,
-            puntualidad: data.resultadoEvaluacion.puntualidad
+            puntualidad: resultadoEvaluacion.puntualidad
         }
     }
 
@@ -114,7 +115,7 @@ export default function EditarFeedbackAsesorPage({params}: {
     
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
-            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usrInsert=${user?.usuario || ""}`)}>
+            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)}>
                 <ArrowLeft size={15}/>
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>
