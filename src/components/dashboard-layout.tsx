@@ -343,7 +343,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
   {
     id: "feedback",
     title: "feedback",
-    icon: GlassesIcon,
+    icon: PencilIcon,
     href: "/dashboards/feedback",
     subItems: [
       {
