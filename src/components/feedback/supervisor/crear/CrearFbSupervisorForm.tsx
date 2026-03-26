@@ -9,7 +9,6 @@ import { Controller, useForm } from "react-hook-form"
 import { HeaderCrearFbSupervisor } from "./HeaderCrearFbSupervisor"
 import { Empleado } from "@/types/feedback/interfaces"
 import { useUser } from "@/Provider/UserProvider"
-import { Colaborador } from "../../asesor/crear/HeaderCrearFbAsesor"
 
 export const formatWithThousands = (input: string, maxDecimals = 2) => {
     if (!input) return ""
@@ -88,8 +87,8 @@ const metricFields: Array<{
 
 export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorName, periodoDefault }: Props) => {
     const [supervisor, setSupervisor] = useState<Empleado>()
-    const [periodo, setPeriodo] = useState<string>()
-    
+    const [periodo, setPeriodo] = useState<string | undefined>(undefined)
+
     const { user } = useUser()
     const safeDefaults: Form = defaultValues ?? {
         recupero: "",
@@ -126,7 +125,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
         isOpen: false,
         message: ""
     })
-    const onClickSave = async (type: string, {analisisResultados, ...data}: Form) => {
+    const onClickSave = async (type: string, { analisisResultados, ...data }: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de supervisor publicado con éxito" : "Borrador guardado con éxito"
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
             method: "POST",
@@ -141,14 +140,14 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                 tipoEmpleado: "SUPERVISOR"
             })
         })
-        .then(() => {
-            setModal({ isOpen: true, message: message })
-            setTimeout(() => {
-                router.push("/dashboard/feedback/supervisores")
-            }, 1500);
-        }).catch(() => {
-            alert("Ocurrio un error, contactar con soporte si el error persiste")
-        })
+            .then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push("/dashboard/feedback/supervisores")
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
+            })
     }
     const handleChange =
         (onChange: (value: string) => void, maxDecimals = 2) =>
@@ -231,6 +230,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                     <h4 className="text-[18px] text-zinc-900 dark:text-zinc-100">Finalizar evaluación</h4>
                     <p className="text-sm text-gray-500 dark:text-zinc-400">Confirme y verifique que todos los datos son correctos. El sistema procesará el análisis tras la publicación</p>
                     <Button
+                        disabled={!supervisor || !periodo}
                         onClick={() => {
                             submitModeRef.current = "PUBLICAR"
                             handleSubmit((data) => {
@@ -247,6 +247,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                         <p className="text-red-600 text-xs self-center">{errors.root.message}</p>
                     )}
                     <Button
+                        disabled={!supervisor || !periodo}
                         onClick={() => {
                             submitModeRef.current = "BORRADOR"
                             handleSubmit((data) => {
@@ -263,6 +264,11 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                         <SaveIcon />
                         Guardar borrador
                     </Button>
+                    {!supervisor || !periodo ?
+                        <h1 className="text-red-500 text-xs">Debe seleccionar el supervisor y el periodo de la evaluacion</h1>
+                        :
+                        <></>
+                    }
                 </div>
                 <SuccessModal
                     isOpen={modal.isOpen}

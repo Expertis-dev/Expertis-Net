@@ -1,13 +1,13 @@
 "use client"
 
-import { format } from "date-fns"
-import * as XLSX from "xlsx"
-import { es } from "date-fns/locale"
-import { saveAs } from "file-saver";
+// import { format } from "date-fns"
+// import * as XLSX from "xlsx"
+// import { es } from "date-fns/locale"
+// import { saveAs } from "file-saver";
+// import { useEffect, useState } from "react";
 import { SheetIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HistFeedback } from "@/types/feedback/interfaces";
-import { useEffect, useState } from "react";
 import { Form } from "./crear/CrearFbAsesorForm";
 
 interface Props {
@@ -31,19 +31,19 @@ export interface Fb {
 }
 
 
-export const DownloadExcelButton = ({feedbacks}: Props) => {
+export const DownloadExcelButton = ({}: Props) => {
 
     const onDownloadExcel = () => {
-        console.log(feedbacks)
-        const questionHeaders: string[] = []
-        const rows: string[][] = [[]]
+        // console.log(feedbacks)
+        // const questionHeaders: string[] = []
+        // const rows: string[][] = [[]]
 
-        //! PRIMERA HOJA RUTINA
-        const aoaDataRutina: string[] = feedbacks[0]
-            ? Object.keys(feedbacks[0])
-            : []
+        // //! PRIMERA HOJA RUTINA
+        // const aoaDataRutina: string[] = feedbacks[0]
+        //     ? Object.keys(feedbacks[0])
+        //     : []
 
-        //! SEGUNDA HOJA NEGATIVO
+        // //! SEGUNDA HOJA NEGATIVO
 
 
         // const aoaData: string[][] = [

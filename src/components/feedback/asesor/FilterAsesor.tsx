@@ -10,9 +10,24 @@ import { useRef } from 'react'
 
 interface Props {
     asesores: Array<Empleado>
+    defaultValues?: Values
 }
 
-export const FilterAsesor = ({ asesores }: Props) => {
+interface Values {
+    asesor?: string,
+    filtroMes?: string,
+    tipoEvaluacion?: string,
+}
+
+export const FilterAsesor = ({ asesores, defaultValues }: Props) => {
+    const toMonthValue = (value?: string) => {
+        if (!value) return ""
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return ""
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
 
     const {
         filteredOptions: filteredAsesores,
@@ -26,7 +41,8 @@ export const FilterAsesor = ({ asesores }: Props) => {
         options: asesores,
         getLabel: (asesor) => asesor.alias,
         filterOption: (asesor, query) =>
-            asesor.alias.toLowerCase().includes(query)
+            asesor.alias.toLowerCase().includes(query),
+        initialQuery: defaultValues?.asesor
     })
     const { user } = useUser()
     const router = useRouter()
@@ -89,6 +105,7 @@ export const FilterAsesor = ({ asesores }: Props) => {
                     onChange={() => {
                         onChangePeriodo()
                     }}
+                    defaultValue={toMonthValue(defaultValues?.filtroMes)}
                 />
             </div>
 
@@ -102,7 +119,7 @@ export const FilterAsesor = ({ asesores }: Props) => {
                             onChangeAsesor(e.target.value)
                         }}
                         onFocus={() => setIsAsesorOpen(true)}
-                        className="placeholder:text-black rounded-sm w-full border border-gray-200 bg-gray-50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-200 h-8.5 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        className="rounded-sm w-full border border-gray-200 bg-gray-50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-200 h-8.5 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                         placeholder="TODOS LOS ASESORES"
                     />
 
@@ -135,6 +152,7 @@ export const FilterAsesor = ({ asesores }: Props) => {
                         className={`rounded-sm dark:border-zinc-500 dark:bg-zinc-800 dark:text-gray-200 w-full bg-gray-50 text-slate-700 text-sm border border-gray-200 pl-4 pr-10 leading-normal transition-all appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none hover:bg-gray-100 h-8.5`}
                         ref={tipoRef}
                         onChange={onChangeTipoEvaluacion}
+                        value={defaultValues?.tipoEvaluacion}
                     >
                         <option value="todos">Todos</option>
                         <option value="rutina">Rutina</option>

@@ -17,7 +17,7 @@ interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
-    asesor: Colaborador,
+    asesor?: Colaborador,
     defaultFields?: Form
 }
 
@@ -66,7 +66,7 @@ export const CrearFbNegativoAsesorForm = ({
     asesor,
     defaultFields
 }: Props) => {
-    const {id: idFeedback} = useParams<{id: string}>()
+    const { id: idFeedback } = useParams<{ id: string }>()
     const buildDefaults = (fields?: Form): Form => ({
         calidadLlamadas: fields === undefined ? "" : fields.calidadLlamadas,
         indicadoresGestion: fields === undefined ? "" : fields.indicadoresGestion,
@@ -85,8 +85,12 @@ export const CrearFbNegativoAsesorForm = ({
                 submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
     const { user } = useUser()
     const onClickSave = async (type: string, { observaciones, ...data }: Form) => {
+        if (!asesor?.idEmpleado) {
+            setError("root", { type: "manual", message: "Selecciona un asesor." })
+            return
+        }
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        if (!defaultFields){
+        if (!defaultFields) {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "POST",
@@ -108,7 +112,7 @@ export const CrearFbNegativoAsesorForm = ({
             }).catch(() => {
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
-        }else {
+        } else {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
@@ -161,12 +165,18 @@ export const CrearFbNegativoAsesorForm = ({
                 </div>
             </div>
             <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
-                <div className="flex flex-row justify-between p-2 self-end">
-                    <div className="flex flex-row justify-between">
-                        {errors.root?.message && (
-                            <p className="text-red-600 text-xs self-center">{errors.root.message}</p>
+                <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-1">
+                        {!asesor?.idEmpleado && (
+                            <p className="text-xs font-semibold text-red-600">Debes seleccionar a un asesor</p>
                         )}
+                        {errors.root?.message && (
+                            <p className="text-xs text-red-600">{errors.root.message}</p>
+                        )}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <Button
+                            disabled={!asesor?.idEmpleado}
                             onClick={() => {
                                 submitModeRef.current = "BORRADOR"
                                 handleSubmit(data => {
@@ -178,13 +188,17 @@ export const CrearFbNegativoAsesorForm = ({
                                     onClickSave("BORRADOR", data)
                                 })()
                             }}
-                            className="flex-1 bg-white text-black border border-gray-400 hover:bg-gray-100 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700">
+                            className="bg-white text-black border border-gray-400 hover:bg-gray-100 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700"
+                        >
                             Guardar Borrador
                         </Button>
-                        <Button className="flex-1 ml-4 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white" onClick={() => {
-                            submitModeRef.current = "PUBLICAR"
-                            handleSubmit(data => onClickSave("PUBLICAR", data))()
-                        }}
+                        <Button
+                            className="dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
+                            disabled={!asesor?.idEmpleado}
+                            onClick={() => {
+                                submitModeRef.current = "PUBLICAR"
+                                handleSubmit(data => onClickSave("PUBLICAR", data))()
+                            }}
                         >
                             Publicar Feedback
                             <ArrowRight />
@@ -199,3 +213,4 @@ export const CrearFbNegativoAsesorForm = ({
         </>
     )
 }
+

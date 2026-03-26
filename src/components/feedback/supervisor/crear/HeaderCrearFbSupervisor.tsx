@@ -58,7 +58,12 @@ export const HeaderCrearFbSupervisor = ({supervisores, setPeriodo, setSupervisor
 
     const onInputChange = (e: string) => {
         setPeriodValue(e)
+        if (!e) {
+            setPeriodo("")
+            return
+        }
         const fecha = new Date(e)
+        if (Number.isNaN(fecha.getTime())) return
         setPeriodo(fecha.toISOString())
     }
 

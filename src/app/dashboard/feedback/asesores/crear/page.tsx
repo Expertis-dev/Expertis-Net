@@ -27,7 +27,7 @@ export default function CrearFeedbackAsesorPage() {
             {
                 currentFeedback === "rutina" ?
                     <CrearFbAsesorForm
-                        asesor={asesor!}
+                        asesor={asesor}
                         modal={modal}
                         router={router}
                         setModal={setModal}
@@ -37,7 +37,7 @@ export default function CrearFeedbackAsesorPage() {
                         modal={modal}
                         router={router}
                         setModal={setModal}
-                        asesor={asesor!}
+                        asesor={asesor}
                     />
             }
         </div>

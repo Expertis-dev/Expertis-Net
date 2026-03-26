@@ -7,7 +7,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react"
 interface Props {
     currentFeedback: string,
     setCurrentFeedback: Dispatch<SetStateAction<string>>
-    setAsesor: (asesor: Colaborador) => void,
+    setAsesor: (asesor?: Colaborador) => void,
     idEmpleado?: number
 }
 
@@ -49,27 +49,38 @@ export const HeaderCrearFbAsesor = ({
         query,
         setIsOpen,
         selectOption
-    } = useCombobox({ options: asesorOptions.map((v) => v.usuario) });
+    } = useCombobox({
+        options: asesorOptions,
+        getLabel: (v) => v.usuario,
+        filterOption: (v, q) => v.usuario.toLowerCase().includes(q)
+    });
 
     const selectedById = idEmpleado
         ? asesorOptions.find((v) => v.idEmpleado === idEmpleado)
         : undefined;
 
     useEffect(() => {
-        const colaborador = asesorOptions.filter((v) => v.usuario.includes(query))
-        if (colaborador.length === 1) setAsesor(colaborador[0])
-
+        const normalized = query.trim().toLowerCase()
+        if (!normalized) {
+            setAsesor(undefined)
+            return
+        }
+        const exactMatch = asesorOptions.find(
+            (v) => v.usuario.toLowerCase() === normalized
+        )
+        setAsesor(exactMatch)
     }, [query, asesorOptions, setAsesor])
 
     useEffect(() => {
-        const colaborador = asesorOptions.filter((v) => v.usuario === selectedById?.usuario)
-        if (colaborador.length === 1) setAsesor(colaborador[0])
+        if (!selectedById) return
+        selectOption(selectedById)
+        setAsesor(selectedById)
     }, [selectedById, asesorOptions, setAsesor])
 
 
     return (
         <>
-            <div className="flex flex-row bg-zinc-50 p-2 border shadow rounded-sm dark:bg-zinc-900 dark:border-zinc-700">
+            <div className="flex flex-row bg-zinc-50 p-2 border shadow rounded-sm dark:bg-zinc-900 dark:border-zinc-700 mb-2">
                 <div className="flex flex-col px-2 flex-3/4">
                     <h1 className="font-bold text-xl text-gray-800 dark:text-zinc-100">{
                         !!idEmpleado ?
@@ -77,20 +88,24 @@ export const HeaderCrearFbAsesor = ({
                             :
                             "Crear Nuevo Feedback"
                     }</h1>
-                    <p className="font-light text-gray-600 text-[14px] dark:text-zinc-300">Ingrese los datos de desempeño mensual y sus respectivas metas</p>
+                    <p className="font-light text-gray-600 text-[14px] dark:text-zinc-300 -mb-2">Ingrese los datos de desempeño mensual y sus respectivas metas</p>
                     <p className="font-light text-gray-600 text-[12px] mt-2 dark:text-zinc-400">Seleccionar asesor</p>
                     <div className="flex-1" ref={containerRef}>
                         <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                             <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                             <input
-                                value={selectedById ? selectedById.usuario : query}
+                                value={query}
                                 onChange={(e) => {
-                                    setQuery(e.target.value)
+                                    const value = e.target.value
+                                    setQuery(value)
+                                    if (!value.trim()) {
+                                        setAsesor(undefined)
+                                    }
                                     setIsOpen(true)
                                 }}
                                 onFocus={() => setIsOpen(true)}
                                 className="w-full border-none bg-transparent px-2 py-2 text-sm outline-none dark:text-zinc-100 dark:placeholder:text-zinc-300"
-                                placeholder="Buscar supervisor..."
+                                placeholder="Buscar asesor..."
                             />
 
                             {isOpen && (
@@ -98,14 +113,15 @@ export const HeaderCrearFbAsesor = ({
                                     {filteredOptions.length > 0 ? (
                                         filteredOptions.map((a) => (
                                             <button
-                                                key={a}
+                                                key={a.idEmpleado}
                                                 type="button"
                                                 onClick={() => {
                                                     selectOption(a)
+                                                    setAsesor(a)
                                                 }}
                                                 className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-gray-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                             >
-                                                {a}
+                                                {a.usuario}
                                             </button>
                                         ))
                                     ) : (
@@ -174,7 +190,11 @@ export const HeaderCrearFbAsesor = ({
                     <div className="flex flex-row bg-white -mx-2 -mb-2 mt-2 justify-evenly dark:bg-zinc-900">
                         <div className="flex-1 p-2">
                             <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Nombre completo</p>
-                            <p className="text-[15px] dark:text-zinc-100">{filteredOptions.length === 1 ? filteredOptions[0] : selectedById?.usuario}</p>
+                            <p className="text-[15px] dark:text-zinc-100">
+                                {query.trim()
+                                    ? asesorOptions.find((v) => v.usuario.toLowerCase() === query.trim().toLowerCase())?.usuario
+                                    : selectedById?.usuario}
+                            </p>
                         </div>
                         <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">

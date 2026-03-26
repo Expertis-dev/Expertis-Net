@@ -128,7 +128,7 @@ export default function EditarFeedbackAsesorPage({params}: {
             {
                 (currentFeedback === "rutina" && form) ? 
                 <CrearFbAsesorForm
-                    asesor={asesor!}
+                    asesor={asesor}
                     modal={modal}
                     router={router}
                     setModal={setModal}
@@ -139,7 +139,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                     modal={modal}
                     router={router}
                     setModal={setModal}
-                    asesor={asesor!}
+                    asesor={asesor}
                     defaultFields={isFormNegativo(form) ? form : undefined}
                 />
             }

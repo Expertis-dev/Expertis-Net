@@ -3,7 +3,6 @@ import { AsesorHeaders } from "@/components/feedback/AsesorHeaders";
 import { FilterAsesor } from "@/components/feedback/asesor/FilterAsesor";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
-import { SheetIcon } from "lucide-react";
 import Link from "next/link";
 import { Empleado, HistFeedback } from "@/types/feedback/interfaces";
 import { DownloadExcelButton } from "@/components/feedback/asesor/DownloadExcelButton";
@@ -81,6 +80,11 @@ export default async function AsesoresPage({
 
             <FilterAsesor
                 asesores={asesores}
+                defaultValues={{
+                    asesor: asesor,
+                    filtroMes: filtroMes,
+                    tipoEvaluacion: tipoEvaluacion
+                }}
             />
 
             {/* Tabla */}

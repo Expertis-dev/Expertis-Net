@@ -19,7 +19,7 @@ interface Props {
     modal: Modal,
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
-    asesor: Colaborador,
+    asesor?: Colaborador,
     defaultValues?: Form
 }
 
@@ -108,7 +108,7 @@ export const CrearFbAsesorForm = ({
     asesor,
     defaultValues
 }: Props) => {
-    const {id: idFeedback} = useParams<{id: string}>()
+    const { id: idFeedback } = useParams<{ id: string }>()
     const buildDefaults = (fields?: Form): Form => ({
         recupero: fields === undefined ? "" : fields.recupero,
         recuperoMeta: fields === undefined ? "" : fields.recuperoMeta,
@@ -135,8 +135,12 @@ export const CrearFbAsesorForm = ({
         submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
 
     const onClickSave = async (type: string, { observacionesGenerales, ...data }: Form) => {
+        if (!asesor?.idEmpleado) {
+            setError("root", { type: "manual", message: "Selecciona un asesor." })
+            return
+        }
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        if (!defaultValues){
+        if (!defaultValues) {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "POST",
@@ -158,7 +162,7 @@ export const CrearFbAsesorForm = ({
             }).catch(() => {
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
-        }else{
+        } else {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
@@ -266,14 +270,15 @@ export const CrearFbAsesorForm = ({
             <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
                 <div className="flex flex-row justify-between p-2">
                     <div className="flex-row flex">
-                        <InfoIcon className="self-center text-gray-500 dark:text-zinc-400" size={15} />
-                        <p className="text-gray-500 ml-1 text-xs self-center dark:text-zinc-400">Los campos vacios se guardarán con valor 0</p>
+                        <InfoIcon className={`self-center text-gray-500 ${!asesor?.idEmpleado ? "text-gray-500 dark:text-zinc-400" : "text-red-500 dark:text-red-400"}`} size={15} />
+                        <p className={`${!asesor?.idEmpleado ? "text-gray-500 dark:text-zinc-400" : "text-red-500 dark:text-red-400"} ml-1 text-xs self-center`}>{!asesor?.idEmpleado ? "Completar el nombre del asesor" : "Los campos vacios se guardarán con valor "}0</p>
                     </div>
                     {errors.root?.message && (
                         <p className="text-red-600 text-xs self-center">{errors.root.message}</p>
                     )}
                     <div className="flex flex-row justify-between">
                         <Button
+                            disabled={!asesor?.idEmpleado}
                             onClick={() => {
                                 submitModeRef.current = "BORRADOR"
                                 handleSubmit((data) => {
@@ -288,7 +293,9 @@ export const CrearFbAsesorForm = ({
                             className="flex-1 bg-white text-black border border-gray-400 hover:bg-gray-100 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700">
                             Guardar Borrador
                         </Button>
-                        <Button className="flex-1 ml-4 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
+                        <Button
+                            disabled={!asesor?.idEmpleado}
+                            className="flex-1 ml-4 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white"
                             onClick={() => {
                                 submitModeRef.current = "PUBLICAR"
                                 clearErrors("root")
@@ -308,3 +315,4 @@ export const CrearFbAsesorForm = ({
         </>
     )
 }
+
