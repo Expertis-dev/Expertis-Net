@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { format, subBusinessDays, startOfDay } from "date-fns"
 import { es } from "date-fns/locale"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { LoadingModal } from "@/components/loading-modal"
@@ -96,13 +96,24 @@ const nivel3Options = {
 export default function NuevaJustificacion() {
   const { user } = useUser()
   const { colaboradores } = useColaboradores()
+
+  // Función para obtener la fecha mínima permitida (3 días hábiles atrás)
+  const obtenerFechaMinima = () => {
+    return startOfDay(subBusinessDays(new Date(), 0))
+  }
+
+  // Función para obtener la fecha por defecto formateada
+  const obtenerFechaPredeterminada = () => {
+    return format(obtenerFechaMinima(), "yyyy-MM-dd")
+  }
+
   const [asesor, setasesor] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nivel1: "",
     nivel2: "",
     nivel3: "",
     hora: 0,
-    fecha: "",
+    fecha: obtenerFechaPredeterminada(),
     observacion: "",
   })
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -169,7 +180,7 @@ export default function NuevaJustificacion() {
         nivel2: "",
         nivel3: "",
         hora: 0,
-        fecha: "",
+        fecha: obtenerFechaPredeterminada(),
         observacion: "",
       })
       setasesor(null)
@@ -234,6 +245,7 @@ export default function NuevaJustificacion() {
                           setFormData((prev) => ({ ...prev, fecha: format(date, "yyyy-MM-dd") }))
                         }
                       }}
+                      disabled={{ before: obtenerFechaMinima() }}
                     />
                   </PopoverContent>
                 </Popover>
