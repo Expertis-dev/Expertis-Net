@@ -34,10 +34,15 @@ import {
 const HORARIO_STAFF_ESTANDAR = { entrada: "09:00", tolerancia: 0 };
 const HORARIO_STAFF_SUPERVISOR = { entrada: "07:00", tolerancia: 0 };
 const HORARIO_STAFF_6AM = { entrada: "06:00", tolerancia: 0 };
+const HORARIO_STAFF_8AM = { entrada: "08:00", tolerancia: 0 };
 const HORARIO_STAFF_830AM = { entrada: "08:30", tolerancia: 0 };
 
 const STAFF_6AM = [
     "JAMES IZQUIERDO"
+];
+
+const STAFF_8AM: string[] = [
+    "EDWARD ESPINOZA"
 ];
 
 const STAFF_830AM = [
@@ -174,11 +179,12 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
 
     // 1.5. Calcular estadísticas de horarios
     const stats = useMemo(() => {
-        const counts = { six: 0, seven: 0, eightThirty: 0, nine: 0 };
+        const counts = { six: 0, seven: 0, eight: 0, eightThirty: 0, nine: 0 };
         colaboradores.forEach(c => {
             const alias = (c.alias || c.usuario || "").toString().trim().toUpperCase();
             if (STAFF_6AM.includes(alias)) counts.six++;
             else if (SUPERVISORES_ESP.includes(alias)) counts.seven++;
+            else if (STAFF_8AM.includes(alias)) counts.eight++;
             else if (STAFF_830AM.includes(alias)) counts.eightThirty++;
             else counts.nine++;
         });
@@ -362,6 +368,8 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                 config = HORARIO_STAFF_SUPERVISOR;
             } else if (STAFF_6AM.includes(aliasUpper)) {
                 config = HORARIO_STAFF_6AM;
+            } else if (STAFF_8AM.includes(aliasUpper)) {
+                config = HORARIO_STAFF_8AM;
             } else if (STAFF_830AM.includes(aliasUpper)) {
                 config = HORARIO_STAFF_830AM;
             }
@@ -777,6 +785,7 @@ const ReporteStaff = ({ colaboradores }: ReporteProps) => {
                         {[
                             { label: '6:00 AM', val: stats.six },
                             { label: '7:00 AM', val: stats.seven },
+                            { label: '8:00 AM', val: stats.eight },
                             { label: '8:30 AM', val: stats.eightThirty },
                             { label: '9:00 AM', val: stats.nine }
                         ].map((s, idx) => (
