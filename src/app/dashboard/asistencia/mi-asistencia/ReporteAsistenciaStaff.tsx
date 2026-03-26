@@ -273,8 +273,11 @@ const ReporteAsistenciaStaff = () => {
         if (STAFF_830AM.includes(aliasUpper)) {
             return { entrada: "08:30", tolerancia: 0 }; // 08:30 AM
         }
-        if (esSupervisorInterno || aliasUpper === "ROBERTO INZUA") {
+        if (esSupervisorInterno) {
             return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM
+        }
+        if (aliasUpper === "ROBERTO INZUA") {
+            return { entrada: "07:00", tolerancia: 0 }; // 07:10 AM
         }
         return { entrada: "09:00", tolerancia: 10 }; // 09:10 AM
     }, [esSupervisorInterno, user?.id_grupo, user?.usuario]);
