@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo, tipoFeedback }: Props) => {
-    console.log(tipoFeedback)
+    console.log(estado)
     return (
         <div className={`grid grid-cols-${esSupervisor ? 3 : 4} px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center`}>
             {
@@ -19,7 +19,7 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
                     <></>
                     :
                     <div className="flex justify-between md:block">
-                        <span>{tipoFeedback}</span>
+                        <span className={`${tipoFeedback === "NEGATIVO" ? "text-red-500" : "text-green-500"}`}>{tipoFeedback}</span>
                     </div>
             }
             <div className="flex justify-between md:block">
@@ -30,7 +30,7 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
             </div>
             <div className="flex justify-between md:block">
                 {
-                    (estado === "PUBLICADO" && esSupervisor === false) ?
+                    (estado === "PUBLICADO" && esSupervisor === true) ?
                         <Link href={`/dashboard/feedback/historialSupervisores/compromiso/${idFeedback}`} >
                             <button className="hover:bg-blue-800 dark:hover:bg-blue-800 bg-blue-500 text-white cursor-pointer dark:bg-blue-950 px-3 my-0.5 rounded-2xl">
                                 Redactar Compromiso

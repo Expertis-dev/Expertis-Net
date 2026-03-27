@@ -271,7 +271,7 @@ export const CrearFbAsesorForm = ({
                 <div className="flex flex-row justify-between p-2">
                     <div className="flex-row flex">
                         <InfoIcon className={`self-center text-gray-500 ${!asesor?.idEmpleado ? "text-gray-500 dark:text-zinc-400" : "text-red-500 dark:text-red-400"}`} size={15} />
-                        <p className={`${!asesor?.idEmpleado ? "text-gray-500 dark:text-zinc-400" : "text-red-500 dark:text-red-400"} ml-1 text-xs self-center`}>{!asesor?.idEmpleado ? "Completar el nombre del asesor" : "Los campos vacios se guardarán con valor "}0</p>
+                        <p className={`${!asesor?.idEmpleado ? "text-gray-500 dark:text-zinc-400" : "text-red-500 dark:text-red-400"} ml-1 text-xs self-center`}>{!asesor?.idEmpleado ? "Completar el nombre del asesor" : "Los campos vacios se guardarán con valor 0"}</p>
                     </div>
                     {errors.root?.message && (
                         <p className="text-red-600 text-xs self-center">{errors.root.message}</p>

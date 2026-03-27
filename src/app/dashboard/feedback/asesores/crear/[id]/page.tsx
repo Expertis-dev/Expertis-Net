@@ -2,6 +2,7 @@
 import { CrearFbAsesorForm, Form as FormRutina} from "@/components/feedback/asesor/crear/CrearFbAsesorForm";
 import { CrearFbNegativoAsesorForm,  Form as FormNegativo} from "@/components/feedback/asesor/crear/CrearFbNegativoAsesorForm";
 import { Colaborador, HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
+import { GoBackLink } from "@/components/feedback/GoBackLink";
 import { useUser } from "@/Provider/UserProvider";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -115,7 +116,7 @@ export default function EditarFeedbackAsesorPage({params}: {
     
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
-            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)}>
+            <div className="text-xs flex mb-1 cursor-pointer text-gray-500" onClick={() => router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`, )}>
                 <ArrowLeft size={15}/>
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>

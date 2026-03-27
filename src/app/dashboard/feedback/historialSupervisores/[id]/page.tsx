@@ -37,6 +37,7 @@ export default async function HistorialSupervisoresPage({params, searchParams}: 
             <h1 className="font-semibold text-[20px] pl-2 pb-1">Registros históricos</h1>
             <FilterHistorialAsesor 
                 esSupervisor
+                fechaDefault={filtroMes!}
             />
 
 

@@ -10,6 +10,7 @@ interface HistorialAsesor {
     estadoFeedBack:      string;
     analisisResultados:  null;
     resultadoEvaluacion: string;
+    tipoEvaluacion:      string;
 }
 
 
@@ -38,7 +39,9 @@ export default async function HistorialAsesoresPage({params, searchParams} : {
                 </div>
             </div>
             {/* // Filtro */}
-            <FilterHistorialAsesor />
+            <FilterHistorialAsesor
+                fechaDefault={filtroMes}
+            />
             {/* Tabla */}
             <Table>
                 <HistorialHeaders />
@@ -49,7 +52,7 @@ export default async function HistorialAsesoresPage({params, searchParams} : {
                             estado={v.estadoFeedBack}
                             idFeedback={v.idFeedBack}
                             periodo={v.periodo}
-                            tipoFeedback="asd"
+                            tipoFeedback={v.tipoEvaluacion}
                         />
                     )
                 }

@@ -9,9 +9,16 @@ import React, { useRef } from 'react'
 
 interface Props {
     supervisores: Array<Empleado>
+    defaultValues?: Values
 }
 
-export const FiltersSupervisor = ({supervisores}: Props) => {
+interface Values {
+    supervisor?: string,
+    filtroMes?: string,
+    estadoEvaluacion?: string,
+}
+
+export const FiltersSupervisor = ({supervisores, defaultValues}: Props) => {
     const {
         filteredOptions,
         isOpen,
@@ -24,14 +31,22 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
         options: supervisores,
         getLabel: (asesor) => asesor.alias,
         filterOption: (asesor, query) =>
-            asesor.alias.toLowerCase().includes(query)
+            asesor.alias.toLowerCase().includes(query),
+        initialQuery: defaultValues?.supervisor
     });
     const monthRef = useRef<HTMLInputElement>(null);
     const estadoRef = useRef<HTMLSelectElement>(null)
     const router = useRouter()
     const searchParams = useSearchParams()
     const params = searchParams.entries()
-    
+    const toMonthValue = (value?: string) => {
+        if (!value) return ""
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return ""
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
     const onClickSearch = () => {
         const urlParams = new URLSearchParams()
         if (!!monthRef.current?.value) {
@@ -82,6 +97,7 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                     className="rounded-sm dark:text-zinc-300 dark:bg-zinc-700 dark:border-zinc-600 md:w-max bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block p-2.5 outline-none transition-all h-8"
                     ref={monthRef}
                     onChange={onChangeMonth}
+                    defaultValue={toMonthValue(defaultValues?.filtroMes)}
                 />
             </div>
             <hr className="border-gray-200 border h-10 w-0.5 dark:border-zinc-500" />
@@ -92,6 +108,7 @@ export const FiltersSupervisor = ({supervisores}: Props) => {
                         className="rounded-sm w-44 h-10 border dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-600 border-slate-200 bg-gray-50 pl-3 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:bg-gray-50 appearance-none cursor-pointer"
                         ref={estadoRef}
                         onChange={onChangeEstado}
+                        defaultValue={defaultValues?.estadoEvaluacion || "todos"}
                     >
                         <option value="todos">Todos los estados</option>
                         <option value="BORRADOR">Borrador</option>

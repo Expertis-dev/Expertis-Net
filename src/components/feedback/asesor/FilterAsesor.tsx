@@ -152,7 +152,7 @@ export const FilterAsesor = ({ asesores, defaultValues }: Props) => {
                         className={`rounded-sm dark:border-zinc-500 dark:bg-zinc-800 dark:text-gray-200 w-full bg-gray-50 text-slate-700 text-sm border border-gray-200 pl-4 pr-10 leading-normal transition-all appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none hover:bg-gray-100 h-8.5`}
                         ref={tipoRef}
                         onChange={onChangeTipoEvaluacion}
-                        value={defaultValues?.tipoEvaluacion}
+                        defaultValue={defaultValues?.tipoEvaluacion || "todos"}
                     >
                         <option value="todos">Todos</option>
                         <option value="rutina">Rutina</option>

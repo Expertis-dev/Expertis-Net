@@ -6,9 +6,19 @@ import { useRef } from "react"
 
 interface Props {
     esSupervisor?: boolean
+    fechaDefault: string
 }
 
-export const FilterHistorialAsesor = ({esSupervisor = false}: Props) => {
+
+export const FilterHistorialAsesor = ({ esSupervisor = false, fechaDefault }: Props) => {
+    const toMonthValue = (value: string) => {
+        if (!value) return ""
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return ""
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
 
     const {user} = useUser()
     const inputMonthRef = useRef<HTMLInputElement>(null)
@@ -50,6 +60,7 @@ export const FilterHistorialAsesor = ({esSupervisor = false}: Props) => {
                     id="mes-anio"
                     className="w-full rounded-sm dark:bg-zinc-500 dark:text-gray-200 dark:border-zinc-700 sm:w-64 bg-gray-50 border border-gray-200 text-gray-800 text-sm px-4 py-2 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 my-2 transition-all cursor-pointer font-medium"
                     onChange={onChange}
+                    defaultValue={toMonthValue(fechaDefault)}
                 />
             </div>
         </div>

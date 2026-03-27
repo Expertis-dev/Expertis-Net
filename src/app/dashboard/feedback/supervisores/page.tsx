@@ -3,9 +3,10 @@ import { FiltersSupervisor } from "@/components/feedback/supervisor/FiltersSuper
 import { SupervisorFila } from "@/components/feedback/supervisor/SupervisorFila";
 import { Table } from "@/components/feedback/Table";
 import { Button } from "@/components/ui/button";
-import { BrainIcon, SheetIcon } from "lucide-react";
+import { BrainIcon } from "lucide-react";
 import Link from "next/link";
 import { Empleado, HistFeedback } from "@/types/feedback/interfaces";
+import { DownloadExcelButton } from "@/components/feedback/supervisor/DownloadExcelButton";
 
 
 const fetchSupervisores = async (): Promise<Array<Empleado>> => {
@@ -64,10 +65,9 @@ export default async function SupervisoresPage({
                         <BrainIcon />
                         Generar Análisis de resultados
                     </Button>
-                    <Button className="mr-2.5 bg-green-600 dark:text-gray-300 dark:hover:bg-green-900 hover:bg-green-500 text-xs h-8 mt-3" >
-                        <SheetIcon className="text-gray-50" />
-                        Exportar a Excel
-                    </Button>
+                    <DownloadExcelButton
+                        feedbacks={feedbacks}
+                    />
                     <Link
                         href={"/dashboard/feedback/supervisores/crear"}
                     >
@@ -103,6 +103,11 @@ export default async function SupervisoresPage({
 
             <FiltersSupervisor
                 supervisores={supervisores}
+                defaultValues={{
+                    estadoEvaluacion: estadoFeedback,
+                    filtroMes: filtroMes,
+                    supervisor: usuario
+                }}
             />
 
             <Table>

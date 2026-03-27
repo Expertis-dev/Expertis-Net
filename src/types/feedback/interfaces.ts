@@ -9,4 +9,5 @@ export interface HistFeedback {
     tipoEvaluacion?: string;
     periodo: string;
     estadoFeedBack: string;
+    resultadoEvaluacion: string
 }

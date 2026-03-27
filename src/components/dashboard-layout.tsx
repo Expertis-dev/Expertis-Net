@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, GlassesIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, GlassesIcon, BookIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -343,7 +343,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
   {
     id: "feedback",
     title: "feedback",
-    icon: PencilIcon,
+    icon: BookIcon,
     href: "/dashboards/feedback",
     subItems: [
       {

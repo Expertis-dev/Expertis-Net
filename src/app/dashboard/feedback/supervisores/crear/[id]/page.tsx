@@ -4,6 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Empleado } from "@/types/feedback/interfaces";
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { GoBackLink } from "@/components/feedback/GoBackLink";
 
 interface SupervisorFb {
     USUARIO: string;
@@ -49,6 +52,7 @@ export default function EditarFeedbackSupervisorPage({ params }: {
     const [supervisores, setSupervisores] = useState<Empleado[]>([])
     const [form, setForm] = useState<FormDefaulValues>()
     const [data, setData] = useState<SupervisorFb>()
+    const router = useRouter()
 
     const parseFeedback = (data: SupervisorFb) => {
         console.log(data)
@@ -91,10 +95,7 @@ export default function EditarFeedbackSupervisorPage({ params }: {
 
     return (
         <>
-            <Link className="flex flex-row text-gray-500 dark:text-gray-400 cursor-pointer" href={"/dashboard/feedback/supervisores"}>
-                <ArrowLeft size={15} className="self-center" />
-                <p className="text-xs font-light">Volver a feedbacks supervisor</p>
-            </Link>
+            <GoBackLink/>
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-gray-100">Edición de evaluacion de supervisor</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 font-light">Ingrese los resultados de objetivos y desempeno operativo</p>
 
