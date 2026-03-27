@@ -2,7 +2,6 @@
 import { CrearFbAsesorForm, Form as FormRutina} from "@/components/feedback/asesor/crear/CrearFbAsesorForm";
 import { CrearFbNegativoAsesorForm,  Form as FormNegativo} from "@/components/feedback/asesor/crear/CrearFbNegativoAsesorForm";
 import { Colaborador, HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
-import { GoBackLink } from "@/components/feedback/GoBackLink";
 import { useUser } from "@/Provider/UserProvider";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";

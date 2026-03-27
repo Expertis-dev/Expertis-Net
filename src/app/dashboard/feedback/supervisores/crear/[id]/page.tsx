@@ -1,11 +1,7 @@
 "use client"
 import { CrearFbSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbSupervisorForm";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { Empleado } from "@/types/feedback/interfaces";
 import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { GoBackLink } from "@/components/feedback/GoBackLink";
 
 interface SupervisorFb {
@@ -52,7 +48,6 @@ export default function EditarFeedbackSupervisorPage({ params }: {
     const [supervisores, setSupervisores] = useState<Empleado[]>([])
     const [form, setForm] = useState<FormDefaulValues>()
     const [data, setData] = useState<SupervisorFb>()
-    const router = useRouter()
 
     const parseFeedback = (data: SupervisorFb) => {
         console.log(data)

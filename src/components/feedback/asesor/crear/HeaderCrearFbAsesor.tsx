@@ -75,7 +75,7 @@ export const HeaderCrearFbAsesor = ({
         if (!selectedById) return
         selectOption(selectedById)
         setAsesor(selectedById)
-    }, [selectedById, asesorOptions, setAsesor])
+    }, [selectedById, asesorOptions, setAsesor, selectOption])
 
 
     return (
