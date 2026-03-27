@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 
 interface DataFbBase {
-    idFeedback:             string;
     fecInsert:             Date;
     idEmpleado:             string;
     periodo:                Date;
@@ -18,6 +17,7 @@ interface DataFbBase {
     tipoEmpleado:           string;
     compromisoMejora:       null;
     usrInsert:              string;
+    USUARIO: string
 }
 
 type DataFb =
@@ -106,6 +106,7 @@ export default function EditarFeedbackAsesorPage({params}: {
         }
         fetchFeedback(+idFeedback).then(data => {
             const formValues = parseFeedback(data)
+            console.log(data)
             setForm(formValues)
             setData(data)
             setCurrentFeedback(data.tipoEvaluacion === "RUTINA" ? "rutina" : "negativa")
@@ -124,6 +125,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                 setCurrentFeedback={setCurrentFeedback} 
                 setAsesor={setAsesor}
                 idEmpleado={data?.idEmpleado != null ? +data.idEmpleado : undefined}
+                USUARIO={data?.USUARIO}
             />
             {
                 (currentFeedback === "rutina" && form) ? 

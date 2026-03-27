@@ -1,9 +1,11 @@
 'use client'
 import { DeleteConfirmationModal } from '@/components/delete-confirmation-modal'
 import { SuccessModal } from '@/components/success-modal'
+import { useUser } from '@/Provider/UserProvider'
 import { HistFeedback } from '@/types/feedback/interfaces'
 import { EyeIcon, PencilIcon, Trash2Icon } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
 
 interface Modal {
@@ -17,6 +19,8 @@ interface Props {
 }
 
 export const SupervisorFila = ({ feedback }: Props) => {
+    const {user} = useUser()
+    const router = useRouter()
     const [deletionModal, setDeletionModal] = useState<Modal>({
         isOpen: false,
         message: "¿Estas seguro?",
@@ -39,17 +43,23 @@ export const SupervisorFila = ({ feedback }: Props) => {
             ...deletionModal,
             isOpen: false,
         })
-
-        setSuccesModal({
-            ...successModal,
-            isOpen: true,
-        })
-        setTimeout(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${feedback.idFeedBack}/${user?.usuario}`, {
+            method: "DELETE"
+        }).then(() => {
             setSuccesModal({
                 ...successModal,
-                isOpen: false,
+                isOpen: true,
             })
-        }, 1200)
+            setTimeout(() => {
+                setSuccesModal({
+                    ...successModal,
+                    isOpen: false,
+                })
+                router.refresh()
+            }, 1200)
+        }).catch(() => {
+            alert("Error al eliminar el feedback")
+        })
     }
 
     const onClickTrash = () => {

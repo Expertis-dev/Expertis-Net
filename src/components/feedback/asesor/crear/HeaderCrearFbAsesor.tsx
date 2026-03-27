@@ -9,6 +9,7 @@ interface Props {
     setCurrentFeedback: Dispatch<SetStateAction<string>>
     setAsesor: (asesor?: Colaborador) => void,
     idEmpleado?: number
+    USUARIO?: string
 }
 
 export interface Colaborador {
@@ -22,9 +23,9 @@ export const HeaderCrearFbAsesor = ({
     currentFeedback,
     setCurrentFeedback,
     setAsesor,
-    idEmpleado
+    idEmpleado,
+    USUARIO
 }: Props) => {
-
     const [asesorOptions, setAsesorOptions] = useState<Array<Colaborador>>([])
     const { user } = useUser()
     useEffect(() => {
@@ -52,8 +53,19 @@ export const HeaderCrearFbAsesor = ({
     } = useCombobox({
         options: asesorOptions,
         getLabel: (v) => v.usuario,
-        filterOption: (v, q) => v.usuario.toLowerCase().includes(q)
+        filterOption: (v, q) => v.usuario.toLowerCase().includes(q),
+        initialQuery: `${USUARIO}`
     });
+
+    useEffect(() => {
+        if (!USUARIO) return
+        setQuery(USUARIO)
+        setIsOpen(false)
+        const exactMatch = asesorOptions.find(
+            (v) => v.usuario.toLowerCase() === USUARIO.trim().toLowerCase()
+        )
+        setAsesor(exactMatch)
+    }, [USUARIO, asesorOptions, setAsesor, setQuery, setIsOpen])
 
     const selectedById = idEmpleado
         ? asesorOptions.find((v) => v.idEmpleado === idEmpleado)
@@ -94,8 +106,9 @@ export const HeaderCrearFbAsesor = ({
                         <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                             <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                             <input
-                                value={query}
+                                value={USUARIO ?? query}
                                 onChange={(e) => {
+                                    if (USUARIO) return
                                     const value = e.target.value
                                     setQuery(value)
                                     if (!value.trim()) {
@@ -103,12 +116,16 @@ export const HeaderCrearFbAsesor = ({
                                     }
                                     setIsOpen(true)
                                 }}
-                                onFocus={() => setIsOpen(true)}
+                                onFocus={() => {
+                                    if (USUARIO) return
+                                    setIsOpen(true)
+                                }}
+                                disabled={!!USUARIO}
                                 className="w-full border-none bg-transparent px-2 py-2 text-sm outline-none dark:text-zinc-100 dark:placeholder:text-zinc-300"
                                 placeholder="Buscar asesor..."
                             />
 
-                            {isOpen && (
+                            {isOpen && !USUARIO && (
                                 <div className="absolute left-0 right-0 top-[110%] z-20 max-h-44 overflow-y-auto rounded-sm border border-gray-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
                                     {filteredOptions.length > 0 ? (
                                         filteredOptions.map((a) => (
@@ -148,7 +165,7 @@ export const HeaderCrearFbAsesor = ({
                                 : "text-gray-600 dark:text-zinc-300"
                                 }`}
                             onClick={() => {
-                                if (!!idEmpleado) return;
+                                if (!!USUARIO) return;
                                 setCurrentFeedback("rutina")
                             }}
                         >
@@ -162,7 +179,7 @@ export const HeaderCrearFbAsesor = ({
                                 : "text-gray-600 dark:text-zinc-300"
                                 }`}
                             onClick={() => {
-                                if (!!idEmpleado) return;
+                                if (!!USUARIO) return;
                                 setCurrentFeedback("negativa")
                             }}
                         >

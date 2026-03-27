@@ -1,31 +1,62 @@
 "use client"
 import { SuccessModal } from '@/components/success-modal'
 import { Button } from '@/components/ui/button'
-import { ArrowRightToLine, BarChartIcon, NotebookPenIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useUser } from '@/Provider/UserProvider'
+import { ArrowLeft, ArrowRightToLine, BarChartIcon, NotebookPenIcon } from 'lucide-react'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { FeedbackSupervisor } from './SideTable'
 
 interface CompromisoMejora {compromisoMejora: string};
 
-export const CompromisoPage = () => {
+interface Props{
+    feedback: FeedbackSupervisor
+}
+
+export const CompromisoPage = ({feedback}: Props) => {
     const router = useRouter()
     const [modal, setModal] = useState({
         isOpen: false,
         message: ""
     })
     const {register, handleSubmit, formState: {errors}} = useForm<CompromisoMejora>()
+    const {idFeedback} = useParams<{idFeedback: string}>() // idFeedback
 
     const onClickSave = (data: CompromisoMejora) => {
-        console.log(data)
-        setModal({isOpen: true, message: "Compromiso guardado con éxito"})
-        setTimeout(() => {
-            router.back()
-        }, 1000);
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                estadoFeedback: "LISTO_PARA_FIRMAR",
+                observacionesGenerales: feedback.observacionesGenerales,
+                analisisResultados: feedback.analisisResultados,
+                compromisoMejora: data.compromisoMejora,
+                resultadoEvaluacion: JSON.stringify(feedback.resultadoEvaluacion),
+                usuario: user?.usuario
+            })
+        }).then(() => {
+            setModal({isOpen: true, message: "Compromiso guardado con éxito"})
+            setTimeout(() => {
+                router.push(`/dashboard/feedback/historialSupervisores/${user?.idEmpleado}`)
+            }, 1000);
+        }).catch(() => {
+            alert("Fallo al subir el compromiso")
+        })
     }
 
+    const {user} = useUser()
+
     return (
-        <div className="flex flex-col flex-3/4">
+        <div className="flex flex-col flex-3/4 relative">
+            <Link
+                href={`/dashboard/feedback/historialSupervisores/${user?.idEmpleado}`}
+                className="text-xs flex items-center gap-1 mb-2 cursor-pointer text-gray-500 self-start hover:text-gray-700"
+            >
+                <ArrowLeft size={15} />
+                <span>Volver a la pagina anterior</span>
+            </Link>
             <div className="flex flex-col p-4 mx-5 bg-blue-50 rounded-md dark:bg-blue-950/30">
                 <div className="flex flex-row">
                     <BarChartIcon className="text-blue-500 mr-1 mb-0.5" size={20} />
@@ -33,18 +64,7 @@ export const CompromisoPage = () => {
                 </div>
                 <hr className="my-1.5 border-gray-300 dark:border-zinc-600" />
                 <p className="text-[13px] text-gray-700 dark:text-zinc-300">
-                    El desempeño del equipo ha superado las expectativas en recuperación y
-                    calidad. Sin embargo, la efectividad de contacto ha caído por debajo del
-                    umbral crítico del 90%, lo que sugiere problemas en la segmentación de la
-                    base de datos o en los horarios de llamada. Se requiere un plan de acción
-                    específico para revertir la tendencia en Efectividad y Alcance durante el
-                    próximo ciclo operativo.
-                    El desempeño del equipo ha superado las expectativas en recuperación y
-                    calidad. Sin embargo, la efectividad de contacto ha caído por debajo del
-                    umbral crítico del 90%, lo que sugiere problemas en la segmentación de la
-                    base de datos o en los horarios de llamada. Se requiere un plan de acción
-                    específico para revertir la tendencia en Efectividad y Alcance durante el
-                    próximo ciclo operativo.
+                    {feedback.analisisResultados}
                 </p>
                 <p className="text-gray-400 text-[9px] mt-2 dark:text-zinc-400">EMITIDO POR: JEFATURA DE OPERACIONES</p>
             </div>

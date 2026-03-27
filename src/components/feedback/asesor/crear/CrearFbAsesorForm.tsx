@@ -163,14 +163,29 @@ export const CrearFbAsesorForm = ({
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
         } else {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
                 body: JSON.stringify({
-                    idFeedback,
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observacionesGenerales,
-                    resultadoEvaluacion: data,
+                    analisisResultados: null,
+                    compromisoMejora: null,
+                    resultadoEvaluacion: JSON.stringify({
+                        recupero: data.recupero,
+                        recuperoMeta: data.recuperoMeta,
+                        calidadPdp: data.calidadPdp,
+                        calidadPdpPromedio: data.calidadPdpPromedio,
+                        calidadCierre: data.calidadCierre,
+                        calidadCierrePromedio: data.calidadCierrePromedio,
+                        produccionPdp: data.produccionPdp,
+                        produccionPdpPromedio: data.produccionPdpPromedio,
+                        ticketDePdp: data.ticketDePdp,
+                        ticketDePdpPromedio: data.ticketDePdpPromedio,
+                        faltasInjustificadas: data.faltasInjustificadas,
+                        tardanzasInjustificadas: data.tardanzasInjustificadas,
+                    }),
+                    usuario: user?.usuario
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })
