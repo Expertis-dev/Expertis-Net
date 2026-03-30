@@ -83,5 +83,7 @@ export type SolicitudesTotales = {
     FECHA_INCIO_VACACIONES: string;
     AGENCIA?: string;
     agencia?: string;
+    USR_INSERT?: string;
+    usrInsert?: string;
 };
 export type ArraySolicitudesTotales = Array<SolicitudesTotales>;

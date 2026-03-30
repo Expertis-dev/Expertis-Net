@@ -23,6 +23,13 @@ import { SolicitudesTotales } from "@/types/Vacaciones"
 import { BadgeStatus } from "@/components/BadgeStatus"
 import { Loading } from "@/components/Loading"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout"
 
 export default function ReporteGeneralVacaciones() {
@@ -33,6 +40,12 @@ export default function ReporteGeneralVacaciones() {
     const [searchTerm, setSearchTerm] = useState("")
     const [startDate, setStartDate] = useState("")
     const [endDate, setEndDate] = useState("")
+    const [selectedAgencia, setSelectedAgencia] = useState("EXPERTIS")
+
+    const agencias = useMemo(() => {
+        const set = new Set(solicitudes.map(s => (s.AGENCIA || s.agencia || "SIN AGENCIA").toUpperCase()))
+        return Array.from(set).sort()
+    }, [solicitudes])
 
     useEffect(() => {
         // Validar permisos
@@ -62,7 +75,14 @@ export default function ReporteGeneralVacaciones() {
 
     const filteredSolicitudes = useMemo(() => {
         return solicitudes.filter((sol) => {
-            const matchesSearch = (sol.ALIAS_EMPLEADO || "").toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesSearch = 
+                (sol.ALIAS_EMPLEADO || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (sol.USR_INSERT || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (sol.usrInsert || "").toLowerCase().includes(searchTerm.toLowerCase())
+
+            // Filtro de Agencia
+            const solAgencia = (sol.AGENCIA || sol.agencia || "SIN AGENCIA").toUpperCase()
+            const matchesAgencia = selectedAgencia === "TODAS" || solAgencia === selectedAgencia
 
             // Filtro especial para Diana Davila (se evalúa siempre, antes del return)
             if (user?.usuario?.toUpperCase() === "DIANA DAVILA") {
@@ -70,7 +90,7 @@ export default function ReporteGeneralVacaciones() {
                 if (agencia !== "EXPERTIS BPO") return false;
             }
 
-            if (!startDate && !endDate) return matchesSearch;
+            if (!startDate && !endDate) return matchesSearch && matchesAgencia;
 
             // Lógica de solapamiento (Overlap):
             // Una vacación se muestra si su rango [Inicio, Fin] tiene algún punto en común con el rango del filtro [Desde, Hasta]
@@ -85,9 +105,9 @@ export default function ReporteGeneralVacaciones() {
             const matchesStartDate = filterStart ? solEnd >= filterStart : true
             const matchesEndDate = filterEnd ? solStart <= filterEnd : true
 
-            return matchesSearch && matchesStartDate && matchesEndDate
+            return matchesSearch && matchesAgencia && matchesStartDate && matchesEndDate
         }).sort((a, b) => new Date(b.FECHA_INCIO_VACACIONES).getTime() - new Date(a.FECHA_INCIO_VACACIONES).getTime())
-    }, [solicitudes, searchTerm, startDate, endDate, user?.usuario])
+    }, [solicitudes, searchTerm, startDate, endDate, user?.usuario, selectedAgencia])
 
     const aprobadas = useMemo(() => filteredSolicitudes.filter(s => s.ESTADO_VACACIONES === "APROBADO"), [filteredSolicitudes])
     const pendientes = useMemo(() => filteredSolicitudes.filter(s => s.ESTADO_VACACIONES === "PENDIENTE"), [filteredSolicitudes])
@@ -98,10 +118,11 @@ export default function ReporteGeneralVacaciones() {
             return
         }
 
-        const headers = ["DNI", "Empleado", "Fecha Inicio", "Fecha Final", "Días", "Estado"]
+        const headers = ["DNI", "Empleado", "Grupo", "Fecha Inicio", "Fecha Final", "Días", "Estado"]
         const exportData = data.map(sol => [
             sol.DNI,
             sol.ALIAS_EMPLEADO,
+            sol.USR_INSERT || sol.usrInsert || "---",
             sol.FECHA_INCIO_VACACIONES.split("T")[0],
             sol.FECHA_FIN_VACACIONES.split("T")[0],
             sol.DIAS_GOZADOS_TOTALES,
@@ -162,7 +183,7 @@ export default function ReporteGeneralVacaciones() {
 
             <Card className="border shadow-sm bg-card overflow-hidden">
                 <CardContent className="p-3">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Empleado</label>
                             <div className="relative">
@@ -175,6 +196,22 @@ export default function ReporteGeneralVacaciones() {
                                 />
                             </div>
                         </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Agencia</label>
+                            <Select value={selectedAgencia} onValueChange={setSelectedAgencia}>
+                                <SelectTrigger className="h-9 text-sm bg-background">
+                                    <SelectValue placeholder="Seleccionar agencia" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="TODAS">TODAS LAS AGENCIAS</SelectItem>
+                                    {agencias.map(ag => (
+                                        <SelectItem key={ag} value={ag}>{ag}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Desde</label>
                             <div className="relative">
@@ -208,6 +245,7 @@ export default function ReporteGeneralVacaciones() {
                                     setSearchTerm("")
                                     setStartDate("")
                                     setEndDate("")
+                                    setSelectedAgencia("EXPERTIS")
                                 }}
                             >
                                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
@@ -259,6 +297,7 @@ function TableContainer({ data }: { data: SolicitudesTotales[] }) {
                 <TableRow className="hover:bg-transparent border-b">
                     <TableHead className="font-bold text-xs">DNI</TableHead>
                     <TableHead className="font-bold py-2 text-xs">Empleado</TableHead>
+                    <TableHead className="font-bold py-2 text-xs">Grupo</TableHead>
                     <TableHead className="font-bold text-xs">Fecha Inicio</TableHead>
                     <TableHead className="font-bold text-xs">Fecha Final</TableHead>
                     <TableHead className="font-bold text-xs">Días</TableHead>
@@ -270,6 +309,7 @@ function TableContainer({ data }: { data: SolicitudesTotales[] }) {
                     <TableRow key={idx} className="hover:bg-muted/30 transition-colors border-b last:border-0 h-10">
                         <TableCell className="text-muted-foreground text-xs">{item.DNI || "---"}</TableCell>
                         <TableCell className="font-semibold text-foreground py-2 text-xs capitalize">{item.ALIAS_EMPLEADO}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{item.USR_INSERT || item.usrInsert || "---"}</TableCell>
                         <TableCell className="text-muted-foreground text-xs">{item.FECHA_INCIO_VACACIONES ? item.FECHA_INCIO_VACACIONES.split("T")[0] : "---"}</TableCell>
                         <TableCell className="text-muted-foreground text-xs">{item.FECHA_FIN_VACACIONES ? item.FECHA_FIN_VACACIONES.split("T")[0] : "---"}</TableCell>
                         <TableCell className="py-2">
