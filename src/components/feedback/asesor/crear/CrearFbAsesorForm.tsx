@@ -61,7 +61,7 @@ const metricFields: Array<{
             name: "Recupero",
             values: [
                 { name: "recupero", label: "Actual", prefix: "S/", decimals: 2, placeholder: "Actual" },
-                { name: "recuperoMeta", label: "Meta", prefix: "S/", decimals: 2, placeholder: "Meta" },
+                { name: "recuperoMeta", label: "Meta", prefix: "S/", decimals: 2, placeholder: "Meta por asesor" },
             ],
         },
         {
@@ -95,8 +95,8 @@ const metricFields: Array<{
         {
             name: "Asistencia (Faltas/Tardanzas)",
             values: [
-                { name: "faltasInjustificadas", label: "Faltas injustificadas", prefix: "", decimals: 0, placeholder: "Actual" },
-                { name: "tardanzasInjustificadas", label: "Tardanzas injustificadas", prefix: "", decimals: 0, placeholder: "Promedio por asesor" },
+                { name: "faltasInjustificadas", label: "Faltas injustificadas", prefix: "", decimals: 0, placeholder: "Faltas injustificadas" },
+                { name: "tardanzasInjustificadas", label: "Tardanzas injustificadas", prefix: "", decimals: 0, placeholder: "Tardanzas injustificadas" },
             ],
         },
     ]

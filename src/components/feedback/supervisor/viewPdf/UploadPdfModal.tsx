@@ -1,20 +1,25 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useRouter } from 'next/navigation';
 import React, { Dispatch, SetStateAction, useRef, useState } from 'react'
 
 interface Props {
     setIsUploadModalOpen: Dispatch<SetStateAction<boolean>>,
-    isUploadModalOpen: boolean
+    isUploadModalOpen: boolean,
+    idFeedback: number
 }
 
 export const UploadPdfModal = ({
     setIsUploadModalOpen,
-    isUploadModalOpen
+    isUploadModalOpen,
+    idFeedback
 }: Props) => {
+    const router = useRouter()
     const inputFileRef = useRef<HTMLInputElement | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
     const [uploadError, setUploadError] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
     const processSelectedFile = (file: File | null) => {
         if (!file) return;
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
@@ -40,12 +45,31 @@ export const UploadPdfModal = ({
         processSelectedFile(file);
     };
 
-    const handleConfirmUpload = () => {
+    const handleConfirmUpload = async () => {
         if (!selectedPdf) return;
-        //! Aqui conectas tu servicio real para subir PDF.
-        setIsUploadModalOpen(false);
-        setSelectedPdf(null);
+        if (isUploading) return;
+        const formData = new FormData()
+        formData.append('file', selectedPdf);
+
+        setIsUploading(true);
         setUploadError("");
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor/fbFirmado/${idFeedback}`, {
+                method: "PUT",
+                body: formData
+            })
+            if (!response.ok) {
+                throw new Error("Error al subir el PDF.");
+            }
+            setIsUploadModalOpen(false);
+            setSelectedPdf(null);
+            setUploadError("");
+        } catch {
+            setUploadError("Error al subir el PDF.");
+        } finally {
+            setIsUploading(false);
+            router.refresh()
+        }
     };
 
     const handleCloseUploadModal = () => {
@@ -136,11 +160,12 @@ export const UploadPdfModal = ({
                     <Button variant="outline" onClick={handleCloseUploadModal}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleConfirmUpload} disabled={!selectedPdf}>
-                        Subir PDF
+                    <Button onClick={handleConfirmUpload} disabled={!selectedPdf || isUploading}>
+                        {isUploading ? "Subiendo..." : "Subir PDF"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
+

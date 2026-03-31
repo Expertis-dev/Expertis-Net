@@ -47,6 +47,7 @@ interface Props {
     defaultValues?: Form
     supervisorName?: string
     periodoDefault?: Date
+    idFeedback: number
 }
 
 interface Form {
@@ -85,7 +86,7 @@ const metricFields: Array<{
         { name: "ausentismoEquipo", label: "% Ausentismo Equipo", prefix: "%", decimals: 2 },
     ]
 
-export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorName, periodoDefault }: Props) => {
+export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorName, periodoDefault, idFeedback }: Props) => {
     const [supervisor, setSupervisor] = useState<Empleado>()
     const [periodo, setPeriodo] = useState<string | undefined>(undefined)
 
@@ -127,19 +128,21 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
     })
     const onClickSave = async (type: string, { analisisResultados, ...data }: Form) => {
         const message = type === "PUBLICAR" ? "Feedback de supervisor publicado con éxito" : "Borrador guardado con éxito"
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                idEmpleado: supervisor?.idEmpleado,
-                periodo,
-                estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
-                analisisResultados: analisisResultados,
-                resultadoEvaluacion: data,
-                usrInsert: user?.usuario,
-                tipoEmpleado: "SUPERVISOR"
+
+        if (!defaultValues){
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    idEmpleado: supervisor?.idEmpleado,
+                    periodo,
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    analisisResultados: analisisResultados,
+                    resultadoEvaluacion: data,
+                    usrInsert: user?.usuario,
+                    tipoEmpleado: "SUPERVISOR"
+                })
             })
-        })
             .then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
@@ -148,6 +151,29 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
             }).catch(() => {
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
+        }else {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
+                    observacionesGenerales: undefined,
+                    analisisResultados: analisisResultados,
+                    compromisoMejora: undefined,
+                    resultadoEvaluacion: JSON.stringify(data),
+                    usuario: user?.usuario
+                })
+            })
+            .then(() => {
+                setModal({ isOpen: true, message: message })
+                setTimeout(() => {
+                    router.push("/dashboard/feedback/supervisores")
+                }, 1500);
+            }).catch(() => {
+                alert("Ocurrio un error, contactar con soporte si el error persiste")
+            })
+        }
+
     }
     const handleChange =
         (onChange: (value: string) => void, maxDecimals = 2) =>

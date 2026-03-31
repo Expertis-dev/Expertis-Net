@@ -17,18 +17,16 @@ const feedbackMetrics = [
 ];
 
 interface Feedback {
-    idFeedback: string;
-    created_at: Date;
-    idEmpleado: string;
-    tipoEvaluacion: string;
-    periodo: Date;
-    estadoFeedback: string;
-    observacionesGenerales: null;
-    analisisResultados: string;
-    tipoEmpleado: string;
-    compromisoMejora: string;
-    resultadoEvaluacion: string;
-    usrInsert: string;
+    idFeedBack: number
+    USUARIO: string
+    tipoEmpleado: string
+    periodo: Date
+    estadoFeedBack: string
+    analisisResultados: string
+    compromisoMejora: string
+    resultadoEvaluacion: string
+    tipoEvaluacion: string
+    observacionesGenerales: string
 }
 
 interface ResultadoEvaluacion {
@@ -70,11 +68,11 @@ export default async function ViewSupervisorPdfPage({ params }: {
                     <h1 className="mt-2 text-2xl font-bold flex-1 tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">Detalle del feedback</h1>
                     <p className={`
                         self-center inline-flex items-center rounded-full border 
-                        ${feedback.estadoFeedback === "PUBLICADO" ? "border-green-400/70 bg-green-200 px-3 py-1 text-[11px] text-green-900 shadow-sm dark:border-green-500/50 dark:bg-green-400/20 dark:text-green-100"
+                        ${feedback.estadoFeedBack === "PUBLICADO" ? "border-green-400/70 bg-green-200 px-3 py-1 text-[11px] text-green-900 shadow-sm dark:border-green-500/50 dark:bg-green-400/20 dark:text-green-100"
                             : "border-gray-400/70 bg-gray-200 px-3 py-1 text-[11px] text-gray-900 shadow-sm dark:border-gray-500/50 dark:bg-gray-400/20 dark:text-gray-100"
                         }
                         font-semibold uppercase tracking-[0.18em] `}>
-                        {feedback.estadoFeedback}
+                        {feedback.estadoFeedBack}
                     </p>
                 </div>
 
@@ -88,7 +86,7 @@ export default async function ViewSupervisorPdfPage({ params }: {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Nombre</p>
-                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">Sebastian Guzman</p>
+                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">{feedback.USUARIO}</p>
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Tipo feedback</p>
@@ -96,7 +94,7 @@ export default async function ViewSupervisorPdfPage({ params }: {
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Periodo</p>
-                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">Marzo de 2026</p>
+                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">{(new Date(feedback.periodo)).toLocaleDateString("es-ES", {month: "long", year: "numeric"}).toUpperCase()}</p>
                     </div>
                 </div>
             </div>
@@ -132,7 +130,11 @@ export default async function ViewSupervisorPdfPage({ params }: {
                         </div>
                     </div>
                 </div>
-                <SupervisorPdfActionsPanel />
+                <SupervisorPdfActionsPanel 
+                    compromisoMejora={feedback.compromisoMejora}
+                    estadoFeedBack={feedback.estadoFeedBack}
+                    idFeedback={feedback.idFeedBack}
+                />
             </div>
         </div>
     );

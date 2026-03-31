@@ -100,6 +100,7 @@ export default function EditarFeedbackSupervisorPage({ params }: {
                     defaultValues={form}
                     supervisorName={data?.USUARIO}
                     periodoDefault={data?.periodo}
+                    idFeedback={+idFeedback}
                 />
             ) : null}
         </>

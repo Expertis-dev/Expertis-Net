@@ -24,7 +24,7 @@ export const HeaderCrearFbAsesor = ({
     setCurrentFeedback,
     setAsesor,
     idEmpleado,
-    USUARIO
+    USUARIO = ""
 }: Props) => {
     const [asesorOptions, setAsesorOptions] = useState<Array<Colaborador>>([])
     const { user } = useUser()
@@ -32,7 +32,7 @@ export const HeaderCrearFbAsesor = ({
         const fetchAsesores = async (): Promise<Colaborador[]> => {
             const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`, {
                 method: "POST",
-                "headers": { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ usuario: user?.usuario || "" })
             }).then(r => r.json())
             return asesores
@@ -106,7 +106,7 @@ export const HeaderCrearFbAsesor = ({
                         <div className="relative rounded-sm flex flex-row bg-gray-50 border dark:bg-zinc-600">
                             <SearchIcon className="self-center ml-2 mt-0.5 dark:text-white" size={18} />
                             <input
-                                value={USUARIO ?? query}
+                                value={query}
                                 onChange={(e) => {
                                     if (USUARIO) return
                                     const value = e.target.value

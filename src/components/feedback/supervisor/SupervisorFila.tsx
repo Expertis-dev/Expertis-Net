@@ -21,6 +21,13 @@ interface Props {
 export const SupervisorFila = ({ feedback }: Props) => {
     const {user} = useUser()
     const router = useRouter()
+    const statusClassMap: Record<string, string> = {
+        BORRADOR: "text-amber-600 dark:text-amber-400",
+        POR_GENERAR_ANALISIS: "text-yellow-600 dark:text-yellow-400",
+        PUBLICADO: "text-green-600 dark:text-green-400",
+        LISTO_PARA_FIRMAR: "text-blue-600 dark:text-blue-400",
+        CERRADO: "text-gray-600 dark:text-gray-400",
+    }
     const [deletionModal, setDeletionModal] = useState<Modal>({
         isOpen: false,
         message: "¿Estas seguro?",
@@ -78,10 +85,8 @@ export const SupervisorFila = ({ feedback }: Props) => {
                 <span className='text-[14px]'>{feedback.periodo.split("T")[0].slice(0, 7)}</span>
             </div>
             <div className="flex justify-between md:block">
-                <span className={`${feedback.estadoFeedBack === "PUBLICADO" ?
-                    "text-green-600 dark:text-green-400" :
-                    "text-gray-600 dark:text-gray-400"} 
-                    font-medium text-[14px]`}
+                <span
+                    className={`${statusClassMap[feedback.estadoFeedBack] ?? "text-gray-600 dark:text-gray-400"} font-medium text-[14px]`}
                 >
                     {feedback.estadoFeedBack}
                 </span>
@@ -128,3 +133,4 @@ export const SupervisorFila = ({ feedback }: Props) => {
         </div>
     )
 }
+
