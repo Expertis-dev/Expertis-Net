@@ -8,36 +8,36 @@ import { Clock, CalendarX2, AlertTriangle, Info, Search, ArrowUpDown } from "luc
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Loading } from "@/components/Loading" 
+import { Loading } from "@/components/Loading"
 import { getPermisosFromStorage, tienePermiso } from "@/components/dashboard-layout"
 import { useUser } from "@/Provider/UserProvider"
 
 export interface AsistenciaRecord {
-  fecha: string;
-  alias: string;
-  documento: string;
-  grupo: string;
-  agencia: string;
-  horaIngreso: string | null;
-  horaSalida: string | null;
-  esFalta: number;
-  esDiaLaborable: number;
-  esVacaciones: number;
-  esAusenciaLaborable: number;
-  tipoAusencia: string | null;
-  tipo: string | null;
-  tipoSubsidio: string | null;
-  tipoGoce: string | null;
-  hayJustificacion: number;
-  tipoJustificacion: string | null;
-  minutos_permiso: number;
-  descuento: number;
-  fechaInicioGestion: string | null;
-  fechaFinGestion: string | null;
-  horario: string | null;
-  esTardanza: number;
-  minutosTardanza: number;
-  esUltimoSabadoDelMes: number;
+    fecha: string;
+    alias: string;
+    documento: string;
+    grupo: string;
+    agencia: string;
+    horaIngreso: string | null;
+    horaSalida: string | null;
+    esFalta: number;
+    esDiaLaborable: number;
+    esVacaciones: number;
+    esAusenciaLaborable: number;
+    tipoAusencia: string | null;
+    tipo: string | null;
+    tipoSubsidio: string | null;
+    tipoGoce: string | null;
+    hayJustificacion: number;
+    tipoJustificacion: string | null;
+    minutos_permiso: number;
+    descuento: number;
+    fechaInicioGestion: string | null;
+    fechaFinGestion: string | null;
+    horario: string | null;
+    esTardanza: number;
+    minutosTardanza: number;
+    esUltimoSabadoDelMes: number;
 }
 
 export default function AlertasPage() {
@@ -51,7 +51,7 @@ export default function AlertasPage() {
     const [filtroColor, setFiltroColor] = useState("TODOS");
     const [showAutocomplete, setShowAutocomplete] = useState(false);
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-    
+
     const autocompleteRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -79,18 +79,18 @@ export default function AlertasPage() {
             return;
         }
 
-        const URL_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/alertaIncidencias/?codMes=3`;
-        
+        const URL_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/alertaIncidencias/?codMes=4`;
+
         const fetchData = async () => {
             setLoading(true);
             try {
                 const response = await fetch(URL_ENDPOINT);
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     const listTardanzas = data.data?.tardanzas || data.tardanzas || [];
                     const listFaltas = data.data?.faltas || data.faltas || [];
-                    
+
                     setTardanzas(listTardanzas);
                     setFaltas(listFaltas);
                 }
@@ -100,8 +100,8 @@ export default function AlertasPage() {
                 setLoading(false);
             }
         }
-        
-        fetchData(); 
+
+        fetchData();
     }, []);
 
     // Función auxiliar transformar "DD-MM-YYYY" a milisegundos y ordenar
@@ -124,9 +124,9 @@ export default function AlertasPage() {
 
         const ordenadoTotal = [...base].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
         const contadores: Record<string, number> = {};
-        
+
         type RecordWithIncidence = AsistenciaRecord & { incidencia: number };
-        
+
         const conIncidenciaTotal: RecordWithIncidence[] = ordenadoTotal.map((item) => {
             contadores[item.alias] = (contadores[item.alias] || 0) + 1;
             return {
@@ -194,9 +194,9 @@ export default function AlertasPage() {
 
         const ordenadoTotal = [...base].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
         const contadores: Record<string, number> = {};
-        
+
         type RecordWithIncidence = AsistenciaRecord & { incidencia: number };
-        
+
         const conIncidenciaTotal: RecordWithIncidence[] = ordenadoTotal.map((item) => {
             contadores[item.alias] = (contadores[item.alias] || 0) + 1;
             return {
@@ -345,7 +345,7 @@ export default function AlertasPage() {
                     <h1 className="text-2xl font-bold text-foreground leading-tight">Panel de Alertas</h1>
                     <p className="text-sm text-muted-foreground">Monitorea y visualiza incidencias de asistencia como tardanzas y faltas.</p>
                 </div>
-                
+
                 <div className="flex items-center gap-3 shrink-0">
                     <Card className="bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900 shadow-none">
                         <CardContent className="p-3 flex items-center gap-3">
@@ -364,8 +364,8 @@ export default function AlertasPage() {
             <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/40 p-3 rounded-xl border w-full shadow-sm dark:bg-muted/10">
                 <div className="flex items-center w-full md:w-auto md:flex-1 relative" ref={autocompleteRef}>
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar empleado por nombre..." 
+                    <Input
+                        placeholder="Buscar empleado por nombre..."
                         value={filtroNombre}
                         onChange={e => {
                             setFiltroNombre(e.target.value);
@@ -375,13 +375,13 @@ export default function AlertasPage() {
                         className="h-10 w-full pl-9 bg-background shadow-sm text-base md:text-sm"
                         autoComplete="off"
                     />
-                    
+
                     {/* Lista Flotante Personalizada */}
                     {showAutocomplete && filtroNombre.trim().length > 0 && (
                         <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-background border rounded-lg shadow-xl max-h-[220px] overflow-auto flex flex-col p-1 animate-in fade-in slide-in-from-top-2">
                             {nombresList.filter(nombre => nombre.toLowerCase().includes(filtroNombre.toLowerCase())).length > 0 ? (
                                 nombresList.filter(nombre => nombre.toLowerCase().includes(filtroNombre.toLowerCase())).map(nombre => (
-                                    <div 
+                                    <div
                                         key={nombre}
                                         className="px-3 py-2 cursor-pointer hover:bg-muted/70 rounded-md text-sm text-foreground transition-colors"
                                         onClick={() => {
@@ -472,7 +472,7 @@ export default function AlertasPage() {
                                 <Table>
                                     <TableHeader className="bg-muted/50">
                                         <TableRow>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortTardanzas("fecha")}
                                             >
@@ -481,7 +481,7 @@ export default function AlertasPage() {
                                                     <ArrowUpDown className={`w-3 h-3 ${sortTardanzas.field === "fecha" ? "text-foreground" : "text-transparent group-hover:text-muted-foreground"}`} />
                                                 </div>
                                             </TableHead>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortTardanzas("alias")}
                                             >
@@ -492,7 +492,7 @@ export default function AlertasPage() {
                                             </TableHead>
                                             <TableHead className="font-semibold">Grupo</TableHead>
                                             <TableHead className="font-semibold">Hora de Ingreso</TableHead>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortTardanzas("minutosTardanza")}
                                             >
@@ -501,7 +501,7 @@ export default function AlertasPage() {
                                                     <ArrowUpDown className={`w-3 h-3 ${sortTardanzas.field === "minutosTardanza" ? "text-foreground" : "text-transparent group-hover:text-muted-foreground"}`} />
                                                 </div>
                                             </TableHead>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortTardanzas("incidencia")}
                                             >
@@ -514,8 +514,8 @@ export default function AlertasPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {tardanzasProcesadas.length > 0 ? tardanzasProcesadas.map((item, id) => (
-                                            <TableRow 
-                                                key={id} 
+                                            <TableRow
+                                                key={id}
                                                 className={`transition-colors h-14 ${getRowClassByIncidence(item.incidencia)}`}
                                             >
                                                 <TableCell className="font-medium">
@@ -566,7 +566,7 @@ export default function AlertasPage() {
                                 <Table>
                                     <TableHeader className="bg-muted/50">
                                         <TableRow>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortFaltas("fecha")}
                                             >
@@ -575,7 +575,7 @@ export default function AlertasPage() {
                                                     <ArrowUpDown className={`w-3 h-3 ${sortFaltas.field === "fecha" ? "text-foreground" : "text-transparent group-hover:text-muted-foreground"}`} />
                                                 </div>
                                             </TableHead>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortFaltas("alias")}
                                             >
@@ -586,7 +586,7 @@ export default function AlertasPage() {
                                             </TableHead>
                                             <TableHead className="font-semibold">Grupo</TableHead>
                                             <TableHead className="font-semibold">Estado</TableHead>
-                                            <TableHead 
+                                            <TableHead
                                                 className="font-semibold cursor-pointer hover:bg-muted/70 transition-colors select-none group"
                                                 onClick={() => toggleSortFaltas("incidencia")}
                                             >
@@ -599,7 +599,7 @@ export default function AlertasPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {faltasProcesadas.length > 0 ? faltasProcesadas.map((item, id) => (
-                                            <TableRow 
+                                            <TableRow
                                                 key={id}
                                                 className={`transition-colors h-14 ${getFaltaRowClassByIncidence(item.incidencia)}`}
                                             >
