@@ -102,7 +102,8 @@ export const CrearFbNegativoAsesorForm = ({
                     observacionesGenerales: observaciones,
                     resultadoEvaluacion: data,
                     usrInsert: user?.usuario || "",
-                    tipoEmpleado: "ASESOR"
+                    tipoEmpleado: "ASESOR",
+                    USUARIO: asesor.usuario
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })
@@ -113,7 +114,7 @@ export const CrearFbNegativoAsesorForm = ({
                 alert("Ocurrio un error, contactar con soporte si el error persiste")
             })
         } else {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
                 body: JSON.stringify({

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
-import { ArrowRight, InfoIcon, SquareIcon } from "lucide-react"
+import { ArrowRight, InfoIcon, RefreshCcw, SquareIcon } from "lucide-react"
 import { formatWithThousands } from "../../supervisor/crear/CrearFbSupervisorForm"
-import { Dispatch, SetStateAction, useEffect, useRef } from "react"
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react"
 import { FormattedNumberInput } from "../../FormattedNumberInput"
 import { SuccessModal } from "@/components/success-modal"
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
@@ -40,6 +40,40 @@ export interface Form {
 }
 
 type MetricField = Exclude<keyof Form, "observacionesGenerales">
+
+export interface AsistenciaDetalle {
+    fecha: Date;
+    alias: string;
+    documento: string;
+    grupo: string | null;
+    agencia: Agencia;
+    horaIngreso: null | string;
+    horaSalida: null | string;
+    esFalta: number;
+    esDiaLaborable: number;
+    esVacaciones: number;
+    esAusenciaLaborable: number;
+    tipoAusencia: null | string;
+    tipo: null;
+    tipoSubsidio: null | string;
+    tipoGoce: null;
+    hayJustificacion: number;
+    tipoJustificacion: null | string;
+    minutos_permiso: number;
+    descuento: number;
+    fechaInicioGestion: string;
+    fechaFinGestion: null;
+    horario: string;
+    esTardanza: number;
+    minutosTardanza: number;
+    esUltimoSabadoDelMes: number;
+}
+
+export enum Agencia {
+    Expertis = "EXPERTIS",
+    ExpertisBpo = "EXPERTIS BPO",
+}
+
 
 const metricFields: Array<{
     name: string
@@ -109,6 +143,10 @@ export const CrearFbAsesorForm = ({
     defaultValues
 }: Props) => {
     const { id: idFeedback } = useParams<{ id: string }>()
+
+    const [isFetching, setIsFetching] = useState(false)
+    const [isDisable, setIsDisable] = useState(false)
+
     const buildDefaults = (fields?: Form): Form => ({
         recupero: fields === undefined ? "" : fields.recupero,
         recuperoMeta: fields === undefined ? "" : fields.recuperoMeta,
@@ -125,7 +163,7 @@ export const CrearFbAsesorForm = ({
         observacionesGenerales: fields === undefined ? "" : fields.observacionesGenerales,
     })
 
-    const { control, register, handleSubmit, setError, clearErrors, formState: { errors }, reset } = useForm<Form>({
+    const { control, register, handleSubmit, setError, clearErrors, formState: { errors }, reset, setValue } = useForm<Form>({
         defaultValues: buildDefaults(defaultValues)
     })
     const { user } = useUser()
@@ -133,6 +171,30 @@ export const CrearFbAsesorForm = ({
 
     const requireIfPublishing = (message: string) => (value: string) =>
         submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
+
+    const onClickFetchData = async () => {
+        setIsFetching(true)
+        setIsDisable(true)
+        const hoy = new Date()
+        const dia = hoy.getDate()
+        const mes = hoy.getMonth() + 1
+        const data: AsistenciaDetalle[] = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteCruzado/${(dia >= 26) ? mes + 1 : mes}`)
+            .then(res => res.json())
+
+        const filteredData = data.filter(v => v.alias === asesor?.usuario).filter(v => v.esDiaLaborable === 1)
+        console.log(filteredData)
+        let faltasInjustificadas = 0;
+        let tardanzasInjustificadas = 0;
+        for (const asistencia of filteredData) {
+            if (asistencia.esFalta === 1) faltasInjustificadas++;
+            if (asistencia.esTardanza === 1) tardanzasInjustificadas++;
+        }
+        setValue("faltasInjustificadas", String(faltasInjustificadas), { shouldDirty: true })
+        setValue("tardanzasInjustificadas", String(tardanzasInjustificadas), { shouldDirty: true })
+
+        setIsFetching(false)
+        setIsDisable(false)
+    }
 
     const onClickSave = async (type: string, { observacionesGenerales, ...data }: Form) => {
         if (!asesor?.idEmpleado) {
@@ -152,7 +214,8 @@ export const CrearFbAsesorForm = ({
                     observacionesGenerales: observacionesGenerales,
                     resultadoEvaluacion: data,
                     usrInsert: user?.usuario || "",
-                    tipoEmpleado: "ASESOR"
+                    tipoEmpleado: "ASESOR",
+                    USUARIO: asesor.usuario
                 })
             }).then(() => {
                 setModal({ isOpen: true, message: message })
@@ -220,6 +283,19 @@ export const CrearFbAsesorForm = ({
                     <p className="font-semibold">
                         Matriz de Desempeño
                     </p>
+                    <span className="flex-1" />
+                    {
+                        !!asesor &&
+                        <Button className="mr-4 bg-gray-200 text-black dark:text-white hover:scale-105 hover:bg-blue-300 dark:bg-zinc-500"
+                            onClick={onClickFetchData}
+                        >
+                            {
+                                isFetching &&
+                                <RefreshCcw className="animate-spin" />
+                            }
+                            Autocompletado
+                        </Button>
+                    }
                     <div className="flex flex-row">
                         <SquareIcon size={12} className="self-center text-gray-400 dark:text-zinc-500" />
                         <p className="text-[10px] self-center ml-1 dark:text-zinc-300">REAL</p>
@@ -252,6 +328,7 @@ export const CrearFbAsesorForm = ({
                                                                 name={field.name}
                                                                 placeholder={input.placeholder}
                                                                 inputAsesor={true}
+                                                                disbaled={isDisable}
                                                             />
                                                         )}
                                                     />
@@ -278,6 +355,7 @@ export const CrearFbAsesorForm = ({
                         })}
                         className="border text-[13px] border-gray-200 rounded-sm px-2 py-1 mx-2 mt-1 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400 dark:focus:ring-blue-500/30"
                         placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
+                        disabled={isDisable}
                     />
                 </div>
             </div>

@@ -11,7 +11,6 @@ interface Props {
 
 export const SupervisorPdfActionsPanel = ({compromisoMejora, estadoFeedBack, idFeedback}: Props) => {
     console.log({compromisoMejora, estadoFeedBack})
-    const unsignedPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/generateFbRutinaSupervisorPdf/${idFeedback}`;
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     
 
@@ -31,8 +30,11 @@ export const SupervisorPdfActionsPanel = ({compromisoMejora, estadoFeedBack, idF
     };
 
     const onClickPdfSigned = async () => {
-        console.log(idFeedback)
-        const response: {url: string, key: string} = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor/fbFirmado/${idFeedback}`).then(r => r.json());
+        const response: {url: string, key: string} = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/supervisor/fbFirmado/${idFeedback}?esFirmado=1`).then(r => r.json());
+        openPdfInPopup(response.url)
+    }
+    const onClickPdfUnSigned = async () => {
+        const response: {url: string, key: string} = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/generateFbRutinaSupervisorPdf/${idFeedback}?esFirmado=0`).then(r => r.json());
         openPdfInPopup(response.url)
     }
 
@@ -43,8 +45,8 @@ export const SupervisorPdfActionsPanel = ({compromisoMejora, estadoFeedBack, idF
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Se abrira en una ventana emergente.</p>
                 <Button 
                     className="mt-4 w-full" 
-                    onClick={() => openPdfInPopup(unsignedPdfUrl)}
-                    disabled={compromisoMejora === ""}
+                    onClick={onClickPdfUnSigned}
+                    // disabled={compromisoMejora === ""}
                 >
                     Ver PDF sin firmar
                 </Button>

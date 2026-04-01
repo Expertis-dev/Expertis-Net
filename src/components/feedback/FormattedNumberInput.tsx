@@ -7,6 +7,7 @@ interface Props {
     name?: string
     placeholder?: string
     inputAsesor?: boolean
+    disbaled?: boolean
 }
 
 export const FormattedNumberInput = forwardRef<HTMLInputElement, Props>(({
@@ -15,7 +16,8 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, Props>(({
     onBlur,
     name,
     placeholder,
-    inputAsesor = false
+    inputAsesor = false,
+    disbaled = false
 }, ref) => (
     <input
         ref={ref}
@@ -27,6 +29,7 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, Props>(({
         onBlur={onBlur}
         placeholder={placeholder}
         className={`ml-1 w-full ${inputAsesor ? "" : "text-right"} min-w-0 bg-transparent focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-400`}
+        disabled={disbaled}
     />
 ))
 

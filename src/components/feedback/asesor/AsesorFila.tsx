@@ -21,14 +21,16 @@ export const AsesorFila = ({
 }: Props) => {
     const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${tipoEvaluacion === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`;
 
-    const handleOpenPopup = () => {
+    const handleOpenPopup = async () => {
         const width = 1100;
         const height = 750;
         const left = Math.max(0, Math.floor((window.screen.width - width) / 2));
         const top = Math.max(0, Math.floor((window.screen.height - height) / 2));
 
+        const {url} = await fetch(pdfUrl).then(r => r.json())
+
         const popup = window.open(
-            pdfUrl,
+            url,
             "feedback_pdf_popup",
             `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
         );
@@ -51,7 +53,7 @@ export const AsesorFila = ({
                 <span className={`${estadoFeedback === "PUBLICADO" ? "text-green-600" : "text-amber-700"} font-medium text-[14px]`}>{estadoFeedback}</span>
             </div>
             <div className="flex flex-row justify-between md:block">
-                <button className="text-blue-600 hover:text-blue-800 cursor-pointer" onClick={handleOpenPopup}>
+                <button className="text-blue-600 hover:text-blue-800 cursor-pointer hover:scale-110" onClick={handleOpenPopup}>
                     <EyeIcon size={17} />
                 </button>
                 {

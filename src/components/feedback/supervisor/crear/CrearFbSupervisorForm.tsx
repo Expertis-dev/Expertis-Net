@@ -47,7 +47,7 @@ interface Props {
     defaultValues?: Form
     supervisorName?: string
     periodoDefault?: Date
-    idFeedback: number
+    idFeedback?: number
 }
 
 interface Form {
@@ -134,6 +134,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    USUARIO: supervisor?.alias,
                     idEmpleado: supervisor?.idEmpleado,
                     periodo,
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",

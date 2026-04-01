@@ -1,4 +1,6 @@
+'use client'
 import { EyeIcon } from 'lucide-react'
+
 import Link from 'next/link'
 import React from 'react'
 
@@ -11,7 +13,24 @@ interface Props {
 }
 
 export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo, tipoFeedback }: Props) => {
-    console.log(estado)
+    const handleOpenPdf = async () => {
+        try {
+            const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/${esSupervisor ? "generateFbRutinaSupervisorPdf" : tipoFeedback === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`
+            const response = await fetch(endpoint)
+            if (!response.ok) {
+                throw new Error(`Error al generar PDF: ${response.status}`)
+            }
+            const data = await response.json()
+            if (data?.url) {
+                window.open(data.url, '_blank', 'noopener,noreferrer')
+            } else {
+                throw new Error('Respuesta sin url')
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     return (
         <div className={`grid grid-cols-${esSupervisor ? 3 : 4} px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center`}>
             {
@@ -37,15 +56,14 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
                             </button>
                         </Link>
                         :
-                        <a
-                            href={`${process.env.NEXT_PUBLIC_API_URL}/api/${esSupervisor ? "generateFbRutinaSupervisorPdf" : tipoFeedback === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`}
-                            target='_blank'
-                            rel='noopener noreferrer'
+                        <button
+                            onClick={handleOpenPdf}
+                            className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                            aria-label="Ver PDF"
+                            type="button"
                         >
-                            <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
-                                <EyeIcon />
-                            </button>
-                        </a>
+                            <EyeIcon />
+                        </button>
                 }
             </div>
         </div>

@@ -69,9 +69,9 @@ export const CompromisoPage = ({feedback}: Props) => {
                 <p className="text-gray-400 text-[9px] mt-2 dark:text-zinc-400">EMITIDO POR: JEFATURA DE OPERACIONES</p>
             </div>
             <div className="flex flex-col px-4 mt-2">
-                <div className="flex flex-row mt-2">
-                    <NotebookPenIcon className="text-blue-500 mr-1 mb-0.5" size={20} />
-                    <h1 className="text-xs self-center text-blue-500 font-semibold text-[10px]">ACCIÓN REQUERIDA</h1>
+                <div className="flex flex-row my-2">
+                    <NotebookPenIcon className="text-blue-500 mr-1 mb-0.5" size={25} />
+                    <h1 className="text-lg self-center text-blue-500 font-semibold">Acción Requerida</h1>
                 </div>
                 <h1 className="font-bold text-xl dark:text-zinc-100">Compromiso de Mejora</h1>
                 <p className="text-gray-700 dark:text-zinc-300">Basado en los resultados y el análisis superior, detalla  tu plan de acción para que el próximo periodo. Define objetivos accionables para las métricas que requieren atencion</p>
