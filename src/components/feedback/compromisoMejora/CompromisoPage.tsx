@@ -69,7 +69,7 @@ export const CompromisoPage = ({feedback}: Props) => {
                     <h1 className="text-xs self-center text-black font-semibold dark:text-zinc-100">ANÁLISIS DE RESULTADOS</h1>
                 </div>
                 <hr className="my-1.5 border-gray-300 dark:border-zinc-600" />
-                <p className="text-[13px] text-gray-700 dark:text-zinc-300">
+                <p className="text-[13px] text-gray-700 dark:text-zinc-300 whitespace-pre-line">
                     {feedback.analisisResultados}
                 </p>
                 <p className="text-gray-400 text-[9px] mt-2 dark:text-zinc-400">EMITIDO POR: JEFATURA DE OPERACIONES</p>
