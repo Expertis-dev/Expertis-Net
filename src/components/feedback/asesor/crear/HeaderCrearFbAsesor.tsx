@@ -10,6 +10,11 @@ interface Props {
     setAsesor: (asesor?: Colaborador) => void,
     idEmpleado?: number
     USUARIO?: string
+    periodoRutina?: string
+    periodoNegativa?: string
+    setPeriodoRutina?: (value: string) => void
+    setPeriodoNegativa?: (value: string) => void
+    periodoDisabled?: boolean
 }
 
 export interface Colaborador {
@@ -24,7 +29,12 @@ export const HeaderCrearFbAsesor = ({
     setCurrentFeedback,
     setAsesor,
     idEmpleado,
-    USUARIO = ""
+    USUARIO = "",
+    periodoRutina,
+    periodoNegativa,
+    setPeriodoRutina,
+    setPeriodoNegativa,
+    periodoDisabled = false
 }: Props) => {
     const [asesorOptions, setAsesorOptions] = useState<Array<Colaborador>>([])
     const { user } = useUser()
@@ -89,6 +99,17 @@ export const HeaderCrearFbAsesor = ({
         setAsesor(selectedById)
     }, [selectedById, asesorOptions, setAsesor, selectOption])
 
+    const isRutina = currentFeedback === "rutina"
+    const periodoValue = isRutina ? (periodoRutina ?? "") : (periodoNegativa ?? "")
+    const showPeriodoInput = !!setPeriodoRutina || !!setPeriodoNegativa
+
+    const onPeriodoChange = (value: string) => {
+        if (isRutina) {
+            setPeriodoRutina?.(value)
+            return
+        }
+        setPeriodoNegativa?.(value)
+    }
 
     return (
         <>
@@ -220,8 +241,20 @@ export const HeaderCrearFbAsesor = ({
                         </div>
                         <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">
-                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Mes Evaluacion</p>
-                            <p className="text-[15px] dark:text-zinc-100">{(new Date()).toLocaleString("es-ES", { month: "long", year: "numeric" })}</p>
+                            <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">
+                                {isRutina ? "Mes Evaluacion" : "Fecha Evaluacion"}
+                            </p>
+                            {showPeriodoInput ? (
+                                <input
+                                    type={isRutina ? "month" : "date"}
+                                    value={periodoValue}
+                                    onChange={(e) => onPeriodoChange(e.target.value)}
+                                    disabled={periodoDisabled}
+                                    className="w-full bg-transparent text-[13px] text-zinc-900 dark:text-zinc-100 outline-none"
+                                />
+                            ) : (
+                                <p className="text-[15px] dark:text-zinc-100">{(new Date()).toLocaleString("es-ES", { month: "long", year: "numeric", timeZone: "UTC" })}</p>
+                            )}
                         </div>
                         <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">

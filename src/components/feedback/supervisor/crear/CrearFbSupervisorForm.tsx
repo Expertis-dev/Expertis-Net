@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form"
 import { HeaderCrearFbSupervisor } from "./HeaderCrearFbSupervisor"
 import { Empleado } from "@/types/feedback/interfaces"
 import { useUser } from "@/Provider/UserProvider"
+import { LoadingModal } from "@/components/loading-modal"
 
 export const formatWithThousands = (input: string, maxDecimals = 2) => {
     if (!input) return ""
@@ -89,6 +90,7 @@ const metricFields: Array<{
 export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorName, periodoDefault, idFeedback }: Props) => {
     const [supervisor, setSupervisor] = useState<Empleado>()
     const [periodo, setPeriodo] = useState<string | undefined>(undefined)
+    const [isLoading, setIsLoading] = useState(false)
 
     const { user } = useUser()
     const safeDefaults: Form = defaultValues ?? {
@@ -127,6 +129,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
         message: ""
     })
     const onClickSave = async (type: string, { analisisResultados, ...data }: Form) => {
+        setIsLoading(true)
         const message = type === "PUBLICAR" ? "Feedback de supervisor publicado con éxito" : "Borrador guardado con éxito"
 
         if (!defaultValues){
@@ -144,13 +147,20 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                     tipoEmpleado: "SUPERVISOR"
                 })
             })
-            .then(() => {
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
+            }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
                     router.push("/dashboard/feedback/supervisores")
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         }else {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
@@ -165,13 +175,20 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                     usuario: user?.usuario
                 })
             })
-            .then(() => {
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
+            }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
                     router.push("/dashboard/feedback/supervisores")
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         }
 
@@ -300,6 +317,10 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                 <SuccessModal
                     isOpen={modal.isOpen}
                     message={modal.message}
+                />
+                <LoadingModal 
+                    isOpen={isLoading}
+                    message="Cargando..."
                 />
             </div>
         </>

@@ -20,6 +20,7 @@ export const UploadPdfModal = ({
     const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
     const [uploadError, setUploadError] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const isBusy = isUploading;
     const processSelectedFile = (file: File | null) => {
         if (!file) return;
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
@@ -47,7 +48,7 @@ export const UploadPdfModal = ({
 
     const handleConfirmUpload = async () => {
         if (!selectedPdf) return;
-        if (isUploading) return;
+        if (isBusy) return;
         const formData = new FormData()
         formData.append('file', selectedPdf);
 
@@ -82,6 +83,7 @@ export const UploadPdfModal = ({
         <Dialog
             open={isUploadModalOpen}
             onOpenChange={(open) => {
+                if (!open && isBusy) return;
                 if (!open) {
                     handleCloseUploadModal();
                     return;
@@ -89,7 +91,15 @@ export const UploadPdfModal = ({
                 setIsUploadModalOpen(true);
             }}
         >
-            <DialogContent className="sm:max-w-2xl w-auto">
+            <DialogContent
+                className="sm:max-w-2xl w-auto"
+                onEscapeKeyDown={(event) => {
+                    if (isBusy) event.preventDefault();
+                }}
+                onPointerDownOutside={(event) => {
+                    if (isBusy) event.preventDefault();
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>Subir PDF firmado</DialogTitle>
                     <DialogDescription>
@@ -99,34 +109,45 @@ export const UploadPdfModal = ({
 
                 <div
                     role="button"
-                    tabIndex={0}
-                    onClick={() => inputFileRef.current?.click()}
+                    tabIndex={isBusy ? -1 : 0}
+                    aria-disabled={isBusy}
+                    onClick={() => {
+                        if (isBusy) return;
+                        inputFileRef.current?.click();
+                    }}
                     onKeyDown={(event) => {
+                        if (isBusy) return;
                         if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
                             inputFileRef.current?.click();
                         }
                     }}
                     onDragEnter={(event) => {
+                        if (isBusy) return;
                         event.preventDefault();
                         event.stopPropagation();
                         setIsDragging(true);
                     }}
                     onDragOver={(event) => {
+                        if (isBusy) return;
                         event.preventDefault();
                         event.stopPropagation();
                         setIsDragging(true);
                     }}
                     onDragLeave={(event) => {
+                        if (isBusy) return;
                         event.preventDefault();
                         event.stopPropagation();
                         setIsDragging(false);
                     }}
-                    onDrop={handleDrop}
+                    onDrop={(event) => {
+                        if (isBusy) return;
+                        handleDrop(event);
+                    }}
                     className={`rounded-md border-2 border-dashed p-8 text-center transition-colors ${isDragging
                         ? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30"
                         : "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900"
-                        }`}
+                        } ${isBusy ? "pointer-events-none opacity-60" : ""}`}
                 >
                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                         Arrastra aqui tu PDF firmado
@@ -149,6 +170,7 @@ export const UploadPdfModal = ({
                     type="file"
                     accept="application/pdf,.pdf"
                     className="hidden"
+                    disabled={isBusy}
                     onChange={handleFileInputChange}
                 />
 
@@ -157,11 +179,11 @@ export const UploadPdfModal = ({
                 )}
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={handleCloseUploadModal}>
+                    <Button variant="outline" onClick={handleCloseUploadModal} disabled={isBusy}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleConfirmUpload} disabled={!selectedPdf || isUploading}>
-                        {isUploading ? "Subiendo..." : "Subir PDF"}
+                    <Button onClick={handleConfirmUpload} disabled={!selectedPdf || isBusy}>
+                        {isBusy ? "Subiendo..." : "Subir PDF"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

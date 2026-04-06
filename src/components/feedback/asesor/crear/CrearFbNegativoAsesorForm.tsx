@@ -2,11 +2,13 @@ import { SuccessModal } from '@/components/success-modal'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { Dispatch, SetStateAction, useEffect, useRef } from 'react'
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form';
 import { Colaborador } from './HeaderCrearFbAsesor';
 import { useUser } from '@/Provider/UserProvider';
 import { useParams } from 'next/navigation';
+import { LoadingModal } from '@/components/loading-modal';
+import { ResponseModal } from '@/Encuesta/components/resultados/ResponseModal';
 
 interface Modal {
     isOpen: boolean;
@@ -18,7 +20,8 @@ interface Props {
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
     asesor?: Colaborador,
-    defaultFields?: Form
+    defaultFields?: Form,
+    periodoSeleccionado?: string
 }
 
 export interface Form {
@@ -64,8 +67,10 @@ export const CrearFbNegativoAsesorForm = ({
     setModal,
     router,
     asesor,
-    defaultFields
+    defaultFields,
+    periodoSeleccionado
 }: Props) => {
+    const [isLoading, setIsLoading] = useState(false)
     const { id: idFeedback } = useParams<{ id: string }>()
     const buildDefaults = (fields?: Form): Form => ({
         calidadLlamadas: fields === undefined ? "" : fields.calidadLlamadas,
@@ -85,18 +90,32 @@ export const CrearFbNegativoAsesorForm = ({
                 submitModeRef.current === "PUBLICAR" ? (!!value || message) : true
     const { user } = useUser()
     const onClickSave = async (type: string, { observaciones, ...data }: Form) => {
+        setIsLoading(true)
         if (!asesor?.idEmpleado) {
             setError("root", { type: "manual", message: "Selecciona un asesor." })
+            setIsLoading(false)
             return
         }
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
         if (!defaultFields) {
+            const toIsoFromDate = (value?: string) => {
+                if (!value) return ""
+                const fecha = new Date(`${value}T00:00:00Z`)
+                if (Number.isNaN(fecha.getTime())) return ""
+                return fecha.toISOString()
+            }
+            const periodoIso = toIsoFromDate(periodoSeleccionado)
+            if (!periodoIso) {
+                setError("root", { type: "manual", message: "Selecciona una fecha valida." })
+                setIsLoading(false)
+                return
+            }
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "POST",
                 body: JSON.stringify({
                     idEmpleado: asesor.idEmpleado,
-                    periodo: (new Date()).toISOString(),
+                    periodo: periodoIso,
                     tipoEvaluacion: "NEGATIVO",
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observaciones,
@@ -105,13 +124,20 @@ export const CrearFbNegativoAsesorForm = ({
                     tipoEmpleado: "ASESOR",
                     USUARIO: asesor.usuario
                 })
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
                     router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         } else {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
@@ -123,13 +149,20 @@ export const CrearFbNegativoAsesorForm = ({
                     observacionesGenerales: observaciones,
                     resultadoEvaluacion: data,
                 })
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
-                    router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
+                    router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         }
     }
@@ -208,6 +241,10 @@ export const CrearFbNegativoAsesorForm = ({
                     <SuccessModal
                         isOpen={modal.isOpen}
                         message={modal.message}
+                    />
+                    <LoadingModal
+                        isOpen={isLoading}
+                        message="Subiendo feedback"
                     />
                 </div>
             </div>

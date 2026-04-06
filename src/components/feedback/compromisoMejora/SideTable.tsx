@@ -37,7 +37,7 @@ export const SideTable = ({Feedback}: Props) => {
         <div className="flex flex-col flex-2/5 max-w-[28%] mt-6">
             <div className="flex flex-row">
                 <CalendarIcon className="text-blue-500 mr-1 mb-0.5" size={20} />
-                <h1 className="text-xs self-center text-blue-600 font-bold">{(new Date(Feedback.periodo)).toLocaleDateString("es-ES", {month: "long", year: "numeric"})}</h1>
+                <h1 className="text-xs self-center text-blue-600 font-bold">{(new Date(Feedback.periodo)).toLocaleDateString("es-ES", { month: "long", year: "numeric", timeZone: "UTC" })}</h1>
             </div>
             <h1 className="text-xl font-semibold dark:text-zinc-100">Resultados del Feedback</h1>
             <p className="text-gray-600 font-light dark:text-zinc-300">{Feedback.USUARIO}</p>

@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form"
 import { useUser } from "@/Provider/UserProvider"
 import { Colaborador } from "./HeaderCrearFbAsesor"
 import { useParams } from "next/navigation"
+import { LoadingModal } from "@/components/loading-modal"
 
 interface Modal {
     isOpen: boolean;
@@ -20,7 +21,8 @@ interface Props {
     setModal: Dispatch<SetStateAction<Modal>>,
     router: AppRouterInstance,
     asesor?: Colaborador,
-    defaultValues?: Form
+    defaultValues?: Form,
+    periodoSeleccionado?: string
 }
 
 export interface Form {
@@ -140,13 +142,15 @@ export const CrearFbAsesorForm = ({
     setModal,
     router,
     asesor,
-    defaultValues
+    defaultValues,
+    periodoSeleccionado
 }: Props) => {
     const { id: idFeedback } = useParams<{ id: string }>()
 
     const [isFetching, setIsFetching] = useState(false)
     const [isDisable, setIsDisable] = useState(false)
-
+    const [isLoading, setIsLoading] = useState(false)
+    
     const buildDefaults = (fields?: Form): Form => ({
         recupero: fields === undefined ? "" : fields.recupero,
         recuperoMeta: fields === undefined ? "" : fields.recuperoMeta,
@@ -197,18 +201,34 @@ export const CrearFbAsesorForm = ({
     }
 
     const onClickSave = async (type: string, { observacionesGenerales, ...data }: Form) => {
+        setIsLoading(true)
         if (!asesor?.idEmpleado) {
             setError("root", { type: "manual", message: "Selecciona un asesor." })
+            setIsLoading(false)
             return
         }
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
         if (!defaultValues) {
+            const toIsoFromMonth = (value?: string) => {
+                if (!value) return ""
+                const [year, month] = value.split("-")
+                if (!year || !month) return ""
+                const fecha = new Date(`${year}-${month}-01T00:00:00Z`)
+                if (Number.isNaN(fecha.getTime())) return ""
+                return fecha.toISOString()
+            }
+            const periodoIso = toIsoFromMonth(periodoSeleccionado)
+            if (!periodoIso) {
+                setError("root", { type: "manual", message: "Selecciona un periodo valido." })
+                setIsLoading(false)
+                return
+            }
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/asesor`, {
                 headers: { "Content-Type": "application/json" },
                 method: "POST",
                 body: JSON.stringify({
                     idEmpleado: asesor.idEmpleado,
-                    periodo: (new Date()).toISOString(),
+                    periodo: periodoIso,
                     tipoEvaluacion: "RUTINA",
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observacionesGenerales,
@@ -217,13 +237,20 @@ export const CrearFbAsesorForm = ({
                     tipoEmpleado: "ASESOR",
                     USUARIO: asesor.usuario
                 })
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
                     router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`)
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         } else {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
@@ -250,13 +277,20 @@ export const CrearFbAsesorForm = ({
                     }),
                     usuario: user?.usuario
                 })
+            }).then((res) => {
+                if (!res.ok) {
+                    throw new Error("HTTP_ERROR")
+                }
+                return res
             }).then(() => {
                 setModal({ isOpen: true, message: message })
                 setTimeout(() => {
                     router.push(`/dashboard/feedback/asesores/?usuario=${user?.usuario || ""}`) //! AGREGAR QUERYPARAM DE SUPERVISOR
                 }, 1500);
             }).catch(() => {
-                alert("Ocurrio un error, contactar con soporte si el error persiste")
+                alert("Algo no funcionó")
+            }).finally(() => {
+                setIsLoading(false)
             })
         }
     }
@@ -402,6 +436,10 @@ export const CrearFbAsesorForm = ({
                     <SuccessModal
                         isOpen={modal.isOpen}
                         message={modal.message}
+                    />
+                    <LoadingModal
+                        isOpen={isLoading}
+                        message="Subiendo feedback"
                     />
                 </div>
             </div>

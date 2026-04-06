@@ -16,6 +16,20 @@ export default function CrearFeedbackAsesorPage() {
     })
     const { user } = useUser()
     const [asesor, setAsesor] = useState<Colaborador>()
+    const today = new Date()
+    const toMonthValue = (date: Date) => {
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
+    const toDateValue = (date: Date) => {
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        const day = String(date.getUTCDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+    }
+    const [periodoRutina, setPeriodoRutina] = useState(toMonthValue(today))
+    const [periodoNegativa, setPeriodoNegativa] = useState(toDateValue(today))
 
     return (
         <div className="flex flex-col rounded-xs dark:text-zinc-100">
@@ -23,7 +37,15 @@ export default function CrearFeedbackAsesorPage() {
                 <ArrowLeft size={15} />
                 <p className="self-center">Volver a la pagina anterior</p>
             </div>
-            <HeaderCrearFbAsesor currentFeedback={currentFeedback} setCurrentFeedback={setCurrentFeedback} setAsesor={setAsesor} />
+            <HeaderCrearFbAsesor
+                currentFeedback={currentFeedback}
+                setCurrentFeedback={setCurrentFeedback}
+                setAsesor={setAsesor}
+                periodoRutina={periodoRutina}
+                periodoNegativa={periodoNegativa}
+                setPeriodoRutina={setPeriodoRutina}
+                setPeriodoNegativa={setPeriodoNegativa}
+            />
             {
                 currentFeedback === "rutina" ?
                     <CrearFbAsesorForm
@@ -31,6 +53,7 @@ export default function CrearFeedbackAsesorPage() {
                         modal={modal}
                         router={router}
                         setModal={setModal}
+                        periodoSeleccionado={periodoRutina}
                     />
                     :
                     <CrearFbNegativoAsesorForm
@@ -38,6 +61,7 @@ export default function CrearFeedbackAsesorPage() {
                         router={router}
                         setModal={setModal}
                         asesor={asesor}
+                        periodoSeleccionado={periodoNegativa}
                     />
             }
         </div>

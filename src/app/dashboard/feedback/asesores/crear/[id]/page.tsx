@@ -62,6 +62,20 @@ export default function EditarFeedbackAsesorPage({params}: {
     const router = useRouter()
     const {user} = useUser()
     const [asesor, setAsesor] = useState<Colaborador>()
+    const today = new Date()
+    const toMonthValue = (date: Date) => {
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        return `${year}-${month}`
+    }
+    const toDateValue = (date: Date) => {
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+        const day = String(date.getUTCDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+    }
+    const [periodoRutina, setPeriodoRutina] = useState(toMonthValue(today))
+    const [periodoNegativa, setPeriodoNegativa] = useState(toDateValue(today))
 
     const isFormRutina = (value?: FormRutina | FormNegativo): value is FormRutina =>
         value !== undefined && "recupero" in value
@@ -109,6 +123,11 @@ export default function EditarFeedbackAsesorPage({params}: {
             console.log(data)
             setForm(formValues)
             setData(data)
+            const periodoDate = new Date(data.periodo)
+            if (!Number.isNaN(periodoDate.getTime())) {
+                setPeriodoRutina(toMonthValue(periodoDate))
+                setPeriodoNegativa(toDateValue(periodoDate))
+            }
             setCurrentFeedback(data.tipoEvaluacion === "RUTINA" ? "rutina" : "negativa")
         })
         
@@ -126,6 +145,11 @@ export default function EditarFeedbackAsesorPage({params}: {
                 setAsesor={setAsesor}
                 idEmpleado={data?.idEmpleado != null ? +data.idEmpleado : undefined}
                 USUARIO={data?.USUARIO}
+                periodoRutina={periodoRutina}
+                periodoNegativa={periodoNegativa}
+                setPeriodoRutina={setPeriodoRutina}
+                setPeriodoNegativa={setPeriodoNegativa}
+                periodoDisabled={true}
             />
             {
                 (currentFeedback === "rutina" && form) ? 
@@ -135,6 +159,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                     router={router}
                     setModal={setModal}
                     defaultValues={isFormRutina(form) ? form : undefined}
+                    periodoSeleccionado={periodoRutina}
                 />
                 :
                 <CrearFbNegativoAsesorForm
@@ -143,6 +168,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                     setModal={setModal}
                     asesor={asesor}
                     defaultFields={isFormNegativo(form) ? form : undefined}
+                    periodoSeleccionado={periodoNegativa}
                 />
             }
         </div>

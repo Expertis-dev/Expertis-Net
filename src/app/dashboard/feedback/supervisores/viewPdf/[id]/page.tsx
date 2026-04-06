@@ -94,7 +94,7 @@ export default async function ViewSupervisorPdfPage({ params }: {
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Periodo</p>
-                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">{(new Date(feedback.periodo)).toLocaleDateString("es-ES", {month: "long", year: "numeric"}).toUpperCase()}</p>
+                        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">{(new Date(feedback.periodo)).toLocaleDateString("es-ES", {month: "long", year: "numeric", timeZone: "UTC"}).toUpperCase()}</p>
                     </div>
                 </div>
             </div>

@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation'
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { FeedbackSupervisor } from './SideTable'
+import { LoadingModal } from '@/components/loading-modal'
 
 interface CompromisoMejora {compromisoMejora: string};
 
@@ -21,10 +22,13 @@ export const CompromisoPage = ({feedback}: Props) => {
         isOpen: false,
         message: ""
     })
+    const [isLoading, setIsLoading] = useState(false)
+
     const {register, handleSubmit, formState: {errors}} = useForm<CompromisoMejora>()
     const {idFeedback} = useParams<{idFeedback: string}>() // idFeedback
 
     const onClickSave = (data: CompromisoMejora) => {
+        setIsLoading(true)
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -43,6 +47,8 @@ export const CompromisoPage = ({feedback}: Props) => {
             }, 1000);
         }).catch(() => {
             alert("Fallo al subir el compromiso")
+        }).finally(() => {
+            setIsLoading(false)
         })
     }
 
@@ -97,6 +103,10 @@ export const CompromisoPage = ({feedback}: Props) => {
             <SuccessModal
                 isOpen={modal.isOpen}
                 message={modal.message}
+            />
+            <LoadingModal
+                isOpen={isLoading}
+                message='Cargando...'
             />
         </div>
     )
