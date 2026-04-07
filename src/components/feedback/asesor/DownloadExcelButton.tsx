@@ -29,6 +29,8 @@ export interface Fb {
     fecInsert:              Date;
 }
 
+const stripHtmlTags = (value: string) => value.replace(/<[^>]*>/g, "")
+
 const extractData = (feedbacks: HistFeedback[]) => {
     const formattedFeedbacks = feedbacks.map(f => ({ ...f, resultadoEvaluacion: JSON.parse(f.resultadoEvaluacion) }))
 
@@ -49,9 +51,11 @@ const getAoaData = (feedbacks: HistFeedback[]): string[][] => {
     const objectValues: string[][] = feedbacks.map(f => {
         return [
             ...Object.values(f).slice(0,-1),
-            ...Object.values(f.resultadoEvaluacion).map(v => {
-                if (isNaN(+v.replace(",", ""))) return v
-                return +v.replace(",", "")
+            ...Object.values(f.resultadoEvaluacion).map((v) => {
+                const raw = String(v ?? "")
+                const numericCandidate = raw.replace(",", "")
+                if (isNaN(+numericCandidate)) return stripHtmlTags(raw)
+                return +numericCandidate
             })
         ]
     })

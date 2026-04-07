@@ -88,7 +88,7 @@ export const SupervisorFila = ({ feedback }: Props) => {
                 <span
                     className={`${statusClassMap[feedback.estadoFeedBack] ?? "text-gray-600 dark:text-gray-400"} font-medium text-[14px]`}
                 >
-                    {feedback.estadoFeedBack}
+                    {feedback.estadoFeedBack.split("_").join(" ")}
                 </span>
             </div>
             <div className="flex items-center justify-center gap-2 md:justify-start">

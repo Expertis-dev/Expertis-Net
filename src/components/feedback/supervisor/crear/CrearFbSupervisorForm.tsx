@@ -10,6 +10,7 @@ import { HeaderCrearFbSupervisor } from "./HeaderCrearFbSupervisor"
 import { Empleado } from "@/types/feedback/interfaces"
 import { useUser } from "@/Provider/UserProvider"
 import { LoadingModal } from "@/components/loading-modal"
+import TiptapEditor from "@/components/tiptap/TipTap"
 
 export const formatWithThousands = (input: string, maxDecimals = 2) => {
     if (!input) return ""
@@ -76,14 +77,14 @@ const metricFields: Array<{
 }> = [
         { name: "recupero", label: "Recupero Total", prefix: "S/", decimals: 2 },
         { name: "meta", label: "Meta", prefix: "S/", decimals: 2 },
-        { name: "montoPdp", label: "Monto PDP", prefix: "S/", decimals: 2 },
-        { name: "pagoDkPpc", label: "Pago / DK PPC", prefix: "%", decimals: 2 },
         { name: "alcance", label: "Alcance", prefix: "%", decimals: 2 },
         { name: "efectividad", label: "Efectividad", prefix: "%", decimals: 2 },
+        { name: "montoPdp", label: "Monto PDP", prefix: "S/", decimals: 2 },
         { name: "cierre", label: "% Cierre", prefix: "%", decimals: 2 },
         { name: "calidad", label: "% Calidad", prefix: "%", decimals: 2 },
-        { name: "puntualidadEquipo", label: "Puntualidad - Equipo", prefix: "%", decimals: 2 },
+        { name: "pagoDkPpc", label: "Pago / DK PPC", prefix: "%", decimals: 2 },
         { name: "puntualidad", label: "Puntualidad", prefix: "%", decimals: 2 },
+        { name: "puntualidadEquipo", label: "Puntualidad - Equipo", prefix: "%", decimals: 2 },
         { name: "ausentismoEquipo", label: "% Ausentismo Equipo", prefix: "%", decimals: 2 },
     ]
 
@@ -107,7 +108,7 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
         ausentismoEquipo: "",
         analisisResultados: "",
     }
-    const { control, register, handleSubmit, formState: { errors }, clearErrors, setError, } = useForm<Form>({
+    const { control, handleSubmit, formState: { errors }, clearErrors, setError, } = useForm<Form>({
         defaultValues: {
             recupero: safeDefaults.recupero || "",
             meta: safeDefaults.meta || "",
@@ -259,12 +260,23 @@ export const CrearFbSupervisorForm = ({ supervisores, defaultValues, supervisorN
                         {errors.analisisResultados && (
                             <span className="text-red-600 text-xs">{errors.analisisResultados.message}</span>
                         )}
-                        <textarea
-                            id="1" rows={6}
-                            {...register("analisisResultados", {
-                                validate: requireIfPublishing("El analisisResultados es requerido")
-                            })}
-                            className="border text-[13px] border-gray-200 rounded-sm px-2 py-1 mx-2 mt-1 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400 dark:focus:ring-blue-500/30"
+                        <Controller
+                            control={control}
+                            name="analisisResultados"
+                            rules={{ validate: requireIfPublishing("El analisisResultados es requerido") }}
+                            render={({ field }) => (
+                                <TiptapEditor
+                                    id="analisisResultados"
+                                    value={field.value ?? ""}
+                                    onChange={field.onChange}
+                                    onBlur={field.onBlur}
+                                    placeholder="Escriba aquí el analisis de los resultados del supervisor"
+                                    className="mb-3"
+                                    containerClassName="rounded-sm border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:focus-within:border-blue-500/30 dark:focus-within:ring-blue-500/20"
+                                    toolbarClassName="border-gray-200 dark:border-zinc-700 dark:bg-zinc-900/70"
+                                    editorClassName="min-h-[150px] text-[13px] leading-5 text-gray-800 dark:text-zinc-200"
+                                />
+                            )}
                         />
                     </div>
                 </div>

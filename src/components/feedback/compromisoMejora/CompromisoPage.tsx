@@ -6,9 +6,10 @@ import { ArrowLeft, ArrowRightToLine, BarChartIcon, NotebookPenIcon } from 'luci
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import React, { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { FeedbackSupervisor } from './SideTable'
 import { LoadingModal } from '@/components/loading-modal'
+import TiptapEditor from '@/components/tiptap/TipTap'
 
 interface CompromisoMejora {compromisoMejora: string};
 
@@ -24,7 +25,7 @@ export const CompromisoPage = ({feedback}: Props) => {
     })
     const [isLoading, setIsLoading] = useState(false)
 
-    const {register, handleSubmit, formState: {errors}} = useForm<CompromisoMejora>()
+    const { control, handleSubmit, formState: {errors}} = useForm<CompromisoMejora>()
     const {idFeedback} = useParams<{idFeedback: string}>() // idFeedback
 
     const onClickSave = (data: CompromisoMejora) => {
@@ -69,9 +70,11 @@ export const CompromisoPage = ({feedback}: Props) => {
                     <h1 className="text-xs self-center text-black font-semibold dark:text-zinc-100">ANÁLISIS DE RESULTADOS</h1>
                 </div>
                 <hr className="my-1.5 border-gray-300 dark:border-zinc-600" />
-                <p className="text-[13px] text-gray-700 dark:text-zinc-300 whitespace-pre-line">
-                    {feedback.analisisResultados}
-                </p>
+                <div className="text-[13px] text-gray-700 dark:text-zinc-300 whitespace-pre-line rich-text">
+                    <div
+                                    dangerouslySetInnerHTML={{ __html: feedback.analisisResultados || "No disponible"}}
+                                    />
+                </div>
                 <p className="text-gray-400 text-[9px] mt-2 dark:text-zinc-400">EMITIDO POR: JEFATURA DE OPERACIONES</p>
             </div>
             <div className="flex flex-col px-4 mt-2">
@@ -83,12 +86,25 @@ export const CompromisoPage = ({feedback}: Props) => {
                 <p className="text-gray-700 dark:text-zinc-300">Basado en los resultados y el análisis superior, detalla  tu plan de acción para que el próximo periodo. Define objetivos accionables para las métricas que requieren atencion</p>
                 <hr className="border-none py-2" />
                 <p className="text-gray-700 dark:text-zinc-300">Plan de acción detallado: </p>
-                <p className='text-red-700 text-xs font-semibold ml-2'>{errors.compromisoMejora?.message}</p>
-                <textarea
-                    id="1" rows={6}
-                    {...register("compromisoMejora", {required: "Tienes que redactar el compromiso"})}
-                    className="border-2 text-[13px] border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400"
-                    placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
+                <p className='text-red-700 text-xs font-semibold ml-2'>
+                    {errors.compromisoMejora?.message}</p>
+                <Controller
+                    control={control}
+                    name="compromisoMejora"
+                    rules={{ required: "Tienes que redactar el compromiso" }}
+                    render={({ field }) => (
+                        <TiptapEditor
+                            id="compromisoMejora"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            placeholder="Redacte aqui su compromiso de mejora en base a los datos mostrados"
+                            className="mt-1"
+                            containerClassName="rounded-md border-2 border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:focus-within:border-blue-500/30 dark:focus-within:ring-blue-500/20"
+                            toolbarClassName="border-gray-200 dark:border-zinc-700 dark:bg-zinc-900/70"
+                            editorClassName="min-h-[150px] text-[13px] leading-5 text-gray-800 dark:text-zinc-200"
+                        />
+                    )}
                 />
                 <div className="flex flex-row self-end">
                     <Button 

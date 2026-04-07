@@ -72,7 +72,7 @@ export default async function ViewSupervisorPdfPage({ params }: {
                             : "border-gray-400/70 bg-gray-200 px-3 py-1 text-[11px] text-gray-900 shadow-sm dark:border-gray-500/50 dark:bg-gray-400/20 dark:text-gray-100"
                         }
                         font-semibold uppercase tracking-[0.18em] `}>
-                        {feedback.estadoFeedBack}
+                        {feedback.estadoFeedBack.split("_").join(" ")}
                     </p>
                 </div>
 
@@ -120,13 +120,19 @@ export default async function ViewSupervisorPdfPage({ params }: {
                     <div className="mt-4 grid space-y-2">
                         <div className="flex flex-col pt-2 border dark:bg-zinc-800 rounded-sm">
                             <p className="text-base font-semibold dark:text-zinc-100s p-2 mb-2 -mt-2 border-b-2">&nbsp;&nbsp; Analisis de resultados</p>
-                            <p className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100">
-                                {feedback.analisisResultados}
-                            </p>
+                            <div className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100 rich-text">
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: feedback.analisisResultados || "No disponible"}}
+                                    />
+                            </div>
                         </div>
                         <div className="flex flex-col border dark:bg-zinc-800 rounded-sm">
                             <p className="text-base font-semibold dark:text-zinc-100s p-2 mb-2 border-b-2">&nbsp;&nbsp;Compromiso de mejora</p>
-                            <p className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100">{feedback.compromisoMejora || "No disponible"}</p>
+                            <div className="text-sm mx-2 mb-2 px-2 dark:text-zinc-100 rich-text">
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: feedback.compromisoMejora || "No disponible"}}
+                                    />
+                            </div>
                         </div>
                     </div>
                 </div>

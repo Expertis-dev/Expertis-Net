@@ -13,6 +13,14 @@ interface Props {
 }
 
 export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo, tipoFeedback }: Props) => {
+    const estadoColorMap: Record<string, string> = {
+        PUBLICADO: "text-green-600 dark:text-green-400",
+        LISTO_PARA_FIRMAR: "text-yellow-600 dark:text-yellow-400",
+        CERRADO: "text-gray-800 dark:text-zinc-100",
+        BORRADOR: "text-gray-500 dark:text-gray-400",
+    }
+    const estadoClassName = estadoColorMap[estado] ?? "text-green-600 dark:text-green-400"
+
     const handleOpenPdf = async () => {
         try {
             const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/${esSupervisor ? "generateFbRutinaSupervisorPdf" : tipoFeedback === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`
@@ -45,7 +53,7 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
                 <span>{(new Date(periodo)).toISOString().slice(0,7)}</span>
             </div>
             <div className="flex justify-between md:block">
-                <span className="text-green-600 font-medium text-sm">{estado}</span>
+                <span className={`${estadoClassName} font-medium text-sm`}>{estado}</span>
             </div>
             <div className="flex justify-between md:block">
                 {

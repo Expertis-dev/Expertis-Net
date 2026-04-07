@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Colaborador } from './HeaderCrearFbAsesor';
 import { useUser } from '@/Provider/UserProvider';
 import { useParams } from 'next/navigation';
 import { LoadingModal } from '@/components/loading-modal';
-import { ResponseModal } from '@/Encuesta/components/resultados/ResponseModal';
+import TiptapEditor from '@/components/tiptap/TipTap';
 
 interface Modal {
     isOpen: boolean;
@@ -53,7 +53,7 @@ const metricFields: Array<{ name: MetricField, label: string, placeholder: strin
     {
         name: "calidadLlamadas",
         label: "CALIDAD DE LLAMADAS",
-        placeholder: "Detalle de calida dde llamadas"
+        placeholder: "Detalle de calida de llamadas"
     },
     {
         name: "observaciones",
@@ -80,7 +80,7 @@ export const CrearFbNegativoAsesorForm = ({
         puntualidad: fields === undefined ? "" : fields.puntualidad,
     })
 
-    const { register, handleSubmit, formState: { errors }, setError, clearErrors, reset } = useForm<Form>({
+    const { control, handleSubmit, formState: { errors }, setError, clearErrors, reset } = useForm<Form>({
         defaultValues: buildDefaults(defaultFields)
     })
     const submitModeRef = useRef<"BORRADOR" | "PUBLICAR">("BORRADOR")
@@ -186,11 +186,22 @@ export const CrearFbNegativoAsesorForm = ({
                                 <div className="flex flex-col p-2" key={field.name}>
                                     <h4 className="font-semibold">{field.label}</h4>
                                     {errors.puntualidad ? <p className='text-red-500 text-xs font-semibold'>{errors[field.name]!.message}</p> : <></>}
-                                    <textarea
-                                        {...register(field.name, { validate: requireIfPublishing(`el campo ${field.name} es obligatorio al publicar`) })}
-                                        rows={field.name === "observaciones" ? 8 : 4}
-                                        className="border text-[13px] border-gray-200 rounded-sm px-2 py-1 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-none resize-y dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-400 dark:focus:ring-blue-500/30"
-                                        placeholder={field.placeholder}
+                                    <Controller
+                                        control={control}
+                                        name={field.name}
+                                        rules={{ validate: requireIfPublishing(`el campo ${field.name} es obligatorio al publicar`) }}
+                                        render={({ field: formField }) => (
+                                            <TiptapEditor
+                                                value={formField.value ?? ""}
+                                                onChange={formField.onChange}
+                                                onBlur={formField.onBlur}
+                                                placeholder={field.placeholder}
+                                                className="mt-1"
+                                                containerClassName="rounded-sm border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:focus-within:border-blue-500/30 dark:focus-within:ring-blue-500/20"
+                                                toolbarClassName="border-gray-200 dark:border-zinc-700 dark:bg-zinc-900/70"
+                                                editorClassName={`text-[13px] leading-5 text-gray-800 dark:text-zinc-200 ${field.name === "observaciones" ? "min-h-[200px]" : "min-h-[120px]"}`}
+                                            />
+                                        )}
                                     />
                                 </div>
                             )

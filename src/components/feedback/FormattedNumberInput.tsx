@@ -28,7 +28,7 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, Props>(({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`ml-1 w-full ${inputAsesor ? "" : "text-right"} min-w-0 bg-transparent focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-400`}
+        className={`ml-1 w-full ${inputAsesor ? "" : "text-right"} min-w-0 bg-transparent focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-600 placeholder:text-sm placeholder:text-zinc-400`}
         disabled={disbaled}
     />
 ))

@@ -83,7 +83,7 @@ export const SideTable = ({Feedback}: Props) => {
                     <p className="font-light text-[15px] text-gray-800 dark:text-zinc-200">{Feedback.resultadoEvaluacion.puntualidad}%</p>
                 </div>
                 <div className="flex flex-row justify-between px-2 py-1 border border-gray-200 dark:border-zinc-600">
-                    <p className="font-light text-[15px] text-gray-800 dark:text-zinc-200">Puntualidad - equipos</p>
+                    <p className="font-light text-[15px] text-gray-800 dark:text-zinc-200">Puntualidad - equipo</p>
                     <p className="font-light text-[15px] text-gray-800 dark:text-zinc-200">S/. 12,500</p>
                 </div>
                 <div className="flex flex-row justify-between px-2 py-1 border border-gray-200 dark:border-zinc-600">
