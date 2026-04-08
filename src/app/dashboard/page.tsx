@@ -47,7 +47,7 @@ const carouselImages: { id: number; src: string; alt?: string }[] = [
   { id: 1, src: "/imagen5.webp", alt: "Slide 1" },
   { id: 2, src: "/imagen1.png", alt: "Slide 2" },
   { id: 3, src: "/imagen3.jpg", alt: "Slide 3" },
-  { id: 4, src: "/imagen2.jpg", alt: "Slide 4" },
+  { id: 4, src: "/imagen2.png", alt: "Slide 4" },
 ]
 export default function DashboardHome() {
   const { user } = useUser()
