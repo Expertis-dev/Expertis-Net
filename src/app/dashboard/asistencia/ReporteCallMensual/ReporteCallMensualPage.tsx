@@ -93,7 +93,7 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
     );
 
     useEffect(() => {
-
+        console.log(asesorW)
     }, [asesorW, agenciaW]);
 
     useEffect(() => {
@@ -232,85 +232,122 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
                 downloadExcel={downloadExcel}
             />
             {/* Tabla */}
-            <div className='mt-2 rounded-2xl bg-white p-3 dark:bg-slate-800'>
+            <div className='rounded-2xl bg-white dark:bg-slate-800'>
                 <div className='overflow-auto max-h-[80vh]'>
-                    <table className='w-max table-auto border-separate border-spacing-0 text-sm text-slate-900 dark:text-slate-100'>
+                    <table className='w-max table-auto border-separate border-spacing-0 text-xs text-slate-900 dark:text-slate-100'>
                         <thead>
-                            <tr className='text-sm'>
-                                <th className='sticky left-0 top-0 z-30 bg-white border border-slate-200 px-3 py-2 text-left font-semibold whitespace-nowrap dark:bg-slate-900 dark:border-slate-700'>
+                            <tr className='text-[12px]'>
+                                <th className='sticky left-0 top-0 z-30 bg-blue-100 text-blue-600 dark:text-white border border-slate-200 px-2 py-1 text-left font-semibold whitespace-nowrap dark:bg-blue-950 dark:border-slate-700'>
                                     Nombre Asesor
                                 </th>
                                 {
                                     listaFechas.map((v) => (
-                                        <th key={v} className='sticky top-0 z-20 bg-white border border-slate-200 px-3 py-2 text-left whitespace-nowrap dark:bg-slate-900 dark:border-slate-700'>
+                                        <th key={v} className='sticky top-0 z-20 bg-blue-100 text-blue-600 dark:text-white font-bold border border-slate-200 px-2 py-1 text-center whitespace-nowrap dark:bg-blue-950 dark:border-slate-700'>
                                             {v.slice(0, 5)}
                                         </th>
                                     ))
                                 }
                             </tr>
                         </thead>
-                        <tbody className='text-xs'>
+                        <tbody className='text-[11px]'>
                             {
                                 Object.entries(reporteData)
                                     .filter(v => agenciaW === "TODOS" ? true : v[0].split("_")[1] === agenciaW)
-                                    .filter(v => asesorW === "" ? true : v[0].split("_")[0].includes(asesorW))
+                                    .filter(v => asesorW === "" ? true : (v[0].split("_")[0]).toLowerCase().includes(asesorW))
                                     .map((v, ic) => (
                                         <tr className='odd:bg-slate-50 dark:odd:bg-slate-900/40' key={v[0]}>
                                             <th
                                                 scope='row'
-                                                className='sticky left-0 z-10 bg-white border border-slate-200 px-3 py-2 text-left font-medium whitespace-nowrap dark:bg-slate-900 dark:border-slate-700'
+                                                className='sticky text-[11px] left-0 z-10 bg-white border border-slate-200 px-2 py-1 text-left font-medium whitespace-nowrap dark:bg-slate-900 dark:border-slate-700'
                                             >
                                                 {v[0].split("_")[0]}
                                             </th>
                                             {
-                                                v[1]?.map((v, ir) => (
-                                                    <td
-                                                        className='relative border border-slate-200 px-3 py-2 whitespace-nowrap dark:border-slate-700'
-                                                        key={v.alias + " " + v.fecha}
-                                                    >
-                                                        {
-                                                            v.hayJustificacion === 1 ?
-                                                                <div className='absolute right-0 mr-1 bg-sky-400 text-blue-900 rounded-full px-1.5'>
-                                                                    <p>J</p>
-                                                                </div>
-                                                                :
-                                                                <></>
-                                                        }
-                                                        {
-                                                            v.esFalta === 1 ?
-                                                                <XIcon className={`text-red-500 mx-auto ${v.hayJustificacion === 1 ? "ml-3" : ""}`} />
-                                                                :
-                                                                v.esAusenciaLaborable === 1 ?
-                                                                    <div>
-                                                                        <CrossIcon className='text-blue-400 mx-auto' />
-                                                                        <p className='text-center text-blue-800 dark:text-blue-400'>{v.tipoAusencia === "DESCANSO MEDICO" || v.tipoAusencia === "SUBSIDIO" ? "DM" : "L"}</p>
+                                                v[1]?.map((v, ir) => {
+                                                    const [dia, mes, year] = v.fecha.split("-")
+                                                    const vfecha = new Date(+year, +mes - 1, +dia, 0, 0, 0, 0)
+                                                    const fechaInicio = vfecha.toISOString().split("T")[0]
+                                                    if (ir === 0 && listaFechas.slice(1).includes(`${dia}-${mes}-${year}`)) {
+                                                        const cantDias = intervaloFechas(fechaInicio, fechaInicioW).slice(0, -1).length
+                                                        return (
+                                                            <td colSpan={cantDias} key={ir} className="relative bg-zinc-50 border-b border-zinc-200 space-y-2 dark:bg-slate-900/40 dark:border-slate-700">
+                                                                <div
+                                                                    className="absolute h-full inset-0 w-full rounded-sm border border-zinc-200 bg-[repeating-linear-gradient(135deg,#e5e7eb_0px,#e5e7eb_6px,#f9fafb_6px,#f9fafb_12px)] dark:border-slate-700 dark:bg-[repeating-linear-gradient(135deg,#334155_0px,#334155_6px,#0f172a_6px,#0f172a_12px)]"
+                                                                />
+                                                            </td>
+                                                        )
+                                                    } 
+                                                })
+                                            }
+                                            {
+                                                v[1]?.map((v, ir) => {
+                                                    return (
+                                                        <td
+                                                            className='relative border border-slate-200 px-2 py-1 whitespace-nowrap dark:border-slate-700'
+                                                            key={v.alias + " " + v.fecha}
+                                                        >
+                                                            {
+                                                                v.hayJustificacion === 1 ?
+                                                                    <div className='absolute right-0 mr-0.5 bg-sky-400 text-blue-900 rounded-full px-1'>
+                                                                        <p>J</p>
                                                                     </div>
                                                                     :
-                                                                    v.esVacaciones === 1 ?
-                                                                        <UmbrellaIcon className='mx-auto text-sky-600' />
+                                                                    <></>
+                                                            }
+                                                            {
+                                                                v.esFalta === 1 ?
+                                                                    <XIcon className={`text-red-500 mx-auto ${v.hayJustificacion === 1 ? "ml-3" : ""}`} />
+                                                                    :
+                                                                    v.esAusenciaLaborable === 1 ?
+                                                                        <div>
+                                                                            <CrossIcon className='text-blue-400 mx-auto' />
+                                                                            <p className='text-center text-blue-800 dark:text-blue-400'>{v.tipoAusencia === "DESCANSO MEDICO" || v.tipoAusencia === "SUBSIDIO" ? "DM" : "L"}</p>
+                                                                        </div>
                                                                         :
-                                                                        v.esDiaLaborable === 0 ?
-                                                                            <div className='absolute inset-0 bg-zinc-100 dark:bg-zinc-600'>
-                                                                                <p className='text-center mt-[25%]'>N/L</p>
-                                                                            </div>
+                                                                        v.esVacaciones === 1 ?
+                                                                            <UmbrellaIcon className='mx-auto text-sky-600' />
                                                                             :
-                                                                            <>
-                                                                                <div className={`text-center mr-1 ${v.hayJustificacion === 1 ? "mr-4 mt-1" : ""}`}>
-                                                                                    <div className={`${v.esTardanza === 1 ? "bg-orange-200 rounded-2xl text-orange-800" : ""} px-1`}>
-                                                                                        <p className=''>
-                                                                                            {v.horaIngreso?.slice(0, 5)}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <p>
-                                                                                            {v.horaSalida?.slice(0, 5)}
-                                                                                        </p>
-                                                                                    </div>
+                                                                            v.esDiaLaborable === 0 ?
+                                                                                <div className='absolute inset-0 bg-zinc-100 dark:bg-zinc-600'>
+                                                                                    <p className='text-center mt-[25%]'>N/L</p>
                                                                                 </div>
-                                                                            </>
-                                                        }
-                                                    </td>
-                                                ))
+                                                                                :
+                                                                                <>
+                                                                                    <div className={`text-center mr-1 ${v.hayJustificacion === 1 ? "mr-4 mt-1" : ""}`}>
+                                                                                        <div className={`${v.esTardanza === 1 ? "bg-orange-200 rounded-2xl text-orange-800" : ""} px-1`}>
+                                                                                            <p className=''>
+                                                                                                {v.horaIngreso?.slice(0, 5)}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p>
+                                                                                                {v.horaSalida?.slice(0, 5)}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </>
+                                                            }
+                                                        </td>
+                                                    )
+                                                }
+                                                )
+                                            }
+                                            {
+                                                v[1]?.map((v, ir, arr) => {
+                                                    const [dia, mes, year] = v.fecha.split("-")
+                                                    const vfecha = new Date(+year, +mes - 1, +dia, 0, 0, 0, 0)
+                                                    const fechaInicio = vfecha.toISOString().split("T")[0]
+                                                    if (ir === arr.length - 1 && listaFechas.slice(1).includes(`${dia}-${mes}-${year}`)) {
+                                                        const cantDias = intervaloFechas(fechaFinW, fechaInicio).slice(0, -1).length
+                                                        return (
+                                                            <td colSpan={cantDias} key={ir} className="relative bg-zinc-50 border-b border-zinc-200 space-y-2 dark:bg-slate-900/40 dark:border-slate-700">
+                                                                <div
+                                                                    className="absolute h-full inset-0 w-full rounded-sm border border-zinc-200 bg-[repeating-linear-gradient(135deg,#e5e7eb_0px,#e5e7eb_6px,#f9fafb_6px,#f9fafb_12px)] dark:border-slate-700 dark:bg-[repeating-linear-gradient(135deg,#334155_0px,#334155_6px,#0f172a_6px,#0f172a_12px)]"
+                                                                />
+                                                            </td>
+                                                        )
+                                                    } 
+                                                })
                                             }
                                         </tr>
                                     ))
