@@ -1,7 +1,7 @@
 "use client"
 
 import * as XLSX from "xlsx"
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { ReporteAsistencia } from './types';
 import { useRouter } from 'next/navigation';
@@ -111,13 +111,13 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
 
         router.push(`/dashboard/asistencia/ReporteCallMensual?${params.toString()}`)
 
-    }, [fechaFinW, fechaInicioW])
+    }, [fechaFinW, fechaInicioW, router, setValue])
 
     const limpiarFiltros = () => {
         reset({ agencia: 'TODOS', asesor: '', fechaFin: defaultFechaFin, fechaInicio: defaultFechaInicio })
     }
 
-    const getAoaData = (data: ReporteAsistencia[]): { aoaData: string[][]; merges: XLSX.Range[] } => {
+    const getAoaData = (): { aoaData: string[][]; merges: XLSX.Range[] } => {
         const columns: string[] = ["ASESOR"];
         const fechas = intervaloFechas(fechaInicioW, fechaFinW);
         columns.push(...fechas.map((f) => f.slice(0, 5)));
@@ -215,7 +215,7 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
     }
 
     const downloadExcel = () => {
-        const { aoaData, merges } = getAoaData(data)
+        const { aoaData, merges } = getAoaData()
 
 
         const worksheetNegativo = XLSX.utils.aoa_to_sheet(aoaData);
@@ -257,8 +257,8 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
                             {
                                 Object.entries(reporteData)
                                     .filter(v => agenciaW === "TODOS" ? true : v[0].split("_")[1] === agenciaW)
-                                    .filter(v => asesorW === "" ? true : (v[0].split("_")[0]).toLowerCase().includes(asesorW))
-                                    .map((v, ic) => (
+                                    .filter(v => asesorW === "" ? true : (v[0].split("_")[0]).toLowerCase().includes(asesorW.toLowerCase()))
+                                    .map((v) => (
                                         <tr className='odd:bg-slate-50 dark:odd:bg-slate-900/40' key={v[0]}>
                                             <th
                                                 scope='row'
@@ -284,7 +284,7 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
                                                 })
                                             }
                                             {
-                                                v[1]?.map((v, ir) => {
+                                                v[1]?.map((v) => {
                                                     return (
                                                         <td
                                                             className='relative border border-slate-200 px-2 py-1 whitespace-nowrap dark:border-slate-700'
