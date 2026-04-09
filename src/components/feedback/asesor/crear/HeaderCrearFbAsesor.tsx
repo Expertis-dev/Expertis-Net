@@ -228,18 +228,18 @@ export const HeaderCrearFbAsesor = ({
                     <div className="flex flex-row bg-white -mx-2 -mb-2 mt-2 justify-evenly dark:bg-zinc-900">
                         <div className="flex-1 p-2">
                             <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Nombre completo</p>
-                            <p className="text-[15px] dark:text-zinc-100">
+                            <p className="text-[15px] dark:text-zinc-100 mt-1">
                                 {query.trim()
                                     ? asesorOptions.find((v) => v.usuario.toLowerCase() === query.trim().toLowerCase())?.usuario
                                     : selectedById?.usuario}
                             </p>
                         </div>
-                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <hr className="border peer-autofill border-gray-300 h-15 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">
                             <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Cargo</p>
-                            <p className="text-[15px] dark:text-zinc-100">Asesor</p>
+                            <p className="text-[15px] dark:text-zinc-100 mt-1">Asesor</p>
                         </div>
-                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <hr className="border peer-autofill border-gray-300 h-15 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">
                             <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">
                                 {isRutina ? "Mes Evaluacion" : "Fecha Evaluacion"}
@@ -269,10 +269,10 @@ export const HeaderCrearFbAsesor = ({
                                 <p className="text-[15px] dark:text-zinc-100">{(new Date()).toLocaleString("es-ES", { month: "long", year: "numeric", timeZone: "UTC" })}</p>
                             )}
                         </div>
-                        <hr className="border peer-autofill border-gray-300 h-13 py-2 dark:border-zinc-600" />
+                        <hr className="border peer-autofill border-gray-300 h-15 py-2 dark:border-zinc-600" />
                         <div className="flex-1 p-2">
                             <p className="text-gray-500 text-xs text-[10px] dark:text-zinc-400">Equipo</p>
-                            <p className="text-[15px] dark:text-zinc-100">{user?.nombre}</p>
+                            <p className="text-[15px] dark:text-zinc-100 mt-1">{user?.nombre}</p>
                         </div>
                     </div>
                 </div>
