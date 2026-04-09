@@ -117,115 +117,62 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
         reset({ agencia: 'TODOS', asesor: '', fechaFin: defaultFechaFin, fechaInicio: defaultFechaInicio })
     }
 
-    const getAoaData = (): { aoaData: string[][]; merges: XLSX.Range[] } => {
-        const columns: string[] = ["ASESOR"];
-        const fechas = intervaloFechas(fechaInicioW, fechaFinW);
-        columns.push(...fechas.map((f) => f.slice(0, 5)));
+    const getAoaData = (data: ReporteAsistencia[]): string[][] => {
+        const aoa: string[][] = [];
+        const columnas = [
+            "idEmpleado",
+            "Apellidos y Nombres",
+            "Departamento",
+            "Fecha",
+            "Horario",
+            "Entrada",
+            "Salida",
+            "Tardanza (min)",
+            "Faltas",
+            "Comentario",
+        ];
+        aoa.push(columnas);
 
-        const normalizeFecha = (value: string): string => {
-            if (!value) return "";
-            const datePart = value.split("T")[0];
-            const parts = datePart.split("-");
-            if (parts.length !== 3) return value;
-            if (parts[0].length === 4) {
-                const [y, m, d] = parts;
-                return `${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`;
+        const dataFormatted = data.map((v) => ({
+            diaLaborable: String(v.esDiaLaborable),
+            row: [
+                String(v.documento),
+                String(v.alias),
+                String(v.agencia),
+                String(v.fecha),
+                String(v.horario),
+                String(v.horaIngreso),
+                String(v.horaSalida),
+                String(v.minutosTardanza),
+                v.esFalta === 1 ? "SI" : "NO",
+                v.esVacaciones === 1 ?
+                    "VACACIONES" :
+                    v.esAusenciaLaborable === 1 ?
+                        String(v.tipoAusencia) :
+                        v.hayJustificacion === 1 ?
+                            String(v.tipoJustificacion) : ""
+            ]
+        }));
+
+        dataFormatted.forEach(v => {
+            if (v.diaLaborable === "1") {
+                aoa.push(v.row)
             }
-            const [d, m, y] = parts;
-            return `${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`;
-        };
+        })
 
-        const buildIngresoSalida = (item?: ReporteAsistencia): { ingreso: string; salida: string; merge: boolean } => {
-            let ingreso = "";
-            let salida = "";
-            let merge = false;
-
-            if (!item) {
-                return { ingreso, salida, merge: true };
-            }
-
-            if (item.esFalta === 1) {
-                ingreso = "F";
-                merge = true;
-            } else if (item.esAusenciaLaborable === 1) {
-                ingreso = item.tipoAusencia === "DESCANSO MEDICO" || item.tipoAusencia === "SUBSIDIO" ? "DM" : "L";
-                merge = true;
-            } else if (item.esVacaciones === 1) {
-                ingreso = "VAC";
-                merge = true;
-            } else if (item.esDiaLaborable === 0) {
-                ingreso = "N/L";
-                merge = true;
-            } else {
-                ingreso = item.horaIngreso?.slice(0, 5) || "";
-                salida = item.horaSalida?.slice(0, 5) || "";
-                const tags: string[] = [];
-                if (item.esTardanza === 1) tags.push("T");
-                if (item.hayJustificacion === 1) tags.push("J");
-                const tagText = tags.length > 0 ? ` (${tags.join(",")})` : "";
-                if (ingreso) ingreso = `${ingreso}${tagText}`;
-            }
-
-            if (item.hayJustificacion === 1 && ingreso && !ingreso.includes("J")) {
-                ingreso = `${ingreso} (J)`;
-            }
-
-            if (!ingreso && !salida) merge = true;
-
-            return { ingreso, salida, merge };
-        };
-
-        const rows: string[][] = [];
-        const merges: XLSX.Range[] = [];
-
-        Object.entries(reporteData)
-            .filter(v => agenciaW === "TODOS" ? true : v[0].split("_")[1] === agenciaW)
-            .filter(v => asesorW === "" ? true : v[0].split("_")[0].includes(asesorW))
-            .forEach(([key, values]) => {
-                const asesor = key.split("_")[0];
-                const dateMap = new Map<string, ReporteAsistencia>();
-                (values || []).forEach((item) => {
-                    const normalized = normalizeFecha(item.fecha);
-                    if (!dateMap.has(normalized)) {
-                        dateMap.set(normalized, item);
-                    }
-                });
-
-                const ingresoRow: string[] = [asesor];
-                const salidaRow: string[] = [""];
-                const startRowIndex = rows.length + 1; // +1 because header is row 0
-                fechas.forEach((fecha, idx) => {
-                    const item = dateMap.get(fecha);
-                    const { ingreso, salida, merge } = buildIngresoSalida(item);
-                    ingresoRow.push(ingreso);
-                    salidaRow.push(salida);
-                    if (merge) {
-                        merges.push({
-                            s: { r: startRowIndex, c: idx + 1 },
-                            e: { r: startRowIndex + 1, c: idx + 1 }
-                        });
-                    }
-                });
-
-                rows.push(ingresoRow, salidaRow);
-                merges.push({ s: { r: startRowIndex, c: 0 }, e: { r: startRowIndex + 1, c: 0 } });
-            });
-
-        return { aoaData: [columns, ...rows], merges };
-    }
+        return aoa;
+    };
 
     const downloadExcel = () => {
-        const { aoaData, merges } = getAoaData()
+        const aeaData = getAoaData(data)
 
-
-        const worksheetNegativo = XLSX.utils.aoa_to_sheet(aoaData);
-        worksheetNegativo["!merges"] = merges;
+        const worksheet = XLSX.utils.aoa_to_sheet(aeaData);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheetNegativo, "feedbacksSupervisores");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "feedbacksSupervisores");
 
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const dataExcel = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        saveAs(dataExcel, `reporte_asistencia.xlsx`);
+        saveAs(dataExcel, `resumenAsistencia.xlsx`);
     }
 
     return (
