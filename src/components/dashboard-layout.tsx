@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -342,29 +342,33 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
   },
   {
     id: "feedback",
-    title: "feedback",
+    title: "Feedback",
     icon: BookIcon,
     href: "/dashboards/feedback",
     subItems: [
       {
         title: "Feedback Asesores",
         href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
-        modulo: "Encuesta"
+        modulo: "Feeback",
+        permiso: "FeedbackAsesores-ver"
       },
       {
         title: "Feedback Supervisores",
         href: "/dashboard/feedback/supervisores",
-        modulo: "Encuesta"
+        modulo: "Feeback",
+        permiso: "FeedbacksSupervisores-ver"
       },
       {
         title: "Historial Feedback Supervisor",
         href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
-        modulo: "Encuesta"
+        modulo: "Feeback",
+        permiso: "MisFeedbacksSuper-ver"
       },
       {
         title: "Historial Feedback Asesor",
         href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
-        modulo: "Encuesta"
+        modulo: "Feeback",
+        permiso: "MisFeedbacksAsesor-ver"
       },
     ]
   }
