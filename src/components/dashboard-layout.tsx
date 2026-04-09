@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, Percent } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -345,14 +345,31 @@ const MENU_CONFIG: MenuItem[] = [
       },
 
     ]
+  },
+  {
+    id: "descuentos",
+    title: "Descuentos",
+    icon: Percent,
+    href: "#",
+    subItems: [
+      {
+        title: "Mi Descuento",
+        href: "/dashboard/asistencia/descuentos/mi-descuento",
+      },
+      {
+        title: "Descuento Equipo",
+        href: "/dashboard/asistencia/descuentos/equipo",
+      },
+      {
+        title: "Descuento Grupos",
+        href: "/dashboard/asistencia/descuentos/grupos",
+      },
+      {
+        title: "Historial Descuentos",
+        href: "/dashboard/asistencia/descuentos/historial",
+      },
+    ]
   }
-  /*{
-    id: "mcp",
-    title: "Consultas Expertito",
-    icon: Bot,
-    href: "/dashboard/consultas",
-    subItems: [], // sin permiso → acceso libre
-  },*/
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================
