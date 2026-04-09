@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { ArrowRight, InfoIcon, RefreshCcw, RefreshCw, SquareIcon } from "lucide-react"
+import { ArrowRight, InfoIcon, RefreshCw, SquareIcon } from "lucide-react"
 import { formatWithThousands } from "../../supervisor/crear/CrearFbSupervisorForm"
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react"
 import { FormattedNumberInput } from "../../FormattedNumberInput"

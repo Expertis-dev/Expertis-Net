@@ -94,8 +94,6 @@ export default function TiptapEditor({
     }
   }, [editor, value]);
 
-  if (!editor) return null;
-
   useEffect(() => {
     const update = () => forceRerender((prev) => prev + 1);
     const handleBlur = () => {
@@ -113,6 +111,9 @@ export default function TiptapEditor({
       editor.off("blur", handleBlur);
     };
   }, [editor, onBlur]);
+  
+  if (!editor) return null;
+
 
   const isMarkActive = (mark: string) =>
     editor.isActive(mark) ||

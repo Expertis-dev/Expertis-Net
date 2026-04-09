@@ -1,7 +1,5 @@
 import { CompromisoPage } from "@/components/feedback/compromisoMejora/CompromisoPage";
 import { FeedbackSupervisor, SideTable } from "@/components/feedback/compromisoMejora/SideTable";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 
 
 
