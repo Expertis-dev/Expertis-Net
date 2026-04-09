@@ -166,6 +166,10 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
                 if (ingreso) ingreso = `${ingreso}${tagText}`;
             }
 
+            if (item.hayJustificacion === 1 && ingreso && !ingreso.includes("J")) {
+                ingreso = `${ingreso} (J)`;
+            }
+
             if (!ingreso && !salida) merge = true;
 
             return { ingreso, salida, merge };
@@ -288,8 +292,8 @@ export const ReporteCallMensual = ({ data, defaultFechaFin, defaultFechaInicio }
                                                         >
                                                             {
                                                                 v.hayJustificacion === 1 ?
-                                                                    <div className='absolute right-0 mr-0.5 bg-sky-400 text-blue-900 rounded-full px-1'>
-                                                                        <p>J</p>
+                                                                    <div className='absolute right-0 mr-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sky-600 px-1.5 text-[10px] font-extrabold leading-none text-white shadow-md dark:bg-sky-400'>
+                                                                        J
                                                                     </div>
                                                                     :
                                                                     <></>
