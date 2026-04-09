@@ -7,12 +7,10 @@ import {
   Users, 
   Search, 
   FileSpreadsheet, 
-  TrendingDown,
   Building2,
   DollarSign,
   Loader2,
   AlertCircle,
-  ArrowUpDown,
   SortAsc,
   SortDesc
 } from 'lucide-react'
@@ -38,55 +36,48 @@ import {
 
 const DescuentoGrupos = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [agenciaFilter, setAgenciaFilter] = useState('TODAS')
+  const [agenciaFilter, setAgenciaFilter] = useState('EXPERTIS')
+  const [grupoFilter, setGrupoFilter] = useState('TODOS')
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [sortOrder, setSortOrder] = useState('desc') // 'asc', 'desc'
+  const [sortOrder, setSortOrder] = useState('desc') 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
         setError(null)
-        // Endpoint proporcionado por el usuario
         const response = await axios.get('http://localhost:5000/api/reporteDescuentos/4')
-        
-        // Mapeo flexible para asegurar compatibilidad con el backend
         const mappedData = response.data.map((item) => ({
           id: item.documento,
           name: item.alias || 'Sin nombre',
           agencia: item.agencia || 'EXPERTIS',
+          grupo: item.grupo || 'Sin grupo',
           tardanzas: parseFloat(item.totalMinutosTardanza || 0),
           faltas: parseFloat(item.totalDiasFalta || 0),
           permisos: parseFloat(item.totalMinutosPermiso || 0),
-          sueldo: 1200 // Default 1200 como pidió el usuario
+          sueldo: 1200
         }))
-        
         setData(mappedData)
       } catch (err) {
-        console.error("Error al obtener descuentos:", err)
-        setError("No se pudo conectar con el servidor. Verifica que el API esté corriendo.")
+        setError("Error de red.")
       } finally {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [])
 
-  // Cálculos dinámicos
   const calculateDiscounts = (row) => {
     const sueldo = parseFloat(row.sueldo) || 0
     const pagoPorDia = sueldo / 30
     const pagoPorHora = pagoPorDia / 8
     const pagoPorMinuto = pagoPorHora / 60
-
     const dsctoTardanzas = row.tardanzas * pagoPorMinuto
     const dsctoFaltas = row.faltas * pagoPorDia
     const dsctoPermisos = row.permisos * pagoPorMinuto
     const total = dsctoTardanzas + dsctoFaltas + dsctoPermisos
-
     return {
       tardanzas: dsctoTardanzas.toFixed(2),
       faltas: dsctoFaltas.toFixed(2),
@@ -96,31 +87,28 @@ const DescuentoGrupos = () => {
   }
 
   const handleSueldoChange = (id, value) => {
+    const cleanValue = value.replace(/[^0-9.]/g, '')
     setData(prev => prev.map(item => 
-      item.id === id ? { ...item, sueldo: value } : item
+      item.id === id ? { ...item, sueldo: cleanValue } : item
     ))
   }
 
   const filteredData = useMemo(() => {
-    // 1. Filtrar
     const filtered = data.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesAgencia = agenciaFilter === 'TODAS' || item.agencia === agenciaFilter
-      return matchesSearch && matchesAgencia
+      const matchesGrupo = grupoFilter === 'TODOS' || item.grupo === grupoFilter
+      return matchesSearch && matchesAgencia && matchesGrupo
     })
-
-    // 2. Calcular totales para ordenamiento
     const enriched = filtered.map(item => ({
       ...item,
       computedTotal: parseFloat(calculateDiscounts(item).total)
     }))
-
-    // 3. Ordenar por total
     return enriched.sort((a, b) => {
       if (sortOrder === 'asc') return a.computedTotal - b.computedTotal
       return b.computedTotal - a.computedTotal
     })
-  }, [data, searchTerm, agenciaFilter, sortOrder])
+  }, [data, searchTerm, agenciaFilter, grupoFilter, sortOrder])
 
   const totalDescuentos = useMemo(() => {
     return filteredData.reduce((acc, row) => acc + row.computedTotal, 0).toFixed(2)
@@ -130,121 +118,104 @@ const DescuentoGrupos = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <Loader2 className="h-12 w-12 text-indigo-500 animate-spin" />
-        <p className="text-slate-500 font-medium animate-pulse">Cargando reporte de descuentos...</p>
-      </div>
-    )
-  }
+  const uniqueGrupos = useMemo(() => {
+    const grupos = data.map(item => item.grupo).filter(Boolean)
+    return ['TODOS', ...new Set(grupos)].sort()
+  }, [data])
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
-        <AlertCircle className="h-16 w-16 text-rose-500 opacity-20" />
-        <div className="space-y-1">
-          <p className="text-lg font-bold text-slate-900 dark:text-white">{error}</p>
-          <p className="text-sm text-slate-500 italic">Endpoint: http://localhost:5000/api/reporteDescuentos/4</p>
-        </div>
-        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
-          Reintentar conexión
-        </Button>
-      </div>
-    )
-  }
+  if (loading) return <div className="p-4 text-xs text-center">Cargando reporte...</div>
+  if (error) return <div className="p-4 text-xs text-center text-rose-500">Error de conexión.</div>
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="space-y-3"
+      style={{ zoom: '0.9' }}
     >
-      {/* Header & Filter Area */}
-      <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-            <Building2 className="text-indigo-600 dark:text-indigo-400" size={28} />
+      {/* Balanced Compact Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 bg-white dark:bg-slate-900 px-4 py-2 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+            <Building2 className="text-indigo-600" size={18} />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">
-              Descuentos por Grupo
-            </h1>
-            <p className="text-sm text-slate-500 font-medium">
-              Datos obtenidos en tiempo real del sistema.
-            </p>
-          </div>
+          <h1 className="text-base font-bold text-slate-900 dark:text-white">Descuentos por Grupo</h1>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4 flex-1 justify-end">
-          {/* Total Summary Card (Small Version) */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 p-3 px-5 rounded-xl border border-slate-800 flex items-center gap-4 shadow-lg min-w-[200px]">
-            <div className="h-10 w-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
-              <DollarSign size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Descuentos</p>
-              <p className="text-lg font-bold text-white tracking-tight">S/ {totalDescuentos}</p>
-            </div>
-            <TrendingDown className="text-rose-500 ml-auto opacity-50" size={18} />
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="bg-slate-900 dark:bg-slate-800 px-3 py-1.5 rounded-md flex items-center gap-2 border border-slate-700 shadow-sm">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Descuentos:</span>
+            <span className="text-sm font-bold text-white tracking-tight">S/ {totalDescuentos}</span>
           </div>
 
-          <div className="h-10 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             <Select value={agenciaFilter} onValueChange={setAgenciaFilter}>
-              <SelectTrigger className="h-11 rounded-xl w-full sm:w-44 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500/20">
-                <SelectValue placeholder="Filtrar Agencia" />
+              <SelectTrigger className="h-8 rounded-md w-32 bg-slate-50 border-slate-200 text-[10px] px-2">
+                <SelectValue placeholder="Agencia" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="TODAS">Todas las Agencias</SelectItem>
-                <SelectItem value="EXPERTIS">EXPERTIS</SelectItem>
-                <SelectItem value="EXPERTIS BPO">EXPERTIS BPO</SelectItem>
+                <SelectItem value="TODAS" className="text-[10px]">Agencias (Todas)</SelectItem>
+                <SelectItem value="EXPERTIS" className="text-[10px]">EXPERTIS</SelectItem>
+                <SelectItem value="EXPERTIS BPO" className="text-[10px]">EXPERTIS BPO</SelectItem>
               </SelectContent>
             </Select>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Select value={grupoFilter} onValueChange={setGrupoFilter}>
+              <SelectTrigger className="h-8 rounded-md w-32 bg-slate-50 border-slate-200 text-[10px] px-2">
+                <SelectValue placeholder="Grupo" />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueGrupos.map(grupo => (
+                  <SelectItem key={grupo} value={grupo} className="text-[10px]">
+                    {grupo === 'TODOS' ? 'Grupos (Todos)' : grupo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
               <Input 
                 placeholder="Buscar asesor..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 rounded-xl bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500/20"
+                className="pl-8 h-8 rounded-md bg-slate-50 border-slate-200 text-[10px]"
               />
             </div>
 
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-5 gap-2 shadow-lg shadow-emerald-500/20 transition-all font-bold">
-              <FileSpreadsheet size={18} />
-              <span className="hidden sm:inline">Exportar Excel</span>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md h-8 px-3 gap-1.5 text-[10px] font-bold shadow-sm">
+              <FileSpreadsheet size={14} />
+              <span className="hidden xl:inline">Exportar Excel</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Table Section */}
-      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-2xl">
+      <Card className="border-none shadow-md overflow-hidden rounded-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80 dark:bg-slate-900/50 backdrop-blur-sm">
-                <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100 py-6 px-6">Asesor / Empleado</TableHead>
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100">Agencia</TableHead>
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100 text-center">Tardanzas (min)</TableHead>
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100 text-center">Faltas (días)</TableHead>
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100 text-center">Permisos (min)</TableHead>
-                  <TableHead className="font-bold text-slate-900 dark:text-slate-100 w-32">Sueldo Base</TableHead>
-                  <TableHead className="font-bold text-rose-500 text-right">Dscto. Tard</TableHead>
-                  <TableHead className="font-bold text-rose-500 text-right">Dscto. Falt</TableHead>
-                  <TableHead className="font-bold text-rose-500 text-right">Dscto. Perm</TableHead>
+              <TableHeader className="bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-bold text-slate-700 py-2 px-4 text-[10px] uppercase">Asesor / Empleado</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-[10px] uppercase">Agencia</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-[10px] uppercase">Grupo</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Tar(m)</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Fal(d)</TableHead>
+                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Per(m)</TableHead>
+                  <TableHead className="font-bold text-slate-700 w-24 text-[10px] uppercase">Sueldo Base</TableHead>
+                  <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Tard</TableHead>
+                  <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Falt</TableHead>
+                  <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Perm</TableHead>
                   <TableHead 
-                    className="font-bold text-indigo-600 dark:text-indigo-400 text-right pr-6 cursor-pointer hover:text-indigo-700 transition-colors select-none"
+                    className="font-bold text-indigo-600 text-right pr-4 cursor-pointer hover:bg-slate-100/50 transition-colors select-none text-[10px] uppercase"
                     onClick={toggleSort}
                   >
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       TOTAL
-                      {sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
+                      {sortOrder === 'asc' ? <SortAsc size={10} /> : <SortDesc size={10} />}
                     </div>
                   </TableHead>
                 </TableRow>
@@ -253,39 +224,48 @@ const DescuentoGrupos = () => {
                 {filteredData.map((row) => {
                   const dsctos = calculateDiscounts(row)
                   return (
-                    <TableRow key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 border-slate-50 dark:border-slate-900 transition-colors group">
-                      <TableCell className="py-5 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-400 flex items-center justify-center text-[11px] text-white font-bold shadow-sm">
+                    <TableRow key={row.id} className="hover:bg-slate-50/30 border-slate-50 transition-colors py-0 h-9">
+                      <TableCell className="py-1 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] text-white font-bold">
                             {row.name.split(' ').map(n => n[0]).join('').slice(0,2)}
                           </div>
-                          <span className="font-semibold text-slate-900 dark:text-slate-200">{row.name}</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px] whitespace-nowrap">{row.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`rounded-full border-none px-3 py-1 text-[10px] font-bold ${
-                          row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 
-                          'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
+                        <Badge variant="outline" className={`rounded-full border-none px-2 py-0 text-[8px] font-bold ${
+                          row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                         }`}>
-                          {row.agencia}
+                          {row.agencia === 'EXPERTIS' ? 'EXP' : 'BPO'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center font-medium text-slate-500">{row.tardanzas}</TableCell>
-                      <TableCell className="text-center font-medium text-slate-500">{row.faltas}</TableCell>
-                      <TableCell className="text-center font-medium text-slate-500">{row.permisos}</TableCell>
+                      <TableCell>
+                        <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                          {row.grupo}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center text-slate-500 text-[10px]">{row.tardanzas}</TableCell>
+                      <TableCell className="text-center text-slate-500 text-[10px]">{row.faltas}</TableCell>
+                      <TableCell className="text-center text-slate-500 text-[10px]">{row.permisos}</TableCell>
                       <TableCell>
                         <Input 
-                          type="number" 
+                          type="text" 
+                          inputMode="numeric"
                           value={row.sueldo}
                           onChange={(e) => handleSueldoChange(row.id, e.target.value)}
-                          className="h-9 w-24 text-sm font-bold bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 text-center focus:ring-2 focus:ring-indigo-500/20"
+                          className="h-6 w-20 text-[10px] px-1 font-bold bg-white text-indigo-600 text-center rounded border-slate-200"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-500">S/ {dsctos.tardanzas}</TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-500">S/ {dsctos.faltas}</TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-500">S/ {dsctos.permisos}</TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Badge className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-none px-3 font-bold text-sm shadow-sm h-8">
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.tardanzas}</TableCell>
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.faltas}</TableCell>
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.permisos}</TableCell>
+                      <TableCell className="text-right pr-4">
+                        <Badge className={`border-none px-2 font-bold text-[10px] h-6 min-w-[55px] justify-center ${
+                          row.computedTotal <= 0 
+                            ? 'bg-emerald-50 text-emerald-600' 
+                            : 'bg-rose-50 text-rose-600'
+                        }`}>
                           S/ {row.computedTotal.toFixed(2)}
                         </Badge>
                       </TableCell>
@@ -295,9 +275,8 @@ const DescuentoGrupos = () => {
               </TableBody>
             </Table>
             {filteredData.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 bg-slate-50/50 dark:bg-slate-900/20">
-                <Users size={48} className="text-slate-200 mb-4" />
-                <p className="text-slate-400 font-medium">No se encontraron empleados con los filtros actuales</p>
+              <div className="flex flex-col items-center justify-center py-10 bg-slate-50/20">
+                <p className="text-[10px] text-slate-400 font-medium">No se encontraron resultados</p>
               </div>
             )}
           </div>
