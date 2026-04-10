@@ -39,11 +39,24 @@ import { SuccessModal } from "@/components/success-modal";
 // --- CONFIGURACIÓN DE GRUPOS ---
 const GRUPOS_HORARIO = [
     { id: '6-3', label: 'Grupo 6am - 3pm', entrada: '06:00', salida: '15:00', tolerancia: 10 },
-    { id: '7-5', label: 'Grupo 7am - 5pm', entrada: '07:00', salida: '17:00', tolerancia: 10 },
+    { id: '7-5', label: 'Grupo 7am - 5pm', entrada: '07:00', salida: '17:00', tolerancia: 5 },
     { id: '8-5', label: 'Grupo 8am - 5pm', entrada: '08:00', salida: '17:00', tolerancia: 0 },
     { id: '8:30-5:30', label: 'Grupo 8:30am - 5:30pm', entrada: '08:30', salida: '17:30', tolerancia: 0 },
     { id: '9-6', label: 'Grupo 9am - 6pm', entrada: '09:00', salida: '18:00', tolerancia: 0 },
 ];
+
+const TOLERANCIA_EXCEPCIONES: Record<string, Record<string, number>> = {
+    '7-5': {
+        'ROBERTO INZUA': 0
+    }
+};
+
+const getToleranciaParaEmpleado = (groupId: string, nombreUpper: string, toleranciaDefault: number) => {
+    const overrides = TOLERANCIA_EXCEPCIONES[groupId];
+    if (!overrides) return toleranciaDefault;
+    const override = overrides[nombreUpper];
+    return typeof override === 'number' ? override : toleranciaDefault;
+};
 
 /**
  * ARCHIVO ESTÁTICO DE CONFIGURACIÓN DE EMPLEADOS POR GRUPO
@@ -559,7 +572,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
         colabs.forEach((colab: PersonalGlobal) => {
             const nombreKey = colab.Nombre;
             const nombreUpper = (nombreKey || "").toString().trim().toUpperCase();
-            matrix[nombreKey] = { horarioConfig: config, asistencias: {} };
+            const tolerancia = getToleranciaParaEmpleado(config.id, nombreUpper, config.tolerancia);
+            const configParaEmpleado = tolerancia === config.tolerancia ? config : { ...config, tolerancia };
+            matrix[nombreKey] = { horarioConfig: configParaEmpleado, asistencias: {} };
 
             daysInMonth.forEach(day => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -605,9 +620,9 @@ const ReporteMensualStaff = ({ colaboradores }: ReporteProps) => {
                     const matchI = hI.match(/(\d{2}:\d{2})/);
                     if (matchI) {
                         const [h, m] = matchI[1].split(':').map(Number);
-                        const [bH, bM] = config.entrada.split(':').map(Number);
+                        const [bH, bM] = configParaEmpleado.entrada.split(':').map(Number);
                         const minsIngreso = h * 60 + m;
-                        const minsLimite = bH * 60 + bM + config.tolerancia;
+                        const minsLimite = bH * 60 + bM + configParaEmpleado.tolerancia;
                         matrix[nombreKey].asistencias[dayStr] = {
                             type: 'asistencia',
                             horaI: matchI[1],
