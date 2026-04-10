@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -95,7 +95,7 @@ export const tienePermiso = (
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
-const MENU_CONFIG: MenuItem[] = [
+const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuItem[] => [
   {
     id: "home",
     title: "Home",
@@ -351,6 +351,38 @@ const MENU_CONFIG: MenuItem[] = [
       },
 
     ]
+  },
+  {
+    id: "feedback",
+    title: "Feedback",
+    icon: BookIcon,
+    href: "/dashboards/feedback",
+    subItems: [
+      {
+        title: "Feedback Asesores",
+        href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
+        modulo: "Feeback",
+        permiso: "FeedbackAsesores-ver"
+      },
+      {
+        title: "Feedback Supervisores",
+        href: "/dashboard/feedback/supervisores",
+        modulo: "Feeback",
+        permiso: "FeedbacksSupervisores-ver"
+      },
+      {
+        title: "Historial Feedback Supervisor",
+        href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksSuper-ver"
+      },
+      {
+        title: "Historial Feedback Asesor",
+        href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksAsesor-ver"
+      },
+    ]
   }
   /*{
     id: "mcp",
@@ -464,7 +496,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {
-      return MENU_CONFIG.filter((item) => item.id === "home")
+      return MENU_CONFIG(user, user) .filter((item) => item.id === "home")
     }
     const permisos = getPermisosFromStorage()
     const speechPermisos = getSpeechPermisos()
@@ -473,7 +505,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return required.some((permiso) => speechPermisos.includes(permiso))
     }
     return (
-      MENU_CONFIG
+      MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
           if (!menu.subItems || menu.subItems.length === 0) {

@@ -635,3 +635,49 @@ body {
   background-color: rgba(7, 83, 190, 0.753); /* slate-400 aprox */
   border-radius: 9999px;
 }
+
+@layer base {
+  .tiptap-content .ProseMirror {
+    @apply min-h-[160px] outline-none;
+  }
+
+  .tiptap-content .ProseMirror p {
+    @apply mb-2;
+  }
+
+  .tiptap-content .ProseMirror ul,
+  .tiptap-content .ProseMirror ol {
+    @apply mb-3 list-outside pl-6 text-slate-900;
+  }
+
+  .dark .tiptap-content .ProseMirror ul,
+  .dark .tiptap-content .ProseMirror ol {
+    @apply text-slate-100;
+  }
+
+  .tiptap-content .ProseMirror ul {
+    @apply list-disc;
+  }
+
+  .tiptap-content .ProseMirror ol {
+    @apply list-decimal;
+  }
+
+  .tiptap-content .ProseMirror li::marker {
+    color: #000000;
+  }
+
+  .dark .tiptap-content .ProseMirror li::marker {
+    color: #e2e8f0;
+  }
+
+  .rich-text ul,
+  .rich-text ol {
+    list-style: revert;
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .rich-text ol { list-style-type: decimal; }
+  .rich-text ul { list-style-type: disc; }
+}

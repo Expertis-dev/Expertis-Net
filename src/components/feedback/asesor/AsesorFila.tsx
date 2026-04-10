@@ -1,0 +1,75 @@
+"use client"
+
+import { EyeIcon, PencilIcon } from 'lucide-react'
+import Link from 'next/link';
+import React from 'react'
+
+interface Props {
+    tipoEvaluacion: string;
+    periodo: string;
+    estadoFeedback: string;
+    idFeedback: string;
+    asesor: string
+}
+
+export const AsesorFila = ({
+    estadoFeedback,
+    periodo,
+    tipoEvaluacion,
+    idFeedback,
+    asesor
+}: Props) => {
+    const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${tipoEvaluacion === "RUTINA" ? "generateFbRutinaAsesorPdf" : "generateFbNegativoAsesorPdf"}/${idFeedback}`;
+
+    const handleOpenPopup = async () => {
+        const width = 1100;
+        const height = 750;
+        const left = Math.max(0, Math.floor((window.screen.width - width) / 2));
+        const top = Math.max(0, Math.floor((window.screen.height - height) / 2));
+
+        const {url} = await fetch(pdfUrl).then(r => r.json())
+
+        const popup = window.open(
+            url,
+            "feedback_pdf_popup",
+            `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        );
+
+        if (popup) popup.focus();
+    };
+
+    return (
+        <div className="grid grid-cols-5 md:grid-cols-5 px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center">
+            <div className="flex justify-between md:block">
+                <span className='text-[14px]'>{asesor}</span>
+            </div>
+            <div className={`flex justify-between md:block ${tipoEvaluacion === "RUTINA" ? "text-green-600" : "text-red-600"}`}>
+                <span className='text-[14px]'>{tipoEvaluacion}</span>
+            </div>
+            <div className="flex justify-between md:block">
+                <span className='text-[14px]'>{periodo.slice(0, 7)}</span>
+            </div>
+            <div className="flex justify-between md:block">
+                <span className={`${estadoFeedback === "PUBLICADO" ? "text-green-600" : "text-amber-700"} font-medium text-[14px]`}>{estadoFeedback}</span>
+            </div>
+            <div className="flex flex-row justify-between md:block">
+                <button className="text-blue-600 hover:text-blue-800 cursor-pointer hover:scale-110" onClick={handleOpenPopup}>
+                    <EyeIcon size={17} />
+                </button>
+                {
+                    estadoFeedback === "BORRADOR" ?
+                        <Link
+                            href={`/dashboard/feedback/asesores/crear/${idFeedback}`}
+                            className="text-orange-600 ml-3 hover:text-orange-800">
+                            <button className='cursor-pointer'>
+                                <PencilIcon size={15} />
+
+                            </button>
+                        </Link>
+                        :
+                        <></>
+                }
+            </div>
+        </div>
+    )
+}
