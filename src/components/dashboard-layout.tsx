@@ -47,6 +47,8 @@ interface MenuItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: SubItem[]
+  modulo?: Modulo       // permiso a nivel de módulo padre
+  permiso?: string      // permiso a nivel de módulo padre
 }
 
 // Leer permisos desde localStorage (JSON)
@@ -215,6 +217,40 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     ],
   },
   {
+    id: "feedback",
+    title: "Feedback",
+    icon: BookIcon,
+    href: "/dashboards/feedback",
+    modulo: "Feeback",
+    permiso: "Feeback-ver",
+    subItems: [
+      {
+        title: "Feedback Asesores",
+        href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
+        modulo: "Feeback",
+        permiso: "FeedbackAsesores-ver"
+      },
+      {
+        title: "Feedback Supervisores",
+        href: "/dashboard/feedback/supervisores",
+        modulo: "Feeback",
+        permiso: "FeedbacksSupervisores-ver"
+      },
+      {
+        title: "Historial Feedback Supervisor",
+        href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksSuper-ver"
+      },
+      {
+        title: "Historial Feedback Asesor",
+        href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksAsesor-ver"
+      },
+    ]
+  },
+  {
     id: "speech",
     title: "Speech Analytics",
     icon: AudioLines,
@@ -352,38 +388,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
 
     ]
   },
-  {
-    id: "feedback",
-    title: "Feedback",
-    icon: BookIcon,
-    href: "/dashboards/feedback",
-    subItems: [
-      {
-        title: "Feedback Asesores",
-        href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
-        modulo: "Feeback",
-        permiso: "FeedbackAsesores-ver"
-      },
-      {
-        title: "Feedback Supervisores",
-        href: "/dashboard/feedback/supervisores",
-        modulo: "Feeback",
-        permiso: "FeedbacksSupervisores-ver"
-      },
-      {
-        title: "Historial Feedback Supervisor",
-        href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
-        modulo: "Feeback",
-        permiso: "MisFeedbacksSuper-ver"
-      },
-      {
-        title: "Historial Feedback Asesor",
-        href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
-        modulo: "Feeback",
-        permiso: "MisFeedbacksAsesor-ver"
-      },
-    ]
-  }
+
   /*{
     id: "mcp",
     title: "Consultas Expertito",
@@ -496,7 +501,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {
-      return MENU_CONFIG(user, user) .filter((item) => item.id === "home")
+      return MENU_CONFIG(user, user).filter((item) => item.id === "home")
     }
     const permisos = getPermisosFromStorage()
     const speechPermisos = getSpeechPermisos()
@@ -508,16 +513,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
+            // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
+            // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
+            if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
+              return null
+            }
+
+            // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
+            if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+              return null
+            }
+
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
 
           const filteredSubItems = menu.subItems.filter((sub) => {
-            // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
-            // if (sub.title === "Reporte Staff") {
-            //   return false
-            // }
-
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
             }
