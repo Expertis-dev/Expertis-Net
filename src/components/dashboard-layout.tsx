@@ -160,6 +160,12 @@ const MENU_CONFIG: MenuItem[] = [
         permiso: "ReporteStaff-ver",
       },
       {
+        title: "Reporte Call Mensual",
+        href: "/dashboard/asistencia/ReporteCallMensual",
+        modulo: "Asistencia",
+        permiso: "ReporteStaff-ver",
+      },
+      {
         title: "Alertas",
         href: "/dashboard/asistencia/alertas",
         modulo: "Asistencia",
