@@ -1,25 +1,49 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   BadgePercent, 
   Calendar, 
   Search, 
-  Filter, 
   FileDown, 
-  ChevronRight,
-  Info,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useUser } from '@/Provider/UserProvider'
+import { LoadingModal } from '@/components/loading-modal'
+
+export interface HistorialDescuentos {
+  fecha:  string;
+  motivo: string;
+  monto:  number;
+  estado: string;
+}
 
 const MiDescuento = () => {
+  const {user} = useUser()
+  const [data, setData] = useState<HistorialDescuentos[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
+    const getDataMisDescuentos = async (alias: string): Promise<HistorialDescuentos[]> => {
+      const today = new Date();
+      const monthNumber = today.getMonth() + 1
+      const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteDescuentos/${monthNumber}/${user?.usuario!}`).then(r => r.json())
+      console.log(data)
+      return data;
+    }
+
+    setIsLoading(true)
+    getDataMisDescuentos(user?.usuario!).then((res) => {
+      setData(res)
+      setIsLoading(false)
+    }).finally(() => setIsLoading(false))
+  }, [])
+
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -39,16 +63,16 @@ const MiDescuento = () => {
 
   // Datos de ejemplo para el diseño "Premium"
   const stats = [
-    { title: 'Total Descuentos Mes', value: 'S/ 45.00', icon: BadgePercent, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { title: 'Días Afectados', value: '3 Días', icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { title: 'Total Descuentos Mes', value: data.reduce((acc, curr) => acc += curr.monto, 0), icon: BadgePercent, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { title: 'Días Afectados', value: `${data.length} Días`, icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-50' },
     { title: 'Justificaciones Pendientes', value: '1', icon: Clock, color: 'text-sky-500', bg: 'bg-sky-50' },
   ]
 
-  const historial = [
-    { fecha: '2026-04-01', motivo: 'Tardanza injustificada', monto: 'S/ 15.00', estado: 'Confirmado', icon: AlertCircle, color: 'text-amber-500' },
-    { fecha: '2026-04-03', motivo: 'Inasistencia', monto: 'S/ 30.00', estado: 'En Revisión', icon: Clock, color: 'text-blue-500' },
-    { fecha: '2026-03-28', motivo: 'Tardanza injustificada', monto: 'S/ 15.00', estado: 'Justificado', icon: CheckCircle2, color: 'text-emerald-500' },
-  ]
+  const historial = {
+    'Confirmado': {icon: AlertCircle, color: 'text-amber-500' },
+    'EnRevision': {icon: Clock, color: 'text-blue-500' },
+    'Justificado': {icon: CheckCircle2, color: 'text-emerald-500' },
+  }
 
   return (
     <motion.div 
@@ -86,10 +110,10 @@ const MiDescuento = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.title}</p>
-                    <h3 className="text-2xl font-bold mt-1">{stat.value}</h3>
+                    <h3 className="text-2xl font-bold mt-1">{stat.title === "Total Descuentos Mes" ? "S/" : ""} {isNaN(+stat.value) ? stat.value : Number(stat.value).toFixed(2)}</h3>
                   </div>
-                  <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                    <stat.icon size={24} />
+                  <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform dark:bg-zinc-900`}>
+                    <stat.icon size={24}/>
                   </div>
                 </div>
               </CardContent>
@@ -99,7 +123,7 @@ const MiDescuento = () => {
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden">
-        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 flex flex-row items-center justify-between">
+        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/5 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-lg">Historial de Descuentos</CardTitle>
             <CardDescription>Detalle por fecha y motivo.</CardDescription>
@@ -107,7 +131,7 @@ const MiDescuento = () => {
           <div className="flex gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <Input placeholder="Buscar..." className="pl-9 w-64 bg-white dark:bg-slate-800" />
+              <Input placeholder="Buscar..." className="pl-9 w-64 bg-white dark:bg-slate-700/30" />
             </div>
           </div>
         </CardHeader>
@@ -119,36 +143,21 @@ const MiDescuento = () => {
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Fecha</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Motivo</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Monto</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Estado</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-900">
-                {historial.map((row, i) => (
+                {data.map((row, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 text-sm">{row.fecha}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <row.icon size={16} className={row.color} />
+                        {row.motivo === "Tardanza Justificada" ? <historial.Justificado.icon className={historial.Confirmado.color}/> : <></>}
+                        {row.motivo === "Tardanza injustificada" ? <historial.EnRevision.icon className={historial.Confirmado.color}/> : <></>}
                         <span className="text-sm font-medium">{row.motivo}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-rose-600 dark:text-rose-400">{row.monto}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant="outline" className={`rounded-full px-3 ${
-                        row.estado === 'Justificado' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                        row.estado === 'En Revisión' ? 'bg-sky-50 text-sky-700 border-sky-100' :
-                        'bg-slate-50 text-slate-700 border-slate-100'
-                      }`}>
-                        {row.estado}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                      <span className="text-sm font-bold text-rose-600 dark:text-rose-400">S/. {row.monto.toFixed(2)}</span>
                     </td>
                   </tr>
                 ))}
@@ -158,7 +167,7 @@ const MiDescuento = () => {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="border-none shadow-sm bg-indigo-600 text-white overflow-hidden relative">
           <div className="absolute right-0 top-0 p-4 opacity-10">
             <Info size={120} />
@@ -194,7 +203,11 @@ const MiDescuento = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
+      <LoadingModal
+        isOpen={isLoading}
+        message='Cargando'
+      />
     </motion.div>
   )
 }

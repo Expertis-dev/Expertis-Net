@@ -34,13 +34,39 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+export interface ReporteDescuento {
+  documento:            string;
+  alias:                string;
+  grupo:                string;
+  agencia:              Agencia;
+  totalMinutosTardanza: number;
+  totalDiasFalta:       number;
+  totalMinutosPermiso:  number;
+}
+
+export enum Agencia {
+  Expertis = "EXPERTIS",
+  ExpertisBpo = "EXPERTIS BPO",
+}
+
+export interface mappedData {
+  id: string;
+  name: string;
+  agencia: Agencia;
+  grupo: string;
+  tardanzas: number;
+  faltas: number;
+  permisos: number;
+  sueldo: number;
+}
+
 const DescuentoGrupos = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [agenciaFilter, setAgenciaFilter] = useState('EXPERTIS')
   const [grupoFilter, setGrupoFilter] = useState('TODOS')
-  const [data, setData] = useState([])
+  const [data, setData] = useState<mappedData[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState('desc') 
 
   useEffect(() => {
@@ -48,15 +74,17 @@ const DescuentoGrupos = () => {
       try {
         setLoading(true)
         setError(null)
-        const response = await axios.get('http://localhost:5000/api/reporteDescuentos/4')
-        const mappedData = response.data.map((item) => ({
+        const today = new Date();
+        const monthNumber = today.getMonth() + 1
+        const response: ReporteDescuento[] = (await axios.get(`http://localhost:5000/api/reporteDescuentos/${monthNumber}`)).data
+        const mappedData = response.map((item) => ({
           id: item.documento,
           name: item.alias || 'Sin nombre',
           agencia: item.agencia || 'EXPERTIS',
           grupo: item.grupo || 'Sin grupo',
-          tardanzas: parseFloat(item.totalMinutosTardanza || 0),
-          faltas: parseFloat(item.totalDiasFalta || 0),
-          permisos: parseFloat(item.totalMinutosPermiso || 0),
+          tardanzas: parseFloat(String(item.totalMinutosTardanza || 0)),
+          faltas: parseFloat(String(item.totalDiasFalta || 0)),
+          permisos: parseFloat(String(item.totalMinutosPermiso || 0)),
           sueldo: 1200
         }))
         setData(mappedData)
@@ -69,8 +97,8 @@ const DescuentoGrupos = () => {
     fetchData()
   }, [])
 
-  const calculateDiscounts = (row) => {
-    const sueldo = parseFloat(row.sueldo) || 0
+  const calculateDiscounts = (row: {sueldo: number, tardanzas: number, faltas: number, permisos: number}) => {
+    const sueldo = parseFloat(String(row.sueldo)) || 0
     const pagoPorDia = sueldo / 30
     const pagoPorHora = pagoPorDia / 8
     const pagoPorMinuto = pagoPorHora / 60
@@ -86,8 +114,8 @@ const DescuentoGrupos = () => {
     }
   }
 
-  const handleSueldoChange = (id, value) => {
-    const cleanValue = value.replace(/[^0-9.]/g, '')
+  const handleSueldoChange = (id: string, value: string) => {
+    const cleanValue = +value.replace(/[^0-9.]/g, '')
     setData(prev => prev.map(item => 
       item.id === id ? { ...item, sueldo: cleanValue } : item
     ))
@@ -199,13 +227,13 @@ const DescuentoGrupos = () => {
             <Table>
               <TableHeader className="bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-slate-700 py-2 px-4 text-[10px] uppercase">Asesor / Empleado</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-[10px] uppercase">Agencia</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-[10px] uppercase">Grupo</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Tar(m)</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Fal(d)</TableHead>
-                  <TableHead className="font-bold text-slate-700 text-center text-[10px] uppercase">Per(m)</TableHead>
-                  <TableHead className="font-bold text-slate-700 w-24 text-[10px] uppercase">Sueldo Base</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 py-2 px-4 text-[10px] uppercase">Asesor / Empleado</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase">Agencia</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase">Grupo</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-center text-[10px] uppercase">Tar(m)</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-center text-[10px] uppercase">Fal(d)</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-center text-[10px] uppercase">Per(m)</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 w-24 text-[10px] uppercase">Sueldo Base</TableHead>
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Tard</TableHead>
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Falt</TableHead>
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Perm</TableHead>
@@ -227,7 +255,7 @@ const DescuentoGrupos = () => {
                     <TableRow key={row.id} className="hover:bg-slate-50/30 border-slate-50 transition-colors py-0 h-9">
                       <TableCell className="py-1 px-4">
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] text-white font-bold">
+                          <div className="h-6 w-6 rounded-full bg-indigo-500 dark:bg-indigo-700 flex items-center justify-center text-[8px] text-white font-bold">
                             {row.name.split(' ').map(n => n[0]).join('').slice(0,2)}
                           </div>
                           <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px] whitespace-nowrap">{row.name}</span>
@@ -235,36 +263,36 @@ const DescuentoGrupos = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`rounded-full border-none px-2 py-0 text-[8px] font-bold ${
-                          row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                          row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600 dark:bg-blue-700 dark:text-blue-300' : 'bg-purple-50 text-purple-600'
                         }`}>
                           {row.agencia === 'EXPERTIS' ? 'EXP' : 'BPO'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                        <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:text-slate-200 dark:bg-slate-600 px-1.5 py-0.5 rounded uppercase tracking-tighter">
                           {row.grupo}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center text-slate-500 text-[10px]">{row.tardanzas}</TableCell>
-                      <TableCell className="text-center text-slate-500 text-[10px]">{row.faltas}</TableCell>
-                      <TableCell className="text-center text-slate-500 text-[10px]">{row.permisos}</TableCell>
+                      <TableCell className="text-center text-slate-500 dark:text-slate-300 text-[10px]">{row.tardanzas}</TableCell>
+                      <TableCell className="text-center text-slate-500 dark:text-slate-300 text-[10px]">{row.faltas}</TableCell>
+                      <TableCell className="text-center text-slate-500 dark:text-slate-300 text-[10px]">{row.permisos}</TableCell>
                       <TableCell>
                         <Input 
                           type="text" 
                           inputMode="numeric"
                           value={row.sueldo}
                           onChange={(e) => handleSueldoChange(row.id, e.target.value)}
-                          className="h-6 w-20 text-[10px] px-1 font-bold bg-white text-indigo-600 text-center rounded border-slate-200"
+                          className="h-6 w-20 text-[10px] px-1 font-bold bg-white text-indigo-600 text-center rounded border-slate-200 dark:border-slate-500"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.tardanzas}</TableCell>
-                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.faltas}</TableCell>
-                      <TableCell className="text-right font-mono text-[9px] text-slate-400">-{dsctos.permisos}</TableCell>
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400 dark:text-slate-300">-{dsctos.tardanzas}</TableCell>
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400 dark:text-slate-300">-{dsctos.faltas}</TableCell>
+                      <TableCell className="text-right font-mono text-[9px] text-slate-400 dark:text-slate-300">-{dsctos.permisos}</TableCell>
                       <TableCell className="text-right pr-4">
                         <Badge className={`border-none px-2 font-bold text-[10px] h-6 min-w-[55px] justify-center ${
                           row.computedTotal <= 0 
                             ? 'bg-emerald-50 text-emerald-600' 
-                            : 'bg-rose-50 text-rose-600'
+                            : 'bg-rose-50 text-rose-600 dark:bg-rose-800 dark:text-rose-200'
                         }`}>
                           S/ {row.computedTotal.toFixed(2)}
                         </Badge>
