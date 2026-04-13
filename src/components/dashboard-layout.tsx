@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback" | "SeguimientoAsesor"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -193,6 +193,22 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
         href: "/dashboard/bases/seguimiento-grupo",
         modulo: "Bases",
         permiso: "SeguimientoGrupo-ver",
+      },
+    ],
+  },
+  {
+    id: "seguimiento-asesor-new",
+    title: "Seguimiento Asesor",
+    icon: Users,
+    href: "#",
+    subItems: [
+      {
+        title: "Acompañamiento",
+        href: "/dashboard/seguimiento-asesor/acompanamiento",
+      },
+      {
+        title: "Escuchas",
+        href: "/dashboard/seguimiento-asesor/escuchas",
       },
     ],
   },
