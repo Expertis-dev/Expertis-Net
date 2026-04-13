@@ -65,10 +65,14 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                               animate={{ x: 0, opacity: 1 }}
                               transition={{ duration: 0.2 }}
                             >
+                              {(() => {
+                                console.log("pathname", pathname)
+                                console.log("subItem.href", subItem.href)
+                              })()}
                               <Link href={subItem.href}>
                                 <Button
                                   variant="ghost"
-                                  className={`w-full justify-start h-10 px-4 text-sm transition-all duration-200 ${pathname === subItem.href ? "sidebar-item-active" : "sidebar-item"
+                                  className={`w-full justify-start h-10 px-4 text-sm transition-all duration-200 ${pathname === subItem.href.split("?")[0] ? "sidebar-item-active" : "sidebar-item"
                                     }`}
                                 >
                                   <ChevronRight className="h-3 w-3" />
