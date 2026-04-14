@@ -20,7 +20,8 @@ const HistoricoDescuentos = () => {
     visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } }
   }
 
-  const [tipo, setTipo] = useState<string>("")
+  const a = useState<string>("")
+  const setTipo = a[1]
   const [colabordaorFiltro, setColabordaorFiltro] = useState("")
   const logs = [
     { id: 'DSC-001', user: 'Juan Perez', fecha: '2026-04-01 08:15', monto: 'S/ 15.00', tipo: 'Tardanza', responsable: 'Sistema', estado: 'Finalizado' },

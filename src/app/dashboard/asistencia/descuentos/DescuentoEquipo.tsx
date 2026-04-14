@@ -67,7 +67,7 @@ const DescuentoEquipo = () => {
   const getPorcentajeEquipoConDescuento = useMemo<string>(() => {
     const porcentaje = data?.length === undefined ? 1 : data.length / colaboradores.length * 100
     return porcentaje.toFixed(2);
-  }, [data])
+  }, [data, colaboradores.length])
   
 
   return (

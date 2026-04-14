@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { 
   BadgePercent, 
   Search, 
-  FileDown, 
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -14,7 +13,6 @@ import {
   TimerIcon,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUser } from '@/Provider/UserProvider'
 import { LoadingModal } from '@/components/loading-modal'
