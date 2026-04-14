@@ -23,7 +23,8 @@ interface Props {
     router: AppRouterInstance,
     asesor?: Colaborador,
     defaultValues?: Form,
-    periodoSeleccionado?: string
+    periodoSeleccionado?: string,
+    currentFeedback: string
 }
 
 export interface Form {
@@ -144,10 +145,10 @@ export const CrearFbAsesorForm = ({
     router,
     asesor,
     defaultValues,
-    periodoSeleccionado
+    periodoSeleccionado,
+    currentFeedback
 }: Props) => {
     const { id: idFeedback } = useParams<{ id: string }>()
-
     const [isFetching, setIsFetching] = useState(false)
     const [isDisable, setIsDisable] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -230,7 +231,7 @@ export const CrearFbAsesorForm = ({
                 body: JSON.stringify({
                     idEmpleado: asesor.idEmpleado,
                     periodo: periodoIso,
-                    tipoEvaluacion: "RUTINA",
+                    tipoEvaluacion: currentFeedback.toUpperCase(),
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observacionesGenerales,
                     resultadoEvaluacion: data,
@@ -356,7 +357,7 @@ export const CrearFbAsesorForm = ({
                                     <div className="flex flex-row justify-between">
                                         <h4>{field.name} </h4>
                                         {field.name === "Recupero" ? 
-                                            <p>Alcance recupero: {isNaN(+calculateRatioAlcance()) ? "" : calculateRatioAlcance() + "%"}</p>
+                                            <p className="font-extralight">Alcance recupero: {isNaN(+calculateRatioAlcance()) ? "" : calculateRatioAlcance() + "%"}</p>
                                         : <></>}
                                     </div>
                                     {errors[field.values[0].name] && <span className="text-red-600 text-xs">{errors[field.values[0].name]!.message}</span>}

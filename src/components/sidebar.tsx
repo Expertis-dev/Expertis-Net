@@ -65,10 +65,6 @@ export function Sidebar({ menuItems, expandedMenus, toggleMenu, pathname, onLogo
                               animate={{ x: 0, opacity: 1 }}
                               transition={{ duration: 0.2 }}
                             >
-                              {(() => {
-                                console.log("pathname", pathname)
-                                console.log("subItem.href", subItem.href)
-                              })()}
                               <Link href={subItem.href}>
                                 <Button
                                   variant="ghost"
