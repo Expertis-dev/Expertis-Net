@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Descuentos"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -47,6 +47,8 @@ interface MenuItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: SubItem[]
+  modulo?: Modulo,
+  permiso?: string
 }
 
 // Leer permisos desde localStorage (JSON)
@@ -351,18 +353,26 @@ const MENU_CONFIG: MenuItem[] = [
     title: "Descuentos",
     icon: Percent,
     href: "#",
+    modulo: "Descuentos",
+    permiso: "Descuento-ver",
     subItems: [
       {
         title: "Mi Descuento",
         href: "/dashboard/asistencia/descuentos/mi-descuento",
+        modulo: "Descuentos",
+        permiso: "DescuentoUsuario-ver"
       },
       {
         title: "Descuento Equipo",
         href: "/dashboard/asistencia/descuentos/equipo",
+        modulo: "Descuentos",
+        permiso: "DescuentoEquipo-ver"
       },
       {
         title: "Descuento Grupos",
         href: "/dashboard/asistencia/descuentos/grupos",
+        modulo: "Descuentos",
+        permiso: "DescuentoReporte-ver"
       },
       // {
       //   title: "Historial Descuentos",
@@ -490,7 +500,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
-
+          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+            return null
+          }
           const filteredSubItems = menu.subItems.filter((sub) => {
             // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
             // if (sub.title === "Reporte Staff") {

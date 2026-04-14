@@ -91,9 +91,9 @@ const DescuentoEquipo = () => {
             <Users className="text-cyan-500 h-5 w-5" />
             <div className="text-sm font-semibold">{colaboradores.length} Integrantes</div>
           </div>
-          <Button className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 transition-all">
+          {/* <Button className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 transition-all">
             Reporte Consolidado
-          </Button>
+          </Button> */}
         </div>
       </div>
 

@@ -29,6 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import * as XLSX from "xlsx"
+import { format } from 'date-fns'
+import { saveAs } from "file-saver"
+
 
 export interface ReporteDescuento {
   documento:            string;
@@ -150,6 +154,53 @@ const DescuentoGrupos = () => {
   if (loading) return <div className="p-4 text-xs text-center">Cargando reporte...</div>
   if (error) return <div className="p-4 text-xs text-center text-rose-500">Error de conexión.</div>
 
+  const onClickDownloadExcel = () => {
+    const aoaData: string[][] = [];
+    const headers = [
+        "DNI",
+        "Asesor / Empleado",
+        "Agencia	Grupo",
+        "Tar(m)",
+        "Fal(d)",
+        "Per(m)",
+        "Sueldo Base",
+        "Dscto.Tard",
+        "Dscto.Falt",
+        "Dscto.Perm",
+        "TOTAL"
+    ];
+    aoaData.push(headers)
+    const row = data.map(v => {
+      const {
+        faltas,
+        permisos,
+        tardanzas,
+        total
+      } = calculateDiscounts({faltas: v.faltas, permisos: v.permisos, sueldo: v.sueldo, tardanzas: v.tardanzas})
+      return Object.values({
+        dni: String(v.id),
+        asesor: String(v.name),
+        agencia: String(v.agencia),
+        tarM: String(v.tardanzas),
+        faltas: String(v.faltas),
+        permiso: String(v.permisos),
+        sueldo: String(v.sueldo),
+        descuentoTardanzas: String(tardanzas),
+        descuentoFaltas: String(faltas),
+        descuentoPermisos: String(permisos),
+        total: String(total),
+      })
+    })
+    aoaData.push(...row)
+    const worksheet = XLSX.utils.aoa_to_sheet(aoaData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte Vacaciones")
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+    saveAs(excelBlob, `Reporte_Descuentos_Por_Grupo_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -209,7 +260,9 @@ const DescuentoGrupos = () => {
               />
             </div>
 
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md h-8 px-3 gap-1.5 text-[10px] font-bold shadow-sm">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md h-8 px-3 gap-1.5 text-[10px] font-bold shadow-sm"
+              onClick={onClickDownloadExcel}
+            >
               <FileSpreadsheet size={14} />
               <span className="hidden xl:inline">Exportar Excel</span>
             </Button>

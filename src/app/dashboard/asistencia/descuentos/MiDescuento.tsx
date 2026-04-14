@@ -87,7 +87,7 @@ const MiDescuento = () => {
             Visualiza y gestiona el detalle de tus descuentos aplicados.
           </p>
         </div>
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
             <FileDown className="h-4 w-4" />
             Descargar PDF
@@ -95,7 +95,7 @@ const MiDescuento = () => {
           <Button className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white shadow-lg shadow-cyan-500/20">
             Justificar Reciente
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Stats Grid */}
