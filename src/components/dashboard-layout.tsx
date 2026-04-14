@@ -364,10 +364,10 @@ const MENU_CONFIG: MenuItem[] = [
         title: "Descuento Grupos",
         href: "/dashboard/asistencia/descuentos/grupos",
       },
-      {
-        title: "Historial Descuentos",
-        href: "/dashboard/asistencia/descuentos/historial",
-      },
+      // {
+      //   title: "Historial Descuentos",
+      //   href: "/dashboard/asistencia/descuentos/historial",
+      // },
     ]
   }
 ]
