@@ -1,16 +1,12 @@
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import axios from 'axios'
 import { 
-  Users, 
   Search, 
   FileSpreadsheet, 
   Building2,
-  DollarSign,
-  Loader2,
-  AlertCircle,
   SortAsc,
   SortDesc
 } from 'lucide-react'
@@ -89,7 +85,7 @@ const DescuentoGrupos = () => {
         }))
         setData(mappedData)
       } catch (err) {
-        setError("Error de red.")
+        setError(`Error de red. ${err}`)
       } finally {
         setLoading(false)
       }

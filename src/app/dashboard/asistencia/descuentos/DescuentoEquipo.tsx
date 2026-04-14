@@ -1,13 +1,10 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Users, 
-  AlertTriangle, 
   BarChart3, 
-  ArrowUpRight,
-  ArrowDownRight,
   MoreHorizontal,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -22,7 +19,6 @@ export interface Descuentos {
   alias:  string;
   motivo: string;
   monto:  number;
-  // estado: string;
   minutosTardanza?: number;
   minutosPermiso?: number;
 }
@@ -68,6 +64,12 @@ const DescuentoEquipo = () => {
     }).finally(() => setIsLoading(false));
   }, [colaboradores])
 
+  const getPorcentajeEquipoConDescuento = useMemo<string>(() => {
+    const porcentaje = data?.length === undefined ? 1 : data.length / colaboradores.length * 100
+    return porcentaje.toFixed(2);
+  }, [data])
+  
+
   return (
     <motion.div 
       initial="hidden"
@@ -97,7 +99,7 @@ const DescuentoEquipo = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main List */}
-        <Card className="lg:col-span-2 border-none shadow-sm h-full">
+        <Card className="lg:col-span-2 border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Colaboradores</CardTitle>
@@ -109,8 +111,8 @@ const DescuentoEquipo = () => {
               onChange={(e) => setName(e.target.value)}
             />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4 overflow-auto h-110 scroll-smooth">
+          <CardContent className='overflow-y-scroll sm:h-100 md:h-200'>
+            <div className="space-y-4 ">
               {colaboradores.filter(v => v.usuario.startsWith(name.toUpperCase())).map((member, i) => (
                 <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer group">
                   <div className="flex items-center gap-4">
@@ -158,11 +160,16 @@ const DescuentoEquipo = () => {
                         </div>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                      onClick={() => {setDetailModalIsOpen({info: data?.filter(v => v[0] === member.usuario)[0][1]!, isOpen: true})}}
-                      >
-                      <MoreHorizontal size={18}/>
-                    </Button>
+                    {
+                      data?.some(v => v[0] === member.usuario) ?
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                          onClick={() => {setDetailModalIsOpen({info: data?.filter(v => v[0] === member.usuario)[0][1] || [], isOpen: true})}}
+                          >
+                          <MoreHorizontal size={18}/>
+                        </Button>
+                      : <div className="h-8 w-8">
+                        </div>
+                    }
                   </div>
                   <Detailmodal
                     details={detailIsOpen.info}
@@ -184,50 +191,23 @@ const DescuentoEquipo = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* <div className="space-y-2">
+              <div className="space-y-2">
                 <div className="flex justify-between text-xs font-medium">
-                  <span className="text-slate-400">Puntualidad Global</span>
-                  <span className="text-cyan-400">82%</span>
+                  <span className="text-slate-400">Procentaje de equipo con descuento</span>
+                  <span className="text-cyan-400">{getPorcentajeEquipoConDescuento}%</span>
                 </div>
                 <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-cyan-500 h-full rounded-full" style={{ width: '82%' }} />
+                  <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${getPorcentajeEquipoConDescuento}%` }} />
                 </div>
-              </div> */}
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Total Descuentos</p>
-                  <p className="text-xl font-bold mt-1 tracking-tight">S/ {data?.map(v => v[1]).map(v => v?.reduce((prev, curr) => prev + curr.monto,0)).reduce((prev, curr) => prev! + curr!, 0)?.toFixed(2)}</p>
-                </div>
-                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Alertas Críticas</p>
-                  <p className="text-xl font-bold mt-1 tracking-tight text-amber-400">3</p>
+                <div className="bg-slate-800/50 p-3 col-span-2 rounded-lg border border-slate-700/50">
+                  <p className="text-[12px] text-slate-400 uppercase font-bold">Total Descuentos</p>
+                  <p className="text-2xl font-bold mt-1 tracking-tight">S/ {data?.map(v => v[1]).map(v => v?.reduce((prev, curr) => prev + curr.monto,0)).reduce((prev, curr) => prev! + curr!, 0)?.toFixed(2)}</p>
                 </div>
               </div>
               
-              {/* <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white border-none shadow-lg shadow-cyan-900/40">
-                Ver Análisis Detallado
-              </Button> */}
-            </CardContent>
-          </Card>
-          
-          <Card className="border-none shadow-sm overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <AlertTriangle className="text-amber-500" size={16} />
-                Acciones Requeridas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-500">
-                <p className="text-xs text-amber-800 dark:text-amber-200">
-                  <strong>Juan Perez</strong> ha superado el límite de 3 tardanzas injustificadas.
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" variant="outline" className="h-7 text-[10px] py-0 border-amber-200">Enviar Correo</Button>
-                  <Button size="sm" className="h-7 text-[10px] py-0 bg-amber-600 hover:bg-amber-700 border-none">Notificar RRHH</Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

@@ -16,7 +16,6 @@ interface Props {
 export const Detailmodal = ({ details = [], isOpen, onClose }: Props) => {
 
   const hasData = details.length > 0;
-  console.log(details)
   return (
     <AnimatePresence>
       {isOpen && (

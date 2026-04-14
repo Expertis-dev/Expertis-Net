@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   BadgePercent, 
-  Calendar, 
   Search, 
   FileDown, 
   Clock,
   CheckCircle2,
   AlertCircle,
+  AlertCircleIcon,
+  TimerOff,
+  TimerIcon,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +24,7 @@ export interface HistorialDescuentos {
   motivo: string;
   monto:  number;
   estado: string;
+  minutos: number;
 }
 
 const MiDescuento = () => {
@@ -29,20 +32,20 @@ const MiDescuento = () => {
   const [data, setData] = useState<HistorialDescuentos[]>([])
   const [isLoading, setIsLoading] = useState(false)
   useEffect(() => {
-    const getDataMisDescuentos = async (alias: string): Promise<HistorialDescuentos[]> => {
+    const getDataMisDescuentos = async (): Promise<HistorialDescuentos[]> => {
       const today = new Date();
       const monthNumber = today.getMonth() + 1
-      const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteDescuentos/${monthNumber}/${user?.usuario!}`).then(r => r.json())
+      const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteDescuentos/${monthNumber}/${user?.usuario || ""}`).then(r => r.json())
       console.log(data)
       return data;
     }
 
     setIsLoading(true)
-    getDataMisDescuentos(user?.usuario!).then((res) => {
+    getDataMisDescuentos().then((res) => {
       setData(res)
       setIsLoading(false)
     }).finally(() => setIsLoading(false))
-  }, [])
+  }, [user?.usuario])
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -61,12 +64,6 @@ const MiDescuento = () => {
     visible: { opacity: 1, x: 0 }
   }
 
-  // Datos de ejemplo para el diseño "Premium"
-  const stats = [
-    { title: 'Total Descuentos Mes', value: data.reduce((acc, curr) => acc += curr.monto, 0), icon: BadgePercent, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { title: 'Días Afectados', value: `${data.length} Días`, icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { title: 'Justificaciones Pendientes', value: '1', icon: Clock, color: 'text-sky-500', bg: 'bg-sky-50' },
-  ]
 
   const historial = {
     'Confirmado': {icon: AlertCircle, color: 'text-amber-500' },
@@ -103,23 +100,51 @@ const MiDescuento = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((stat, i) => (
-          <motion.div key={i} variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <Card className="border-none shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.title}</p>
-                    <h3 className="text-2xl font-bold mt-1">{stat.title === "Total Descuentos Mes" ? "S/" : ""} {isNaN(+stat.value) ? stat.value : Number(stat.value).toFixed(2)}</h3>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total descuento</p>
+                    <h3 className="text-2xl font-bold mt-1">S/ {data.reduce((acc, curr) => acc += curr.monto, 0).toFixed(2)}</h3>
                   </div>
-                  <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform dark:bg-zinc-900`}>
-                    <stat.icon size={24}/>
+                  <div className={`p-3 rounded-2xl bg-rose-50 text-rose-500 group-hover:scale-110 transition-transform dark:bg-zinc-900`}>
+                    <BadgePercent size={24}/>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        ))}
+          <motion.div variants={itemVariants} className=''>
+            <Card className="border-none shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tardanzas Injustificadas Mes</p>
+                    <h3 className="text-2xl font-bold mt-1">{data.reduce((acc, curr) => curr.motivo === "Tardanza injustificada" ? acc + 1 : acc, 0)} Días</h3>
+                  </div>
+                  <div className={`p-3 rounded-2xl bg-amber-50 text-amber-500 group-hover:scale-110 transition-transform dark:bg-zinc-900`}>
+                    <TimerIcon size={24}/>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+          <motion.div variants={itemVariants} className=''>
+            <Card className="border-none shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Faltas Injustificadas Mes</p>
+                    <h3 className="text-2xl font-bold mt-1">{data.reduce((acc, curr) => curr.motivo === "Falta injustificada" ? acc + 1 : acc, 0)} Días</h3>
+                  </div>
+                  <div className={`p-3 rounded-2xl bg-red-50 text-red-500 group-hover:scale-110 transition-transform dark:bg-zinc-900`}>
+                    <TimerOff size={24}/>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden">
@@ -137,11 +162,12 @@ const MiDescuento = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-center">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800">
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Fecha</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Motivo</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Minutos</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">Monto</th>
                 </tr>
               </thead>
@@ -150,11 +176,16 @@ const MiDescuento = () => {
                   <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 text-sm">{row.fecha}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 justify-self-center">
                         {row.motivo === "Tardanza Justificada" ? <historial.Justificado.icon className={historial.Confirmado.color}/> : <></>}
                         {row.motivo === "Tardanza injustificada" ? <historial.EnRevision.icon className={historial.Confirmado.color}/> : <></>}
+                        {row.motivo === "Falta injustificada" ? <AlertCircleIcon className="text-red-500"/> : <></>}
                         <span className="text-sm font-medium">{row.motivo}</span>
                       </div>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{row.minutos + "'"}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-bold text-rose-600 dark:text-rose-400">S/. {row.monto.toFixed(2)}</span>
