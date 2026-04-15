@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, Percent } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,8 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback"
-
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Descuentos" | "Feeback"
 type Permisos = Partial<Record<Modulo, string[]>>
 
 interface SubItem {
@@ -47,8 +46,9 @@ interface MenuItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: SubItem[]
-  modulo?: Modulo       // permiso a nivel de módulo padre
-  permiso?: string      // permiso a nivel de módulo padre
+  modulo?: Modulo
+  permiso?: string
+
 }
 
 // Leer permisos desde localStorage (JSON)
@@ -389,6 +389,40 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     ]
   },
 
+  {
+    id: "descuentos",
+    title: "Descuentos",
+    icon: Percent,
+    href: "#",
+    modulo: "Descuentos",
+    permiso: "Descuento-ver",
+    subItems: [
+      {
+        title: "Mi Descuento",
+        href: "/dashboard/asistencia/descuentos/mi-descuento",
+        modulo: "Descuentos",
+        permiso: "DescuentoUsuario-ver"
+      },
+      {
+        title: "Descuento Equipo",
+        href: "/dashboard/asistencia/descuentos/equipo",
+        modulo: "Descuentos",
+        permiso: "DescuentoEquipo-ver"
+      },
+      {
+        title: "Descuento Grupos",
+        href: "/dashboard/asistencia/descuentos/grupos",
+        modulo: "Descuentos",
+        permiso: "DescuentoReporte-ver"
+      },
+      // {
+      //   title: "Historial Descuentos",
+      //   href: "/dashboard/asistencia/descuentos/historial",
+      // },
+    ]
+  }
+
+
   /*{
     id: "mcp",
     title: "Consultas Expertito",
@@ -396,6 +430,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     href: "/dashboard/consultas",
     subItems: [], // sin permiso → acceso libre
   },*/
+
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================
@@ -527,7 +562,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
-
+          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+            return null
+          }
           const filteredSubItems = menu.subItems.filter((sub) => {
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
