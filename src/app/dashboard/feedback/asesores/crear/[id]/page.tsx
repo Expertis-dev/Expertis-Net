@@ -1,6 +1,5 @@
 "use client"
 import { CrearFbAsesorForm, Form as FormRutina} from "@/components/feedback/asesor/crear/CrearFbAsesorForm";
-import { CrearFbNegativoAsesorForm,  Form as FormNegativo} from "@/components/feedback/asesor/crear/CrearFbNegativoAsesorForm";
 import { Colaborador, HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
 import { useUser } from "@/Provider/UserProvider";
 import { ArrowLeft } from "lucide-react";
@@ -24,13 +23,6 @@ type DataFb =
     | (DataFbBase & { tipoEvaluacion: "RUTINA"; resultadoEvaluacion: string })
     | (DataFbBase & { tipoEvaluacion: "NEGATIVO"; resultadoEvaluacion: string })
 
-interface DataFbNegativo {
-    puntualidad:          string;
-    indicadoresPurecloud: string;
-    indicadoresGestion:   string;
-    calidadLlamadas:      string;
-}
-
 interface DataFbRutina {
     recupero:                string;
     recuperoMeta:            string;
@@ -52,7 +44,7 @@ export default function EditarFeedbackAsesorPage({params}: {
 }) {
     const {id: idFeedback} = use(params)
     const [currentFeedback, setCurrentFeedback] = useState("rutina")
-    const [form, setForm] = useState<FormRutina | FormNegativo>()
+    const [form, setForm] = useState<FormRutina>()
     const [data, setData] = useState<DataFbBase>()
     const [modal, setModal] = useState({
         isOpen: false,
@@ -77,38 +69,23 @@ export default function EditarFeedbackAsesorPage({params}: {
     const [periodoRutina, setPeriodoRutina] = useState(toMonthValue(today))
     const [periodoNegativa, setPeriodoNegativa] = useState(toDateValue(today))
 
-    const isFormRutina = (value?: FormRutina | FormNegativo): value is FormRutina =>
-        value !== undefined && "recupero" in value
-
-    const isFormNegativo = (value?: FormRutina | FormNegativo): value is FormNegativo =>
-        value !== undefined && "puntualidad" in value
     
-    const parseFeedback = (data: DataFb): FormNegativo | FormRutina => {
-        if (data.tipoEvaluacion === "RUTINA") {
-            const resultadoEvaluacion: DataFbRutina = JSON.parse(data.resultadoEvaluacion)
-            return {
-                calidadCierre: resultadoEvaluacion.calidadCierre,
-                calidadCierrePromedio: resultadoEvaluacion.calidadCierrePromedio,
-                calidadPdp: resultadoEvaluacion.calidadPdp,
-                calidadPdpPromedio: resultadoEvaluacion.calidadPdpPromedio,
-                faltasInjustificadas: resultadoEvaluacion.faltasInjustificadas,
-                observacionesGenerales: data.observacionesGenerales,
-                produccionPdp: resultadoEvaluacion.produccionPdp,
-                produccionPdpPromedio: resultadoEvaluacion.produccionPdpPromedio,
-                recupero: resultadoEvaluacion.recupero,
-                recuperoMeta: resultadoEvaluacion.recuperoMeta,
-                tardanzasInjustificadas: resultadoEvaluacion.tardanzasInjustificadas,
-                ticketDePdp: resultadoEvaluacion.ticketDePdp,
-                ticketDePdpPromedio: resultadoEvaluacion.ticketDePdpPromedio
-            }
-        }
-        const resultadoEvaluacion: DataFbNegativo = JSON.parse(data.resultadoEvaluacion)
+    const parseFeedback = (data: DataFb): FormRutina => {
+        const resultadoEvaluacion: DataFbRutina = JSON.parse(data.resultadoEvaluacion)
         return {
-            calidadLlamadas: resultadoEvaluacion.calidadLlamadas,
-            indicadoresGestion: resultadoEvaluacion.indicadoresGestion,
-            indicadoresPurecloud: resultadoEvaluacion.indicadoresPurecloud,
-            observaciones: data.observacionesGenerales,
-            puntualidad: resultadoEvaluacion.puntualidad
+            calidadCierre: resultadoEvaluacion.calidadCierre,
+            calidadCierrePromedio: resultadoEvaluacion.calidadCierrePromedio,
+            calidadPdp: resultadoEvaluacion.calidadPdp,
+            calidadPdpPromedio: resultadoEvaluacion.calidadPdpPromedio,
+            faltasInjustificadas: resultadoEvaluacion.faltasInjustificadas,
+            observacionesGenerales: data.observacionesGenerales,
+            produccionPdp: resultadoEvaluacion.produccionPdp,
+            produccionPdpPromedio: resultadoEvaluacion.produccionPdpPromedio,
+            recupero: resultadoEvaluacion.recupero,
+            recuperoMeta: resultadoEvaluacion.recuperoMeta,
+            tardanzasInjustificadas: resultadoEvaluacion.tardanzasInjustificadas,
+            ticketDePdp: resultadoEvaluacion.ticketDePdp,
+            ticketDePdpPromedio: resultadoEvaluacion.ticketDePdpPromedio
         }
     }
 
@@ -151,26 +128,16 @@ export default function EditarFeedbackAsesorPage({params}: {
                 setPeriodoNegativa={setPeriodoNegativa}
                 periodoDisabled={true}
             />
-            {
-                (currentFeedback === "rutina" && form) ? 
-                <CrearFbAsesorForm
-                    asesor={asesor}
-                    modal={modal}
-                    router={router}
-                    setModal={setModal}
-                    defaultValues={isFormRutina(form) ? form : undefined}
-                    periodoSeleccionado={periodoRutina}
-                />
-                :
-                <CrearFbNegativoAsesorForm
-                    modal={modal}
-                    router={router}
-                    setModal={setModal}
-                    asesor={asesor}
-                    defaultFields={isFormNegativo(form) ? form : undefined}
-                    periodoSeleccionado={periodoNegativa}
-                />
-            }
+            
+            <CrearFbAsesorForm
+                asesor={asesor}
+                modal={modal}
+                router={router}
+                setModal={setModal}
+                defaultValues={form}
+                periodoSeleccionado={periodoRutina}
+                currentFeedback={currentFeedback}
+            />
         </div>
     );
 }

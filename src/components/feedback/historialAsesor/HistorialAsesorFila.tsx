@@ -41,14 +41,6 @@ export const HistorialAsesorFila = ({ esSupervisor, estado, idFeedback, periodo,
 
     return (
         <div className={`grid grid-cols-${esSupervisor ? 3 : 4} px-3 py-0.5 items-center border-b hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors justify-items-center`}>
-            {
-                esSupervisor ?
-                    <></>
-                    :
-                    <div className="flex justify-between md:block">
-                        <span className={`${tipoFeedback === "NEGATIVO" ? "text-red-500" : "text-green-500"}`}>{tipoFeedback}</span>
-                    </div>
-            }
             <div className="flex justify-between md:block">
                 <span>{(new Date(periodo)).toISOString().slice(0,7)}</span>
             </div>

@@ -1,6 +1,5 @@
 "use client"
 import { CrearFbAsesorForm } from "@/components/feedback/asesor/crear/CrearFbAsesorForm";
-import { CrearFbNegativoAsesorForm } from "@/components/feedback/asesor/crear/CrearFbNegativoAsesorForm";
 import { Colaborador, HeaderCrearFbAsesor } from "@/components/feedback/asesor/crear/HeaderCrearFbAsesor";
 import { useUser } from "@/Provider/UserProvider";
 import { ArrowLeft } from "lucide-react";
@@ -47,22 +46,14 @@ export default function CrearFeedbackAsesorPage() {
                 setPeriodoNegativa={setPeriodoNegativa}
             />
             {
-                currentFeedback === "rutina" ?
-                    <CrearFbAsesorForm
-                        asesor={asesor}
-                        modal={modal}
-                        router={router}
-                        setModal={setModal}
-                        periodoSeleccionado={periodoRutina}
-                    />
-                    :
-                    <CrearFbNegativoAsesorForm
-                        modal={modal}
-                        router={router}
-                        setModal={setModal}
-                        asesor={asesor}
-                        periodoSeleccionado={periodoNegativa}
-                    />
+                <CrearFbAsesorForm
+                    asesor={asesor}
+                    modal={modal}
+                    router={router}
+                    setModal={setModal}
+                    periodoSeleccionado={periodoRutina}
+                    currentFeedback={currentFeedback}
+                />
             }
         </div>
     );
