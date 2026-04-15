@@ -128,9 +128,9 @@ export default function EscuchaFormularioPage() {
                         >
                             {Math.trunc(timer / 60)}:{(timer % 60) < 10 ? `0${timer % 60}`: timer % 60}
                         </span>
-                        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-lg border border-border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                        {/* <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-lg border border-border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
                             Mínimo requerido: 17:00
-                        </div>
+                        </div> */}
                     </div>
                     <button
                         onClick={() => onFinishForm()}
@@ -211,108 +211,139 @@ export default function EscuchaFormularioPage() {
                     </div>
                 </div>
             </div>
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-between">
-                    <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        Criterios de Evaluación
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                            Progreso:
-                        </span>
-                        <div className="w-24 h-1.5 bg-muted rounded-full">
-                            <div
-                                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                                style={{
-                                    width: `${Object.keys(Object.fromEntries(form)).length / preguntas.length * 100}%`,
-                                }}
-                            />
+            <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden transition-colors duration-300">
+            {/* Header: Progreso */}
+            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+                </div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    Criterios de Evaluación
+                </h3>
+                </div>
+
+                <div className="flex items-center gap-4 bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                    Progreso Total
+                    </span>
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    {(Object.keys(Object.fromEntries(form)).length / preguntas.length * 100).toFixed(1)}%
+                    </span>
+                </div>
+                <div className="w-32 h-2.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                    <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${(Object.keys(Object.fromEntries(form)).length / preguntas.length) * 100}%` }}
+                    />
+                </div>
+                </div>
+            </div>
+            <div className="flex flex-row gap-2 mb-4 mx-4">
+                {
+                    criterios.map((v) => (
+                        <div className={`px-2 py-1 border rounded-2xl cursor-pointer ${selectedCriterio === v ? "bg-blue-200 text-blue-800" : "bg-blue-50 text-blue-600"}`}
+                            onClick={() => setSelectedCriterio(v)}
+                        >
+                            <p>{v}</p>
                         </div>
-                        <span className="text-[10px] font-black text-emerald-600">
-                            {(Object.keys(Object.fromEntries(form)).length / preguntas.length * 100).toFixed(2)}%
+                    ))
+                }
+            </div>
+
+            {/* Cuerpo del Formulario */}
+            <div className="relative">
+                {criterios.map((criterio, i, arr) => {
+                if (criterio !== selectedCriterio) return null;
+                return (
+                    <div key={criterio} className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
+                    
+                    {/* Título del Criterio Actual */}
+                    <div className="px-6 py-3 bg-sky-50 dark:bg-sky-500/10 border-y border-sky-100 dark:border-sky-500/20 flex justify-center">
+                        <span className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-400">
+                        Sección: {criterio}
                         </span>
                     </div>
-                </div>
-                <div className="divide-y divide-border/50 flex flex-row">
-                    {criterios.map((criterio, i, arr) => {
-                        if (criterio !== selectedCriterio) return;
-                        return (
-                            <div key={criterio} className="flex-1">
-                                <div className="flex border-y bg-sky-100 border-zinc-300">
-                                    <h1 className="px-4 py-1.5 self-center">{criterio}</h1>
-                                </div>
-                                <div className="flex flex-row">
-                                <div className="flex-initial flex bg-sky-50 hover:bg-sky-400 cursor-pointer group border-r border-blue-300 transition"
-                                    onClick={() => setSelectedCriterio(i !== 0 ? arr[i - 1] : arr[0])}
-                                >
-                                    <ArrowLeft className="text-sky-600 group-hover:text-sky-500  group-hover:animate-pulse self-center animate-pulse "/>
+
+                    <div className="flex flex-row min-h-[400px]">
+                        {/* Botón Navegación Izquierda */}
+                        <button
+                        onClick={() => setSelectedCriterio(i !== 0 ? arr[i - 1] : arr[0])}
+                        className="flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-r border-zinc-200 dark:border-zinc-800 transition-all group"
+                        >
+                        <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:-translate-x-1 transition-transform" />
+                        </button>
+
+                        {/* Lista de Preguntas */}
+                        <div className="flex-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+                        {preguntas.map((item, idx) => {
+                            if (item.grupo !== criterio) return null;
+                            const isSelectedSi = form.get(idx) === "SI";
+                            const isSelectedNo = form.get(idx) === "NO";
+
+                            return (
+                            <div key={idx} className="p-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors">
+                                <div className="flex flex-col lg:flex-row justify-between gap-6">
+                                <div className="space-y-1.5">
+                                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
+                                    {item.criterio}
+                                    </p>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+                                    {item.descripcion}
+                                    </p>
                                 </div>
 
-                                <div className="flex flex-col flex-1">
+                                {/* Selectores SI/NO */}
+                                <div className="flex items-center gap-4 self-end lg:self-center">
+                                    {/* Botón SI */}
+                                    <label className="relative flex flex-col items-center gap-1.5 cursor-pointer group">
+                                    <input
+                                        type="radio"
+                                        name={`item-${idx}`}
+                                        className="hidden peer"
+                                        onChange={() => onInputChange(idx, "SI")}
+                                        checked={isSelectedSi}
+                                    />
+                                    <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
+                                        <Check className={`w-6 h-6 ${isSelectedSi ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
+                                    </div>
+                                    <span className={`text-[10px] font-bold uppercase ${isSelectedSi ? 'text-emerald-600' : 'text-zinc-500'}`}>Sí</span>
+                                    </label>
 
-                                {preguntas.map((item, idx) => {
-                                    if (item.grupo !== criterio) return
-                                    return (
-                                        <div
-                                        key={idx}
-                                        className="p-4 hover:bg-muted/10 transition-colors space-y-3"
-                                        >
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                                            <div className="flex flex-col">
-                                                <p className="text-[13px] font-semibold text-foreground max-w-2xl leading-tight">
-                                                    {item.criterio}
-                                                </p>
-                                                <p className="text-[11px] text-foreground max-w-2xl leading-tight mt-1">
-                                                    {item.descripcion}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <label className="flex items-center gap-2 cursor-pointer group">
-                                                    <input
-                                                        type="radio"
-                                                        name={`item-${idx}`}
-                                                        className="hidden peer"
-                                                        onChange={() => onInputChange(idx, "SI")}
-                                                        checked={form.get(idx) === "SI"}
-                                                        />
-                                                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center border border-border peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 shadow-sm transition-all active:scale-90">
-                                                        <Check className="w-5 h-5 opacity-40 peer-checked:opacity-100" />
-                                                    </div>
-                                                    <span className="text-[11px] font-black text-muted-foreground uppercase peer-checked:text-emerald-600 tracking-tighter">
-                                                        Sí
-                                                    </span>
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer group">
-                                                    <input
-                                                        type="radio"
-                                                        name={`item-${idx}`}
-                                                        className="hidden peer"
-                                                        onChange={() => onInputChange(idx, "NO")}
-                                                        checked={form.get(idx) === "NO"}
-                                                        />
-                                                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center border border-border peer-checked:bg-destructive peer-checked:text-white peer-checked:border-destructive shadow-sm transition-all active:scale-90">
-                                                        <X className="w-5 h-5 opacity-40 peer-checked:opacity-100" />
-                                                    </div>
-                                                    <span className="text-[11px] font-black text-muted-foreground uppercase peer-checked:text-destructive tracking-tighter">
-                                                        No
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                    {/* Botón NO */}
+                                    <label className="relative flex flex-col items-center gap-1.5 cursor-pointer group">
+                                    <input
+                                        type="radio"
+                                        name={`item-${idx}`}
+                                        className="hidden peer"
+                                        onChange={() => onInputChange(idx, "NO")}
+                                        checked={isSelectedNo}
+                                    />
+                                    <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
+                                        <X className={`w-6 h-6 ${isSelectedNo ? 'text-red-600 dark:text-red-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
                                     </div>
-                                )})}
+                                    <span className={`text-[10px] font-bold uppercase ${isSelectedNo ? 'text-red-600' : 'text-zinc-500'}`}>No</span>
+                                    </label>
                                 </div>
-                                    <div className="flex-initial flex bg-sky-50 hover:bg-sky-400 cursor-pointer group border-l border-blue-300 transition"
-                                        onClick={() => setSelectedCriterio(i !== (arr.length - 1) ? arr[i + 1] : arr[arr.length - 1])}
-                                    >
-                                        <ArrowRight className="text-sky-600 group-hover:text-gray-900  group-hover:animate-pulse self-center animate-pulse"/>
-                                    </div>
                                 </div>
+                            </div>
+                            );
+                        })}
+                        </div>
+
+                        {/* Botón Navegación Derecha */}
+                        <button
+                        onClick={() => setSelectedCriterio(i !== (arr.length - 1) ? arr[i + 1] : arr[arr.length - 1])}
+                        className="flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-l border-zinc-200 dark:border-zinc-800 transition-all group"
+                        >
+                        <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:translate-x-1 transition-transform" />
+                        </button>
                     </div>
-                    )
-                    })}
-                </div>
+                    </div>
+                );
+                })}
+            </div>
             </div>
             <ValidationErrorModal
                 setValidationError={setValidationError}
