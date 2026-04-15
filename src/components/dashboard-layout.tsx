@@ -29,8 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Descuentos"
-
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Descuentos" | "Feeback"
 type Permisos = Partial<Record<Modulo, string[]>>
 
 interface SubItem {
@@ -47,8 +46,9 @@ interface MenuItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: SubItem[]
-  modulo?: Modulo,
+  modulo?: Modulo
   permiso?: string
+
 }
 
 // Leer permisos desde localStorage (JSON)
@@ -97,7 +97,7 @@ export const tienePermiso = (
 
 // ================== CONFIGURACIÓN DEL MENÚ ==================
 
-const MENU_CONFIG: MenuItem[] = [
+const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuItem[] => [
   {
     id: "home",
     title: "Home",
@@ -162,6 +162,12 @@ const MENU_CONFIG: MenuItem[] = [
         permiso: "ReporteStaff-ver",
       },
       {
+        title: "Reporte Call Mensual",
+        href: "/dashboard/asistencia/ReporteCallMensual",
+        modulo: "Asistencia",
+        permiso: "ReporteStaff-ver",
+      },
+      {
         title: "Alertas",
         href: "/dashboard/asistencia/alertas",
         modulo: "Asistencia",
@@ -209,6 +215,40 @@ const MENU_CONFIG: MenuItem[] = [
         permiso: "Justificacion-ver",
       }
     ],
+  },
+  {
+    id: "feedback",
+    title: "Feedback",
+    icon: BookIcon,
+    href: "/dashboards/feedback",
+    modulo: "Feeback",
+    permiso: "Feeback-ver",
+    subItems: [
+      {
+        title: "Feedback Asesores",
+        href: `/dashboard/feedback/asesores?${usrInsert ? `usuario=${usrInsert}` : ""}`,
+        modulo: "Feeback",
+        permiso: "FeedbackAsesores-ver"
+      },
+      {
+        title: "Feedback Supervisores",
+        href: "/dashboard/feedback/supervisores",
+        modulo: "Feeback",
+        permiso: "FeedbacksSupervisores-ver"
+      },
+      {
+        title: "Historial Feedback Supervisor",
+        href: `/dashboard/feedback/historialSupervisores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksSuper-ver"
+      },
+      {
+        title: "Historial Feedback Asesor",
+        href: `/dashboard/feedback/historialAsesores/${idEmpleado}`,
+        modulo: "Feeback",
+        permiso: "MisFeedbacksAsesor-ver"
+      },
+    ]
   },
   {
     id: "speech",
@@ -348,6 +388,7 @@ const MENU_CONFIG: MenuItem[] = [
 
     ]
   },
+
   {
     id: "descuentos",
     title: "Descuentos",
@@ -380,6 +421,16 @@ const MENU_CONFIG: MenuItem[] = [
       // },
     ]
   }
+
+
+  /*{
+    id: "mcp",
+    title: "Consultas Expertito",
+    icon: Bot,
+    href: "/dashboard/consultas",
+    subItems: [], // sin permiso → acceso libre
+  },*/
+
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================
@@ -485,7 +536,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getMenuItems = (): MenuItem[] => {
     // Mientras no haya user, solo mostramos Home para evitar flickers raros
     if (!user) {
-      return MENU_CONFIG.filter((item) => item.id === "home")
+      return MENU_CONFIG(user, user).filter((item) => item.id === "home")
     }
     const permisos = getPermisosFromStorage()
     const speechPermisos = getSpeechPermisos()
@@ -494,9 +545,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return required.some((permiso) => speechPermisos.includes(permiso))
     }
     return (
-      MENU_CONFIG
+      MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
+            // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
+            // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
+            if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
+              return null
+            }
+
+            // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
+            if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+              return null
+            }
+
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
@@ -504,11 +566,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             return null
           }
           const filteredSubItems = menu.subItems.filter((sub) => {
-            // Muestra "Reporte Staff" solo a CAROLINA PICHILINGUE
-            // if (sub.title === "Reporte Staff") {
-            //   return false
-            // }
-
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
             }
