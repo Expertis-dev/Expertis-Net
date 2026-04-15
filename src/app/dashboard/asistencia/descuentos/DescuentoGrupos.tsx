@@ -88,7 +88,7 @@ const DescuentoGrupos = () => {
         setError(null)
         const today = new Date();
         const monthNumber = today.getMonth() + 1
-        const response: ReporteDescuento[] = (await axios.get(`http://localhost:5000/api/reporteDescuentos/${monthNumber}`)).data
+        const response: ReporteDescuento[] = (await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reporteDescuentos/${monthNumber}`)).data
         const mappedData = response.map((item) => ({
           id: item.documento,
           name: item.alias || 'Sin nombre',
