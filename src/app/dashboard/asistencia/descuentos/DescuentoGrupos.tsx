@@ -3,9 +3,9 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import axios from 'axios'
-import { 
-  Search, 
-  FileSpreadsheet, 
+import {
+  Search,
+  FileSpreadsheet,
   Building2,
   SortAsc,
   SortDesc
@@ -14,13 +14,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
 import {
   Select,
@@ -35,13 +35,13 @@ import { saveAs } from "file-saver"
 
 
 export interface ReporteDescuento {
-  documento:            string;
-  alias:                string;
-  grupo:                string;
-  agencia:              Agencia;
+  documento: string;
+  alias: string;
+  grupo: string;
+  agencia: Agencia;
   totalMinutosTardanza: number;
-  totalDiasFalta:       number;
-  totalMinutosPermiso:  number;
+  totalDiasFalta: number;
+  totalMinutosPermiso: number;
 }
 
 export enum Agencia {
@@ -67,7 +67,19 @@ const DescuentoGrupos = () => {
   const [data, setData] = useState<mappedData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortOrder, setSortOrder] = useState('desc') 
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [userRole, setUserRole] = useState('')
+
+  useEffect(() => {
+    try {
+      const singleRol = localStorage.getItem('rol')
+      if (singleRol) {
+        // Quitamos comillas dobles y simples en caso de que esté guardado como JSON string
+        const cleanRole = singleRol.replace(/['"]/g, '').trim().toUpperCase()
+        setUserRole(cleanRole)
+      }
+    } catch (e) { }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,7 +109,7 @@ const DescuentoGrupos = () => {
     fetchData()
   }, [])
 
-  const calculateDiscounts = (row: {sueldo: number, tardanzas: number, faltas: number, permisos: number}) => {
+  const calculateDiscounts = (row: { sueldo: number, tardanzas: number, faltas: number, permisos: number }) => {
     const sueldo = parseFloat(String(row.sueldo)) || 0
     const pagoPorDia = sueldo / 30
     const pagoPorHora = pagoPorDia / 8
@@ -116,7 +128,7 @@ const DescuentoGrupos = () => {
 
   const handleSueldoChange = (id: string, value: string) => {
     const cleanValue = +value.replace(/[^0-9.]/g, '')
-    setData(prev => prev.map(item => 
+    setData(prev => prev.map(item =>
       item.id === id ? { ...item, sueldo: cleanValue } : item
     ))
   }
@@ -124,7 +136,15 @@ const DescuentoGrupos = () => {
   const filteredData = useMemo(() => {
     const filtered = data.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesAgencia = agenciaFilter === 'TODAS' || item.agencia === agenciaFilter
+
+      let matchesAgencia = agenciaFilter === 'TODAS' || item.agencia === agenciaFilter
+
+      if (userRole === 'JEFE DE OPERACIONES') {
+        matchesAgencia = item.agencia === 'EXPERTIS'
+      } else if (userRole === 'JEFE DE OPERACIONES BPO') {
+        matchesAgencia = item.agencia === 'EXPERTIS BPO'
+      }
+
       const matchesGrupo = grupoFilter === 'TODOS' || item.grupo === grupoFilter
       return matchesSearch && matchesAgencia && matchesGrupo
     })
@@ -157,17 +177,17 @@ const DescuentoGrupos = () => {
   const onClickDownloadExcel = () => {
     const aoaData: string[][] = [];
     const headers = [
-        "DNI",
-        "Asesor / Empleado",
-        "Agencia	Grupo",
-        "Tar(m)",
-        "Fal(d)",
-        "Per(m)",
-        "Sueldo Base",
-        "Dscto.Tard",
-        "Dscto.Falt",
-        "Dscto.Perm",
-        "TOTAL"
+      "DNI",
+      "Asesor / Empleado",
+      "Agencia	Grupo",
+      "Tar(m)",
+      "Fal(d)",
+      "Per(m)",
+      "Sueldo Base",
+      "Dscto.Tard",
+      "Dscto.Falt",
+      "Dscto.Perm",
+      "TOTAL"
     ];
     aoaData.push(headers)
     const row = data.map(v => {
@@ -176,7 +196,7 @@ const DescuentoGrupos = () => {
         permisos,
         tardanzas,
         total
-      } = calculateDiscounts({faltas: v.faltas, permisos: v.permisos, sueldo: v.sueldo, tardanzas: v.tardanzas})
+      } = calculateDiscounts({ faltas: v.faltas, permisos: v.permisos, sueldo: v.sueldo, tardanzas: v.tardanzas })
       return Object.values({
         dni: String(v.id),
         asesor: String(v.name),
@@ -202,9 +222,9 @@ const DescuentoGrupos = () => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       className="space-y-3"
       style={{ zoom: '0.9' }}
     >
@@ -216,7 +236,7 @@ const DescuentoGrupos = () => {
           </div>
           <h1 className="text-base font-bold text-slate-900 dark:text-white">Descuentos por Grupo</h1>
         </div>
-        
+
         <div className="flex items-center gap-2 flex-1 justify-end">
           <div className="bg-slate-900 dark:bg-slate-800 px-3 py-1.5 rounded-md flex items-center gap-2 border border-slate-700 shadow-sm">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Descuentos:</span>
@@ -226,16 +246,18 @@ const DescuentoGrupos = () => {
           <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
 
           <div className="flex items-center gap-1.5 flex-wrap justify-end">
-            <Select value={agenciaFilter} onValueChange={setAgenciaFilter}>
-              <SelectTrigger className="h-8 rounded-md w-32 bg-slate-50 border-slate-200 text-[10px] px-2">
-                <SelectValue placeholder="Agencia" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODAS" className="text-[10px]">Agencias (Todas)</SelectItem>
-                <SelectItem value="EXPERTIS" className="text-[10px]">EXPERTIS</SelectItem>
-                <SelectItem value="EXPERTIS BPO" className="text-[10px]">EXPERTIS BPO</SelectItem>
-              </SelectContent>
-            </Select>
+            {userRole !== 'JEFE DE OPERACIONES' && userRole !== 'JEFE DE OPERACIONES BPO' && (
+              <Select value={agenciaFilter} onValueChange={setAgenciaFilter}>
+                <SelectTrigger className="h-8 rounded-md w-32 bg-slate-50 border-slate-200 text-[10px] px-2">
+                  <SelectValue placeholder="Agencia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODAS" className="text-[10px]">Agencias (Todas)</SelectItem>
+                  <SelectItem value="EXPERTIS" className="text-[10px]">EXPERTIS</SelectItem>
+                  <SelectItem value="EXPERTIS BPO" className="text-[10px]">EXPERTIS BPO</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={grupoFilter} onValueChange={setGrupoFilter}>
               <SelectTrigger className="h-8 rounded-md w-32 bg-slate-50 border-slate-200 text-[10px] px-2">
@@ -252,8 +274,8 @@ const DescuentoGrupos = () => {
 
             <div className="relative w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-              <Input 
-                placeholder="Buscar asesor..." 
+              <Input
+                placeholder="Buscar asesor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8 h-8 rounded-md bg-slate-50 border-slate-200 text-[10px]"
@@ -286,7 +308,7 @@ const DescuentoGrupos = () => {
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Tard</TableHead>
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Falt</TableHead>
                   <TableHead className="font-bold text-rose-500 text-right text-[10px] uppercase">Dscto.Perm</TableHead>
-                  <TableHead 
+                  <TableHead
                     className="font-bold text-indigo-600 text-right pr-4 cursor-pointer hover:bg-slate-100/50 transition-colors select-none text-[10px] uppercase"
                     onClick={toggleSort}
                   >
@@ -305,15 +327,14 @@ const DescuentoGrupos = () => {
                       <TableCell className="py-1 px-4">
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded-full bg-indigo-500 dark:bg-indigo-700 flex items-center justify-center text-[8px] text-white font-bold">
-                            {row.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+                            {row.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </div>
                           <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px] whitespace-nowrap">{row.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`rounded-full border-none px-2 py-0 text-[8px] font-bold ${
-                          row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600 dark:bg-blue-700 dark:text-blue-300' : 'bg-purple-50 text-purple-600'
-                        }`}>
+                        <Badge variant="outline" className={`rounded-full border-none px-2 py-0 text-[8px] font-bold ${row.agencia === 'EXPERTIS' ? 'bg-blue-50 text-blue-600 dark:bg-blue-700 dark:text-blue-300' : 'bg-purple-50 text-purple-600'
+                          }`}>
                           {row.agencia === 'EXPERTIS' ? 'EXP' : 'BPO'}
                         </Badge>
                       </TableCell>
@@ -326,8 +347,8 @@ const DescuentoGrupos = () => {
                       <TableCell className="text-center text-slate-500 dark:text-slate-300 text-[10px]">{row.faltas}</TableCell>
                       <TableCell className="text-center text-slate-500 dark:text-slate-300 text-[10px]">{row.permisos}</TableCell>
                       <TableCell>
-                        <Input 
-                          type="text" 
+                        <Input
+                          type="text"
                           inputMode="numeric"
                           value={row.sueldo}
                           onChange={(e) => handleSueldoChange(row.id, e.target.value)}
@@ -338,11 +359,10 @@ const DescuentoGrupos = () => {
                       <TableCell className="text-right font-mono text-[9px] text-slate-400 dark:text-slate-300">-{dsctos.faltas}</TableCell>
                       <TableCell className="text-right font-mono text-[9px] text-slate-400 dark:text-slate-300">-{dsctos.permisos}</TableCell>
                       <TableCell className="text-right pr-4">
-                        <Badge className={`border-none px-2 font-bold text-[10px] h-6 min-w-[55px] justify-center ${
-                          row.computedTotal <= 0 
-                            ? 'bg-emerald-50 text-emerald-600' 
-                            : 'bg-rose-50 text-rose-600 dark:bg-rose-800 dark:text-rose-200'
-                        }`}>
+                        <Badge className={`border-none px-2 font-bold text-[10px] h-6 min-w-[55px] justify-center ${row.computedTotal <= 0
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : 'bg-rose-50 text-rose-600 dark:bg-rose-800 dark:text-rose-200'
+                          }`}>
                           S/ {row.computedTotal.toFixed(2)}
                         </Badge>
                       </TableCell>

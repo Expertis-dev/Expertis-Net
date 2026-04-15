@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, Percent } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, Percent, BookIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -175,6 +175,38 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
       },
 
     ],
+  },
+  {
+    id: "descuentos",
+    title: "Descuentos",
+    icon: Percent,
+    href: "#",
+    modulo: "Descuentos",
+    permiso: "Descuento-ver",
+    subItems: [
+      {
+        title: "Mi Descuento",
+        href: "/dashboard/asistencia/descuentos/mi-descuento",
+        modulo: "Descuentos",
+        permiso: "DescuentoUsuario-ver"
+      },
+      {
+        title: "Descuento Equipo",
+        href: "/dashboard/asistencia/descuentos/equipo",
+        modulo: "Descuentos",
+        permiso: "DescuentoEquipo-ver"
+      },
+      {
+        title: "Descuento Grupos",
+        href: "/dashboard/asistencia/descuentos/grupos",
+        modulo: "Descuentos",
+        permiso: "DescuentoReporte-ver"
+      },
+      // {
+      //   title: "Historial Descuentos",
+      //   href: "/dashboard/asistencia/descuentos/historial",
+      // },
+    ]
   },
   {
     id: "bases",
@@ -387,39 +419,6 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
       },
 
     ]
-  },
-
-  {
-    id: "descuentos",
-    title: "Descuentos",
-    icon: Percent,
-    href: "#",
-    modulo: "Descuentos",
-    permiso: "Descuento-ver",
-    subItems: [
-      {
-        title: "Mi Descuento",
-        href: "/dashboard/asistencia/descuentos/mi-descuento",
-        modulo: "Descuentos",
-        permiso: "DescuentoUsuario-ver"
-      },
-      {
-        title: "Descuento Equipo",
-        href: "/dashboard/asistencia/descuentos/equipo",
-        modulo: "Descuentos",
-        permiso: "DescuentoEquipo-ver"
-      },
-      {
-        title: "Descuento Grupos",
-        href: "/dashboard/asistencia/descuentos/grupos",
-        modulo: "Descuentos",
-        permiso: "DescuentoReporte-ver"
-      },
-      // {
-      //   title: "Historial Descuentos",
-      //   href: "/dashboard/asistencia/descuentos/historial",
-      // },
-    ]
   }
 
 
@@ -548,16 +547,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
-            // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
-            // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-            if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
-              return null
-            }
+          // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
+          // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
+          if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
+            return null
+          }
 
-            // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
-            if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
-              return null
-            }
+          // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
+          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+            return null
+          }
 
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
