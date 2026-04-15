@@ -78,7 +78,7 @@ const DescuentoGrupos = () => {
         const cleanRole = singleRol.replace(/['"]/g, '').trim().toUpperCase()
         setUserRole(cleanRole)
       }
-    } catch (e) { }
+    } catch { }
   }, [])
 
   useEffect(() => {
@@ -156,7 +156,7 @@ const DescuentoGrupos = () => {
       if (sortOrder === 'asc') return a.computedTotal - b.computedTotal
       return b.computedTotal - a.computedTotal
     })
-  }, [data, searchTerm, agenciaFilter, grupoFilter, sortOrder])
+  }, [data, searchTerm, agenciaFilter, grupoFilter, sortOrder, userRole])
 
   const totalDescuentos = useMemo(() => {
     return filteredData.reduce((acc, row) => acc + row.computedTotal, 0).toFixed(2)
