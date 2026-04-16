@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useUser } from "@/Provider/UserProvider";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isToday, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { getFeriado } from "@/lib/holidays";
 import * as XLSX from "xlsx";
@@ -423,8 +423,10 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         const index: Record<string, Record<string, JustificacionRegistro[]>> = {};
         (justificaciones || []).forEach(j => {
             if (!j.fecha) return;
-            const dateObj = parseISO(j.fecha);
+            const dateObj = new Date(j.fecha.replace('Z', ''));
+            
             if (!isSameMonth(dateObj, currentDate)) return;
+            
             const dayKey = j.fecha.split("T")[0].split(" ")[0];
             const keys = [normalizeKey(j.asesor), normalizeKey(j.codigoEmpleado)];
             keys.forEach(key => {
@@ -437,7 +439,6 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
         });
         return index;
     }, [justificaciones, currentDate]);
-
     /**
      * PROCESAMIENTO DE LA MATRIZ DE ASISTENCIA
      * Cruza la data plana del backend con los días del calendario.
@@ -465,7 +466,6 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 });
                 return acc;
             }, {} as Record<string, JustificacionRegistro[]>);
-
             matrix[colab.usuario] = {
                 horarioBase: config.entrada,
                 asistencias: {}
@@ -634,7 +634,7 @@ const ReporteGrupal = ({ colaboradores }: ReporteProps) => {
                 }
 
                 if (justificacionesDelDia.length > 0) {
-                    matrix[colab.usuario].asistencias[dayStr] = {
+                     matrix[colab.usuario].asistencias[dayStr] = {
                         type: 'justificacion',
                         sigla: 'J',
                         label: detalleJustificacion,
