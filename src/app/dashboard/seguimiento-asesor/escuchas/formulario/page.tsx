@@ -1,49 +1,99 @@
 "use client";
 import { TimeComponent } from "@/components/seguimiento-asesor/escuchas/formulario/TimeComponent";
 import { ValidationErrorModal } from "@/components/seguimiento-asesor/escuchas/formulario/ValidationErrorModal";
-import { Button } from "@/components/ui/button";
 import { useColaboradores } from "@/hooks/useColaboradores";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     ArrowLeft,
     ArrowRight,
-    ArrowRightCircleIcon,
     Calendar,
+    CalendarDays,
     Check,
     CheckCircle2,
     ChevronLeft,
     Clock,
+    Link2,
     Save,
-    Speaker,
     Timer,
+    TimerReset,
     Users,
-    Volume1Icon,
     Volume2Icon,
     X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { preguntas } from "./preguntas";
-
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { useUser } from "@/Provider/UserProvider";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
-const formTime = 10 * 60;
-const minFormTime = 2.5 * 60;
+export const formTime = 10 * 60;
+const minFormTime = 2 * 60;
+const TIMER_WARNING_THRESHOLD = Math.floor((5 * 60) / 2);
+const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
+
+type AudioFormValues = {
+    audioUrl: string;
+    audioDate: string;
+    audioDuration: string;
+};
+
+const PURECLOUD_URL_REGEX =
+    /^https:\/\/apps\.mypurecloud\.com\/directory\/#\/analytics\/interactions\/[0-9a-fA-F-]{36}\/admin\?tabId=[0-9a-fA-F-]{36}$/;
+const MINUTES_SECONDS_REGEX = /^\d+:[0-5]\d$/;
+
 
 
 export default function EscuchaFormularioPage() {
     const { colaboradores, loading } = useColaboradores();
-    const [currentAdvisorId, setCurrentAdvisorId] = useState<string>();
+    const [currentAdvisorId, setCurrentAdvisorId] = useState<string>("");
 
     const [validationError, setValidationError] = useState<string | null>(null)
     const [form, setForm] = useState<Map<number, string>>(new Map());
     const startTime = useRef(new Date());
     const [timer, setTimer] = useState(formTime);
     const [selectedCriterio, setSelectedCriterio] = useState<string>(criterios[0])
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isTimeExpired, setIsTimeExpired] = useState(false);
+    const {user} = useUser()
+    const hasTimedOutRef = useRef(false);
+    const hasNavigatedRef = useRef(false);
+    const submitEscuchaRef = useRef<((options?: { forceExit?: boolean }) => Promise<void>) | null>(null);
 
     const router = useRouter();
+    const selectedAdvisor = colaboradores.find((a) => a.usuario === currentAdvisorId);
+    const {
+        register,
+        formState: { errors },
+        watch,
+        getValues,
+        getFieldState,
+        trigger,
+    } = useForm<AudioFormValues>({
+        defaultValues: {
+            audioUrl: "",
+            audioDate: "",
+            audioDuration: "",
+        },
+    });
+    const audioUrlValue = watch("audioUrl");
+    const isLocked = isSubmitting || isTimeExpired;
+    const elapsedTime = formTime - timer;
+
+    const navigateBack = () => {
+        if (hasNavigatedRef.current) return;
+
+        hasNavigatedRef.current = true;
+        router.back();
+        window.setTimeout(() => {
+            router.replace(FALLBACK_ROUTE);
+        }, 250);
+    };
 
     const onInputChange = (idx: number, value: string) => {
+        if (isLocked) return;
+
         const newForm = new Map(form);
 
         newForm.set(idx, value);
@@ -53,38 +103,130 @@ export default function EscuchaFormularioPage() {
         setForm(newForm);
     };
 
-    useEffect(() => {
-        const intervalKey = setInterval(() => {
-            setTimer(timer - 1);
-        }, 1000);
-        if (timer === 0) {
-            clearInterval(intervalKey);
-            // Ejecutar envio de formulario
-        }
+    const getAudioErrorMessage = () => {
+        return (
+            getFieldState("audioUrl").error?.message ||
+            getFieldState("audioDate").error?.message ||
+            getFieldState("audioDuration").error?.message ||
+            "Completa correctamente los datos del audio."
+        );
+    };
 
-        return () => clearInterval(intervalKey);
-    }, [timer, setTimer]);
+    const submitEscucha = async ({ forceExit = false }: { forceExit?: boolean } = {}) => {
+        if (isSubmitting) return;
 
-    const onFinishForm = () => {
-        // Subir el formulario
-        console.log(!!currentAdvisorId)
+        const audioFieldsAreValid = await trigger(["audioUrl", "audioDate", "audioDuration"]);
+
         if (!currentAdvisorId) {
-            setValidationError("Selecciona un asesor")
+            if (forceExit) {
+                toast.error("Tiempo agotado. No se guardo la escucha porque no se selecciono asesor.");
+                navigateBack();
+                return;
+            }
+            setValidationError("Selecciona un asesor");
             return;
-        };
-        if (formTime - timer <= minFormTime) {
-            setValidationError("Tiempo minimo para responder el registro es de 2:30 minutos");
-            return
         }
-    }
+
+        if (elapsedTime <= minFormTime) {
+            if (forceExit) {
+                toast.error("Tiempo agotado. No se guardo la escucha porque no cumplio el tiempo minimo.");
+                navigateBack();
+                return;
+            }
+            setValidationError("Tiempo minimo para responder el registro es de 2:30 minutos");
+            return;
+        }
+
+        if (!audioFieldsAreValid) {
+            const errorMessage = getAudioErrorMessage();
+            if (forceExit) {
+                toast.error(`Tiempo agotado. ${errorMessage}`);
+                navigateBack();
+                return;
+            }
+            setValidationError(errorMessage);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const formulario = preguntas.map((v, i) => ({criterio: v.criterio, respuesta: Object.fromEntries(form)[i] || null}))
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crear-escucha`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    turno: "",
+                    asesor: selectedAdvisor?.usuario || "",
+                    supervisor: user?.usuario,
+                    hora_inicio: startTime.current.toISOString().split("T")[1].split(".")[0].slice(0,-3),
+                    hora_fin: (new Date()).toISOString().split("T")[1].split(".")[0].slice(0,-3),
+                    tiempo_duracion: formTime - timer,
+                    formulario,
+                    link_audio: getValues("audioUrl"),
+                    fecha_audio: getValues("audioDate"),
+                    duracion_audio: getValues("audioDuration")
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("No se pudo guardar la escucha");
+            }
+
+            toast.success("Escucha guardada");
+            navigateBack();
+        } catch {
+            toast.error("Error al guardar la escucha");
+            if (forceExit) {
+                navigateBack();
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    submitEscuchaRef.current = submitEscucha;
+
+    useEffect(() => {
+        if (isTimeExpired) return;
+
+        const intervalKey = window.setInterval(() => {
+            setTimer((currentTime) => {
+                if (currentTime <= 1) {
+                    window.clearInterval(intervalKey);
+                    return 0;
+                }
+
+                return currentTime - 1;
+            });
+        }, 1000);
+
+        return () => window.clearInterval(intervalKey);
+    }, [isTimeExpired]);
+
+    useEffect(() => {
+        if (timer === TIMER_WARNING_THRESHOLD) {
+            toast.info("quedan menos de 2:30 minutos");
+        }
+
+        if (timer === 60) {
+            toast.error("quedan menos de 1 minuto");
+        }
+        if (timer !== 0 || hasTimedOutRef.current) return;
+
+        hasTimedOutRef.current = true;
+        setIsTimeExpired(true);
+        toast.info("Se acabo el tiempo, cerrando formulario...");
+        void submitEscuchaRef.current?.({ forceExit: true });
+    }, [timer]);
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => navigateBack()}
                         className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                        disabled={isLocked}
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -98,7 +240,7 @@ export default function EscuchaFormularioPage() {
                                 FECHA: {new Date().toLocaleDateString()}
                             </span>
                             <span className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[9px] font-black border border-primary/20 uppercase">
-                                "TURNO: 1"
+                                TURNO: 1
                             </span>
                             <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg text-[9px] font-black border border-emerald-500/20 flex items-center gap-1.5">
                                 <Clock className="w-3 h-3" />
@@ -133,11 +275,12 @@ export default function EscuchaFormularioPage() {
                         </div> */}
                     </div>
                     <button
-                        onClick={() => onFinishForm()}
-                        className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95"
+                        onClick={() => void submitEscucha()}
+                        className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={isLocked}
                     >
                         <Save className="w-4 h-4" />
-                        Finalizar
+                        {isSubmitting ? "Guardando..." : "Finalizar"}
                     </button>
                 </div>
             </div>
@@ -154,7 +297,7 @@ export default function EscuchaFormularioPage() {
                                 setCurrentAdvisorId(e.target.value)
                             }
                             className="w-full bg-muted border-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 ring-primary transition-all outline-none appearance-none cursor-pointer font-semibold"
-                            disabled={loading}
+                            disabled={loading || isLocked}
                         >
                             <option value="">
                                 {loading
@@ -182,16 +325,16 @@ export default function EscuchaFormularioPage() {
                             className="flex items-center gap-3 bg-primary/5 p-3 rounded-xl border border-primary/10 shadow-sm min-w-[200px]"
                         >
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                {colaboradores.find((a) => a.usuario === currentAdvisorId,)?.usuario.split(" ")[0][0]}
-                                {colaboradores.find((a) => a.usuario === currentAdvisorId,)?.usuario.split(" ")[1][0]}
+                                {selectedAdvisor?.usuario.split(" ")[0][0]}
+                                {selectedAdvisor?.usuario.split(" ")[1]?.[0] ?? ""}
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-primary uppercase tracking-tighter leading-none">
                                     SELECCIONADO
                                 </p>
                                 <h4 className="text-sm font-bold mt-0.5">
-                                    {colaboradores.find((a) => a.usuario === currentAdvisorId,)?.usuario.split(" ")[0]}{" "}
-                                    {colaboradores.find((a) => a.usuario === currentAdvisorId,)?.usuario.split(" ")[1]}
+                                    {selectedAdvisor?.usuario.split(" ")[0]}{" "}
+                                    {selectedAdvisor?.usuario.split(" ")[1]}
                                 </h4>
                             </div>
                         </motion.div>
@@ -204,10 +347,105 @@ export default function EscuchaFormularioPage() {
                         Seleccionar Audio
                     </label>
                     <div className="px-1">
-                        <div className="flex flex-row gap-4">
-                            <Volume2Icon className="w-4 h-4 text-muted-foreground self-center" />
-                            <p>PONER AUDIO DE 2 MIN minimo AQUI</p>
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                                    URL de PureCloud
+                                </label>
+                                <div className="relative">
+                                    <Link2 className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <input
+                                        type="url"
+                                        placeholder="https://apps.mypurecloud.com/directory/#/analytics/interactions/..."
+                                        {...register("audioUrl", {
+                                            required: "Ingresa la URL del audio.",
+                                            validate: (value) =>
+                                                PURECLOUD_URL_REGEX.test(value.trim()) ||
+                                                "La URL debe tener el formato de interaccion de PureCloud.",
+                                        })}
+                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 ${errors.audioUrl ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        disabled={isLocked}
+                                    />
+                                </div>
+                                {!!errors.audioUrl?.message ?
+                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioUrl ? "text-destructive" : "text-muted-foreground"}`}>
+                                    {errors.audioUrl?.message}
+                                </p>: <></>
+                                }
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                                    Fecha de la escucha
+                                </label>
+                                <div className="relative">
+                                    <CalendarDays className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <input
+                                        min={(() => {
+                                            const ayerDate = new Date();
+                                            ayerDate.setDate(ayerDate.getDate() - 1);
+                                            const ayer = ayerDate.toISOString().split('T')[0];
+                                            return ayer
+                                        })()}
+                                        max={(new Date()).toISOString().split('T')[0]}
+                                        type="date"
+                                        {...register("audioDate", {
+                                            required: "Selecciona la fecha del audio.",
+                                        })}
+                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-semibold outline-none transition-all ${errors.audioDate ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        disabled={isLocked}
+                                    />
+                                </div>
+                                {!!errors.audioDate?.message ?
+                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioDate ? "text-destructive" : "text-muted-foreground"}`}>
+                                    {errors.audioDate?.message}
+                                </p>: <></>
+                                }
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                                    Duracion
+                                </label>
+                                <div className="relative">
+                                    <TimerReset className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="2:30"
+                                        {...register("audioDuration", {
+                                            required: "Ingresa la duracion del audio.",
+                                            validate: (value) =>
+                                                MINUTES_SECONDS_REGEX.test(value.trim()) ||
+                                                "Usa el formato min:seg, por ejemplo 2:30.",
+                                        })}
+                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-16 py-3 text-sm font-semibold outline-none transition-all ${errors.audioDuration ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        disabled={isLocked}
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                        min:seg
+                                    </span>
+                                </div>
+                                {!!errors.audioDuration?.message ?
+                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioDuration ? "text-destructive" : "text-muted-foreground"}`}>
+                                    {errors.audioDuration?.message}
+                                </p>: <></>
+                                }
+                            </div>
                         </div>
+                        {audioUrlValue?.trim() && !errors.audioUrl ? (
+                            <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                                <Volume2Icon className="w-4 h-4 text-emerald-600 mt-0.5" />
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                                        URL validada
+                                    </p>
+                                    <p className="text-xs text-emerald-700/80 break-all">
+                                        {audioUrlValue}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             </div>
@@ -240,15 +478,41 @@ export default function EscuchaFormularioPage() {
                 </div>
                 </div>
             </div>
-            <div className="flex flex-row gap-2 mb-4 mx-4">
+            <div className="flex flex-wrap gap-2 my-2 mx-4">
                 {
-                    criterios.map((v) => (
-                        <div className={`px-2 py-1 border rounded-2xl cursor-pointer ${selectedCriterio === v ? "bg-blue-200 text-blue-800" : "bg-blue-50 text-blue-600"}`}
+                    criterios.map((v) => {
+                        const preguntasContestadas = preguntas.reduce((prev, curr, currI) => (Object.keys(Object.fromEntries(form)).filter((val) => +val === currI && curr.grupo === v).length) ? prev + 1 : prev, 0)
+                        const totalPreguntas = preguntas.filter(p => p.grupo === v).length
+                        return (
+                        <div
+                            key={v}
                             onClick={() => setSelectedCriterio(v)}
-                        >
-                            <p>{v}</p>
+                            className={`
+                                group flex items-center gap-3 px-4 py-2 border-2 transition-all duration-200 rounded-xl cursor-pointer
+                                ${selectedCriterio === v 
+                                ? "border-blue-500 bg-blue-50 shadow-sm  dark:bg-blue-900" 
+                                : "border-transparent bg-gray-50 dark:bg-zinc-600 hover:bg-gray-100 text-gray-600"}
+                            `}
+                            >
+                            {/* Texto del Criterio */}
+                            <span className={`text-sm font-medium transition-colors ${selectedCriterio === v ? "text-blue-700 dark:text-blue-200" : "text-gray-700 dark:text-gray-300"}`}>
+                                {v}
+                            </span>
+
+                            {/* Badge de Progreso */}
+                            <div className={`
+                                flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border
+                                ${preguntasContestadas === totalPreguntas 
+                                ? "bg-green-100 dark:bg-green-500 border-green-200 dark:border-green-600 text-green-700 dark:text-green-100" 
+                                : "bg-amber-100 dark:bg-orange-500/80 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-200"}
+                            `}>
+                                {preguntasContestadas === totalPreguntas ? (
+                                    <Check size={15} className="dark:text-green-900"/>
+                                ) : null}
+                                {preguntasContestadas} / {totalPreguntas}
+                            </div>
                         </div>
-                    ))
+                    )})
                 }
             </div>
 
@@ -266,11 +530,12 @@ export default function EscuchaFormularioPage() {
                         </span>
                     </div>
 
-                    <div className="flex flex-row min-h-[400px]">
+                    <div className="flex flex-row">
                         {/* Botón Navegación Izquierda */}
                         <button
-                        onClick={() => setSelectedCriterio(i !== 0 ? arr[i - 1] : arr[0])}
-                        className="flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-r border-zinc-200 dark:border-zinc-800 transition-all group"
+                        onClick={() => setSelectedCriterio(arr[(i - 1 + arr.length) % arr.length])}
+                        className="hover:border hover:border-blue-300 cursor-pointer flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-r border-zinc-200 dark:border-zinc-800 transition-all group"
+                        disabled={isLocked}
                         >
                         <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:-translate-x-1 transition-transform" />
                         </button>
@@ -297,13 +562,14 @@ export default function EscuchaFormularioPage() {
                                 {/* Selectores SI/NO */}
                                 <div className="flex items-center gap-4 self-end lg:self-center">
                                     {/* Botón SI */}
-                                    <label className="relative flex flex-col items-center gap-1.5 cursor-pointer group">
+                                    <label className={`relative flex flex-col items-center gap-1.5 group ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                                     <input
                                         type="radio"
                                         name={`item-${idx}`}
                                         className="hidden peer"
                                         onChange={() => onInputChange(idx, "SI")}
                                         checked={isSelectedSi}
+                                        disabled={isLocked}
                                     />
                                     <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
                                         <Check className={`w-6 h-6 ${isSelectedSi ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
@@ -312,13 +578,14 @@ export default function EscuchaFormularioPage() {
                                     </label>
 
                                     {/* Botón NO */}
-                                    <label className="relative flex flex-col items-center gap-1.5 cursor-pointer group">
+                                    <label className={`relative flex flex-col items-center gap-1.5 group ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                                     <input
                                         type="radio"
                                         name={`item-${idx}`}
                                         className="hidden peer"
                                         onChange={() => onInputChange(idx, "NO")}
                                         checked={isSelectedNo}
+                                        disabled={isLocked}
                                     />
                                     <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
                                         <X className={`w-6 h-6 ${isSelectedNo ? 'text-red-600 dark:text-red-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
@@ -334,8 +601,9 @@ export default function EscuchaFormularioPage() {
 
                         {/* Botón Navegación Derecha */}
                         <button
-                        onClick={() => setSelectedCriterio(i !== (arr.length - 1) ? arr[i + 1] : arr[arr.length - 1])}
-                        className="flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-l border-zinc-200 dark:border-zinc-800 transition-all group"
+                        onClick={() => setSelectedCriterio(arr[(i + 1) % arr.length])}
+                        className="hover:border hover:border-blue-300 cursor-pointer flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-l border-zinc-200 dark:border-zinc-800 transition-all group"
+                        disabled={isLocked}
                         >
                         <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:translate-x-1 transition-transform" />
                         </button>
