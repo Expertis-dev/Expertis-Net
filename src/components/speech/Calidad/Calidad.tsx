@@ -22,9 +22,11 @@ import {
   FileText,
   Eye,
   Filter as FilterIcon,
+  Info,
   LineChart,
   List,
   Loader2,
+  MessageSquare,
   PlayCircle,
   PhoneCall,
   Search,
@@ -61,6 +63,8 @@ import { cn } from "@/lib/utils"
 import { agruparPorAsesor, calcularKPIsGenerales, distribuirPorCuartiles } from "./utils/CalidadCalculos"
 import type { SpeechCalidadDetalle } from "@/types/speech/analytics"
 import type { CalidadAsesorAgrupado, CalidadRegistroAgrupable } from "./utils/CalidadCalculos"
+import { CALIDAD_PESOS_GRUPO } from "./utils/calidadPesos"
+import { parseCalidadObservacion, type CalidadObservacionParseada } from "./utils/calidadObservacionParser"
 
 type ColumnFilters = Record<string, string[] | undefined>
 type ColumnSearch = Record<string, string>
@@ -134,6 +138,14 @@ type CalidadRegistroNormalizado = CalidadRegistroAgrupable & {
 
 type VistaDato = CalidadRegistroNormalizado | CalidadAsesorAgrupado
 type PdfWithAutoTable = jsPDF & { lastAutoTable?: { finalY: number } }
+type CalidadAsesorConCriterios = CalidadAsesorAgrupado & {
+  apertura?: number
+  actitud?: number
+  negociacion?: number
+  comunicacionefectiva?: number
+  cierre?: number
+  cumplimientonormativo?: number
+}
 
 const LOGO_PATH = '/icono-logo.png';
 
@@ -195,6 +207,24 @@ const promedioValores = (valores: (number | string)[]) => {
     .filter((valor) => Number.isFinite(valor));
   if (!numeros.length) return 0;
   return Number((numeros.reduce((acc, val) => acc + val, 0) / numeros.length).toFixed(1));
+};
+
+const calcularPromedioCriterioGrupo = (
+  llamadas: CalidadRegistroAgrupable[],
+  key: keyof CalidadRegistroNormalizado,
+  fallbackKey?: keyof CalidadRegistroNormalizado
+) => {
+  return promedioValores(
+    llamadas.map((llamada) => {
+      const value = (llamada as CalidadRegistroNormalizado)[key];
+      if (value != null) return value as number | string;
+      if (fallbackKey) {
+        const fallbackValue = (llamada as CalidadRegistroNormalizado)[fallbackKey];
+        if (fallbackValue != null) return fallbackValue as number | string;
+      }
+      return 0;
+    })
+  );
 };
 
 const calcularEvolutivoSemanal = (
@@ -322,6 +352,9 @@ export const Calidad = () => {
   const [visualizandoPdf, setVisualizandoPdf] = useState<string | null>(null);
   const [modalTranscripcionAbierto, setModalTranscripcionAbierto] = useState(false);
   const [contenidoTranscripcion, setContenidoTranscripcion] = useState('');
+  const [modalObservacionAbierto, setModalObservacionAbierto] = useState(false);
+  const [contenidoObservacion, setContenidoObservacion] = useState<CalidadObservacionParseada | null>(null);
+  const [textoObservacionRaw, setTextoObservacionRaw] = useState('');
   const logoDataUrlRef = useRef<string | ArrayBuffer | null>(null);
   const loadLogo = useCallback(async (): Promise<string | ArrayBuffer | null> => {
     if (logoDataUrlRef.current) {
@@ -786,7 +819,18 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     if (modoVista === 'detalle') {
       return datosFiltradosPrincipales;
     } else {
-      return agruparPorAsesor(datosFiltradosPrincipales);
+      return agruparPorAsesor(datosFiltradosPrincipales).map((grupo) => {
+        const llamadas = grupo.llamadas ?? [];
+        return {
+          ...grupo,
+          apertura: calcularPromedioCriterioGrupo(llamadas, "apertura"),
+          actitud: calcularPromedioCriterioGrupo(llamadas, "actitud"),
+          negociacion: calcularPromedioCriterioGrupo(llamadas, "negociacion", "desarrollo"),
+          comunicacionefectiva: calcularPromedioCriterioGrupo(llamadas, "comunicacionefectiva"),
+          cierre: calcularPromedioCriterioGrupo(llamadas, "cierre"),
+          cumplimientonormativo: calcularPromedioCriterioGrupo(llamadas, "cumplimientonormativo"),
+        } satisfies CalidadAsesorConCriterios;
+      });
     }
   }, [modoVista, datosFiltradosPrincipales]);
 
@@ -997,20 +1041,28 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
           Promedio: detalle.promedio ?? '',
           Actitud: detalle.actitud ?? '',
           Apertura: detalle.apertura ?? '',
-          Desarrollo: detalle.desarrollo ?? '',
+          Negociacion: detalle.negociacion ?? detalle.desarrollo ?? '',
+          "Comunicacion Efectiva": detalle.comunicacionefectiva ?? '',
           Cierre: detalle.cierre ?? '',
+          "Cumplimiento Normativo": detalle.cumplimientonormativo ?? '',
           Grabación: detalle.grabacion ?? '',
           Resumen: detalle.resumen ?? '',
           Observación: detalle.observacionCalidad ?? '',
         };
       }
-      const general = item as CalidadAsesorAgrupado;
+      const general = item as CalidadAsesorConCriterios;
       return {
         Asesor: general.asesor ?? '',
         Agencia: general.agencia ?? '',
         Supervisor: general.supervisor ?? '',
         Cantidad: general.cantidad ?? '',
         Promedio: general.promedio ?? '',
+        Actitud: general.actitud ?? '',
+        Apertura: general.apertura ?? '',
+        Negociacion: general.negociacion ?? '',
+        "Comunicacion Efectiva": general.comunicacionefectiva ?? '',
+        Cierre: general.cierre ?? '',
+        "Cumplimiento Normativo": general.cumplimientonormativo ?? '',
         Cuartil: general.cuartil ?? '',
       };
     });
@@ -1061,6 +1113,19 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
   const cerrarTranscripcion = () => {
     setModalTranscripcionAbierto(false);
     setContenidoTranscripcion('');
+  };
+
+  const abrirObservacion = (contenido?: string | null) => {
+    const raw = (contenido ?? '').trim();
+    setTextoObservacionRaw(raw || 'No disponible');
+    setContenidoObservacion(parseCalidadObservacion(raw));
+    setModalObservacionAbierto(true);
+  };
+
+  const cerrarObservacion = () => {
+    setModalObservacionAbierto(false);
+    setContenidoObservacion(null);
+    setTextoObservacionRaw('');
   };
 
   const handleActitudChange = (actitud: string) => {
@@ -1181,8 +1246,10 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     { id: 'promedio', label: 'Promedio', filtrable: false },
     { id: 'actitud', label: 'Actitud', filtrable: false },
     { id: 'apertura', label: 'Apertura', filtrable: false },
-    { id: 'desarrollo', label: 'Desarrollo', filtrable: false },
+    { id: 'negociacion', label: 'Negociacion', filtrable: false },
+    { id: 'comunicacionefectiva', label: 'Comunicacion Efectiva', filtrable: false },
     { id: 'cierre', label: 'Cierre', filtrable: false },
+    { id: 'cumplimientonormativo', label: 'Cumplimiento Normativo', filtrable: false },
     { id: 'acciones', label: 'Acciones', filtrable: false }
   ];
 
@@ -1192,6 +1259,12 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     { id: 'supervisor', label: 'Supervisor', filtrable: true },
     { id: 'cantidad', label: 'Cantidad', filtrable: false },
     { id: 'promedio', label: 'Promedio', filtrable: false },
+    { id: 'actitud', label: 'Actitud', filtrable: false },
+    { id: 'apertura', label: 'Apertura', filtrable: false },
+    { id: 'negociacion', label: 'Negociacion', filtrable: false },
+    { id: 'comunicacionefectiva', label: 'Comunicacion Efectiva', filtrable: false },
+    { id: 'cierre', label: 'Cierre', filtrable: false },
+    { id: 'cumplimientonormativo', label: 'Cumplimiento Normativo', filtrable: false },
     { id: 'cuartil', label: 'Cuartil', filtrable: true },
     { id: 'acciones', label: 'Acciones', filtrable: false }
   ];
@@ -1204,6 +1277,22 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
     q3: "border-sky-200 bg-sky-50 text-sky-700",
     q4: "border-emerald-200 bg-emerald-50 text-emerald-700",
   };
+
+  const subcriteriosAgrupadosObservacion = useMemo(() => {
+    if (!contenidoObservacion?.subcriterios?.length) return [];
+    const grouped = new Map<string, typeof contenidoObservacion.subcriterios>();
+    contenidoObservacion.subcriterios.forEach((item) => {
+      const key = item.grupo || "Sin grupo";
+      const current = grouped.get(key) ?? [];
+      current.push(item);
+      grouped.set(key, current);
+    });
+    return Array.from(grouped.entries()).map(([grupo, items]) => ({
+      grupo,
+      pesoGrupo: items.find((sub) => sub.pesoGrupo)?.pesoGrupo ?? null,
+      items,
+    }));
+  }, [contenidoObservacion]);
 
   const EstadoCard = ({
     icon: Icon,
@@ -1469,11 +1558,44 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
         <CardHeader className="flex flex-col gap-4 pb-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <CardTitle>{modoVista === "detalle" ? "Detalle de llamadas auditadas" : "Resumen por asesor"}</CardTitle>
-            <CardDescription>
-              {modoVista === "detalle"
-                ? "Revisa cada llamada con sus criterios de evaluacion."
-                : "Agrupa por asesor para generar feedback y medir cuartiles."}
-            </CardDescription>
+            <div className="mt-1 flex items-center gap-2">
+              <CardDescription>
+                {modoVista === "detalle"
+                  ? "Revisa cada llamada con sus criterios de evaluacion."
+                  : "Agrupa por asesor para generar feedback y medir cuartiles."}
+              </CardDescription>
+              {modoVista === "detalle" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground"
+                      title="Ver pesos por grupo"
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 space-y-2" align="start">
+                    <p className="text-sm font-semibold">Pesos por grupo</p>
+                    <p className="text-xs text-muted-foreground">
+                      Referencia para interpretar la puntuacion de cada criterio en la observacion.
+                    </p>
+                    <div className="space-y-2">
+                      {CALIDAD_PESOS_GRUPO.map((item) => (
+                        <div
+                          key={item.grupo}
+                          className="flex items-center justify-between rounded-md border bg-muted/30 px-2 py-1 text-sm"
+                        >
+                          <span>{item.grupo}</span>
+                          <Badge variant="outline">{item.pesoGrupo}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -1645,8 +1767,10 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
                             <TableCell>{detalle.promedio}</TableCell>
                             <TableCell>{detalle.actitud}</TableCell>
                             <TableCell>{detalle.apertura}</TableCell>
-                            <TableCell>{detalle.desarrollo}</TableCell>
+                            <TableCell>{detalle.negociacion ?? detalle.desarrollo}</TableCell>
+                            <TableCell>{detalle.comunicacionefectiva}</TableCell>
                             <TableCell>{detalle.cierre}</TableCell>
+                            <TableCell>{detalle.cumplimientonormativo}</TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-2">
                                 {detalle.grabacion ? (
@@ -1667,12 +1791,20 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
                                 >
                                   <FileText className="h-4 w-4" />
                                 </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  title="Ver observacion"
+                                  onClick={() => abrirObservacion(detalle.observacionCalidad)}
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
                         )
                       }
-                      const general = fila as CalidadAsesorAgrupado
+                      const general = fila as CalidadAsesorConCriterios
                       const isViewingPdf =
                         visualizandoPdf !== null && visualizandoPdf === (general.asesor || "__DESCONOCIDO__")
                       return (
@@ -1682,6 +1814,12 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
                           <TableCell>{general.supervisor}</TableCell>
                           <TableCell>{general.cantidad}</TableCell>
                           <TableCell>{general.promedio}</TableCell>
+                          <TableCell>{general.actitud}</TableCell>
+                          <TableCell>{general.apertura}</TableCell>
+                          <TableCell>{general.negociacion}</TableCell>
+                          <TableCell>{general.comunicacionefectiva}</TableCell>
+                          <TableCell>{general.cierre}</TableCell>
+                          <TableCell>{general.cumplimientonormativo}</TableCell>
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -1876,6 +2014,87 @@ const feedbackPdfUrlMutation = useFeedbackPdfUrl();
           </div>
           <div className="flex justify-end">
             <Button variant="outline" onClick={cerrarTranscripcion}>
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={modalObservacionAbierto}
+        onOpenChange={(open) => (open ? setModalObservacionAbierto(true) : cerrarObservacion())}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Observacion de calidad</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="text-xs uppercase text-muted-foreground">Observacion</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+                {contenidoObservacion?.observacion || textoObservacionRaw || "No disponible"}
+              </p>
+            </div>
+
+            {contenidoObservacion?.subcriterios?.length ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                    Cumplidos: {contenidoObservacion.subcriterios.filter((sub) => sub.estado === "SI").length}
+                  </Badge>
+                  <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700">
+                    No cumplidos: {contenidoObservacion.subcriterios.filter((sub) => sub.estado === "NO").length}
+                  </Badge>
+                </div>
+
+                <div className="space-y-3">
+                  {subcriteriosAgrupadosObservacion.map((grupo) => (
+                    <div key={grupo.grupo} className="rounded-lg border bg-background p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-foreground">{grupo.grupo}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {grupo.pesoGrupo ? <Badge variant="outline">Peso grupo: {grupo.pesoGrupo}</Badge> : null}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {grupo.items.map((sub, index) => (
+                          <div
+                            key={`${grupo.grupo}-${sub.subcriterio}-${index}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2"
+                          >
+                            <p className="text-sm text-foreground">
+                              {sub.subcriterio}
+                              {sub.pesoItem ? ` (${sub.pesoItem})` : ""}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  sub.estado === "SI"
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : "border-rose-200 bg-rose-50 text-rose-700"
+                                }
+                              >
+                                {sub.estado}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                No se detectaron subcriterios estructurados en la observacion.
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={cerrarObservacion}>
               Cerrar
             </Button>
           </div>
