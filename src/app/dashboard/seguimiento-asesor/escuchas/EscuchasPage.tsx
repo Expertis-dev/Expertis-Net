@@ -10,14 +10,24 @@ import {
     Award,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formTime } from "./formulario/page";
+import { useUser } from "@/Provider/UserProvider";
 
 type FiltersState = {
     searchTerm: string;
     startDate: string;
     endDate: string;
 };
+
+export interface CantidadEscucha {
+    id_rep:                    number | undefined;
+    supervisor:                string | undefined;
+    numeroDeSombrasRealizadas: number;
+    numeroDeSombrasFaltantes:  number;
+    agencia:                   string;
+}
+
 
 export const EscuchasClientPage = () => {
     const router = useRouter();
@@ -27,10 +37,39 @@ export const EscuchasClientPage = () => {
         startDate: "",
         endDate: "",
     });
+    
+    const [escuchasRealizadas, setEscuchasRealizadas] = useState<CantidadEscucha>({
+        id_rep: undefined,
+        supervisor: undefined,
+        numeroDeSombrasRealizadas: 0,
+        numeroDeSombrasFaltantes: 4,
+        agencia: "EXPERTIS"
+    })
+    
+    const {user} = useUser()
+    const fecha = useMemo(() => {
+        const date = (new Date()).toISOString();
+        const formattedDate = date.split('T')[0];
+        return formattedDate
+    }, [])
+
+    useEffect(() => {
+        const fetchNumeroEscuchas = async (): Promise<CantidadEscucha> => {
+            const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-escuchas-realizadas`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({fecha, usuario: user?.usuario || ''})
+            }).then(r => r.json())
+            return data
+        }
+
+        fetchNumeroEscuchas()
+            .then(r => setEscuchasRealizadas(r))
+    }, [])
 
     const onClickRealizar = async () => {
         if (await checkTurnoPermitido(formTime / 60)){
-            router.push("/dashboard/seguimiento-asesor/escuchas/formulario")                
+            router.push(`/dashboard/seguimiento-asesor/escuchas/formulario?id_reporte=${escuchasRealizadas.id_rep}`)
         }else {
             toast.error("No estas dentro del plazo permitido")
         }
@@ -51,7 +90,7 @@ export const EscuchasClientPage = () => {
                                 Cumplimiento
                             </p>
                             <h2 className="text-2xl font-black text-primary mt-1">
-                                50%
+                                {(escuchasRealizadas?.numeroDeSombrasRealizadas / (escuchasRealizadas?.numeroDeSombrasRealizadas + escuchasRealizadas?.numeroDeSombrasFaltantes) * 100).toFixed(2)}%
                             </h2>
                         </div>
                         <Award className="absolute -bottom-2 -right-2 w-16 h-16 text-primary/5 group-hover:text-primary/10 transition-colors" />
@@ -64,12 +103,12 @@ export const EscuchasClientPage = () => {
                         {[
                             {
                                 label: "Hecho",
-                                value: "2",
+                                value: escuchasRealizadas.numeroDeSombrasRealizadas,
                                 color: "bg-emerald-500",
                             },
                             {
                                 label: "Faltante",
-                                value: "2",
+                                value: escuchasRealizadas.numeroDeSombrasFaltantes,
                                 color: "bg-amber-500",
                             },
                         ].map((kpi, index) => (
@@ -87,7 +126,7 @@ export const EscuchasClientPage = () => {
                                     <div
                                         className={`h-full ${kpi.color} rounded-full`}
                                         style={{
-                                            width: `${(parseInt(kpi.value, 10) / 4) * 100}%`,
+                                            width: `${(kpi.value / 4) * 100}%`,
                                         }}
                                     />
                                 </div>
@@ -104,7 +143,7 @@ export const EscuchasClientPage = () => {
                                 Escuchas
                             </p>
                             <span className="bg-primary/10 text-primary px-1.5 rounded text-[11px] font-black">
-                                2 PEND.
+                                {escuchasRealizadas.numeroDeSombrasFaltantes} PEND.
                             </span>
                         </div>
                         <button
@@ -118,9 +157,9 @@ export const EscuchasClientPage = () => {
                 <TableEscuchas filters={filters} />
             </div>
             <ValidationErrorModal
-                            setValidationError={setValidationError}
-                            validationError={validationError}
-                        />
+                setValidationError={setValidationError}
+                validationError={validationError}
+            />
         </div>
     );
 };

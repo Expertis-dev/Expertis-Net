@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
@@ -13,67 +13,66 @@ import {
   X,
   Clock,
   ClipboardCheck,
-  MessageSquare,
   Check,
   MinusCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { CONFIG } from '../formulario/preguntas'
+import { ReporteEscucha, Escucha, Formulario } from '@/components/seguimiento-asesor/escuchas/TableEscuchas'
 
-const FORM_ITEMS = [
-  "Atiende la llamada de manera inmediata",
-  "Buena fluidez (sin tiempos muertos)",
-  "Explica la deuda claramente",
-  "Registra la gestión de manera correcta",
-  "Uso del corporativo (SMS, llamadas)",
-  "Proactividad con el ingreso de gestiones",
-  "Distracciones frecuentes",
-  "Navega de forma ágil en herramientas",
-  "No realiza actividades personales (comer, distraerse, etc.)"
-]
+interface TurnoConfig {
+  id: number
+  inicio: string
+  fin: string
+  nombre: string
+}
 
-export default function JefeOperacionesView() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedGroup, setSelectedGroup] = useState('TODOS')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [data, setData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+const TURNOS: TurnoConfig[] = CONFIG.TURNOS_PERMITIDOS
 
-  const [selectedSupervisor, setSelectedSupervisor] = useState<any>(null)
-  const [selectedFormDetail, setSelectedFormDetail] = useState<any>(null)
 
-  const fetchTotalAcompanamientos = async () => {
-    setIsLoading(true)
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos-total`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: 'OPERACIONES' })
-      })
+export default function JefeOperacionesViewPage() {
+    const [searchTerm, setSearchTerm] = useState<string>('')
+    const [selectedGroup, setSelectedGroup] = useState<string>('TODOS')
+    const [startDate, setStartDate] = useState<string>('')
+    const [endDate, setEndDate] = useState<string>('')
+    const [data, setData] = useState<ReporteEscucha[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(true)
 
-      if (res.ok) {
-        const result = await res.json()
-        setData(result.data || [])
-      } else {
-        toast.error("Error al cargar datos maestros.")
-      }
-    } catch (error) {
-      console.error("Error fetching total details:", error)
+    const [selectedSupervisor, setSelectedSupervisor] = useState<ReporteEscucha | null>(null)
+    const [selectedFormDetail, setSelectedFormDetail] = useState<Escucha | null>(null)
+    
+    const fetchTotalAcompanamientos = async () => {
+        setIsLoading(true)
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas`)
+            
+            if (res.ok) {
+                const result = await res.json()
+                // El endpoint devuelve un array directamente o envuelto en .data
+                const reportes = Array.isArray(result) ? result : result?.data || []
+                console.log("Datos cargados:", reportes)
+                setData(reportes)
+            } else {
+                toast.error("Error al cargar datos maestros.")
+            }
+        } catch (error) {
+            console.error("Error fetching total details:", error)
+            toast.error("Error de conexión")
     } finally {
-      setIsLoading(false)
+        setIsLoading(false)
     }
-  }
+}
 
-  useEffect(() => {
+useEffect(() => {
     fetchTotalAcompanamientos()
-  }, [])
+}, [])
 
-  const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
+const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
 
-  const filteredData = data.filter(item => {
+const filteredData: ReporteEscucha[] = data.filter(item => {
     const matchesSearch = (item.supervisor || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesGroup = selectedGroup === 'TODOS' || item.agencia === selectedGroup
-
+    
     // Filtro de fecha usando comparación de strings (ISO YYYY-MM-DD)
     let matchesDate = true
     const itemDate = item.fecha // Asumimos formato YYYY-MM-DD del backend
@@ -84,7 +83,7 @@ export default function JefeOperacionesView() {
     return matchesSearch && matchesGroup && matchesDate
   })
 
-  const SombraTable = ({ title, sombras }: { title: string, sombras: any[] }) => (
+  const SombraTable = ({ title, sombras }: { title: string; sombras: Escucha[] }) => (
     <div className="space-y-3">
       <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2 px-1">
         <Clock className="w-3.5 h-3.5" />
@@ -101,7 +100,7 @@ export default function JefeOperacionesView() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {sombras.length > 0 ? sombras.map((s, idx) => (
+            {sombras.length > 0 ? sombras.map((s: Escucha, idx: number) => (
               <tr key={idx} className="hover:bg-muted/30 transition-colors">
                 <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio || '--:--'}</td>
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
@@ -206,28 +205,28 @@ export default function JefeOperacionesView() {
                   <th className="py-3.5 px-6">Supervisor</th>
                   <th className="py-3.5 px-6">Grupo</th>
                   <th className="py-3.5 px-6 text-center">Fecha</th>
-                  <th className="py-3.5 px-6 text-center">Turno 1</th>
-                  <th className="py-3.5 px-6 text-center">Turno 2</th>
+                  <th className="py-3.5 px-6 text-center">{TURNOS[0].nombre}</th>
+                  <th className="py-3.5 px-6 text-center">{TURNOS[1].nombre}</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
                   <th className="py-3.5 px-6 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {filteredData.length > 0 ? filteredData.map((item) => {
-                  const initials = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                  const sombras = item.sombra || []
-                  const countT1 = sombras.filter((s: any) => s.turno == 1 || s.turno === '1').length
-                  const countT2 = sombras.filter((s: any) => s.turno == 2 || s.turno === '2').length
-                  const realizados = item.num_realizado || 0
-                  const esperados = item.num_esperado || 6
-                  const metaAlcanzada = realizados >= esperados
+                {filteredData.length > 0 ? filteredData.map((item: ReporteEscucha) => {
+                  const initials: string = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                  const escuchas: Escucha[] = item.escucha || []
+                  const countT1: number = escuchas.filter((s: Escucha) => s.turno === TURNOS[0].nombre).length
+                  const countT2: number = escuchas.filter((s: Escucha) => s.turno === TURNOS[1].nombre).length
+                  const realizados: number = item.num_realizado
+                  const esperados: number = item.min_num
+                  const metaAlcanzada: boolean = realizados >= esperados
 
-                  let status = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
-                  let statusColor = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
+                  const status: string = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
+                  const statusColor: string = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
 
                   return (
-                    <tr key={item.id_acom} className="hover:bg-muted/10 transition-colors group">
+                    <tr key={item.id_reporte_escucha} className="hover:bg-muted/10 transition-colors group">
                       <td className="py-3 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">{initials}</div>
@@ -282,7 +281,7 @@ export default function JefeOperacionesView() {
                     {selectedSupervisor.supervisor}
                   </h2>
                   <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-1">
-                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.num_realizado}/{selectedSupervisor.num_esperado} Realizados
+                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.num_realizado}/{selectedSupervisor.min_num} Realizados
                   </p>
                 </div>
                 <button onClick={() => setSelectedSupervisor(null)} className="p-2 hover:bg-muted bg-background border border-border rounded-xl transition-all">
@@ -291,8 +290,8 @@ export default function JefeOperacionesView() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 sidebar-scroll bg-[radial-gradient(circle_at_top_right,var(--primary-rgb)/3,transparent)]">
-                <SombraTable title="Turno 1 -" sombras={(selectedSupervisor.sombra || []).filter((s: any) => s.turno == 1 || s.turno === '1')} />
-                <SombraTable title="Turno 2 - " sombras={(selectedSupervisor.sombra || []).filter((s: any) => s.turno == 2 || s.turno === '2')} />
+                <SombraTable title={TURNOS[0].nombre} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === TURNOS[0].nombre)} />
+                <SombraTable title={TURNOS[1].nombre} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === TURNOS[1].nombre)} />
               </div>
             </motion.div>
           </>
@@ -330,29 +329,23 @@ export default function JefeOperacionesView() {
                 <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
                   <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4">Criterios de Sesión</h3>
                   <div className="space-y-4">
-                    {FORM_ITEMS.map((item, idx) => {
-                      const key = `p${idx + 1}`
-                      const answer = selectedFormDetail.formulario?.[key]
+                    {(selectedFormDetail.formulario || []).map((item: Formulario, idx: number) => {
+                      const isPositive: boolean = item.respuesta === 'SI'
+                      const isNegative: boolean = item.respuesta === 'NO'
                       return (
                         <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
                           <div className="flex justify-between gap-4">
-                            <p className="text-[11px] font-bold leading-snug text-foreground/80">{item}</p>
+                            <p className="text-[11px] font-bold leading-snug text-foreground/80">{item.criterio}</p>
                             <div className="flex gap-1 shrink-0">
-                              {answer?.check === 'SI' ? (
+                              {isPositive ? (
                                 <span className="p-1.5 bg-emerald-500 rounded-lg text-white"><Check className="w-3 h-3" /></span>
-                              ) : answer?.check === 'NO' ? (
+                              ) : isNegative ? (
                                 <span className="p-1.5 bg-red-500 rounded-lg text-white"><MinusCircle className="w-3 h-3" /></span>
                               ) : (
                                 <span className="p-1.5 bg-muted rounded-lg text-muted-foreground"><MinusCircle className="w-3 h-3" /></span>
                               )}
                             </div>
                           </div>
-                          {answer?.detalle && (
-                            <div className="bg-muted/60 rounded-xl p-3 border border-border/40 flex items-start gap-2.5 shadow-inner">
-                              <MessageSquare className="w-3 h-3 text-primary/60 mt-0.5" />
-                              <p className="text-xs text-muted-foreground leading-relaxed italic">{answer.detalle}</p>
-                            </div>
-                          )}
                         </div>
                       )
                     })}

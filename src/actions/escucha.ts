@@ -1,12 +1,6 @@
 'use server'
 
-const CONFIG = {
-    TURNOS_PERMITIDOS: [
-        { id: 1, inicio: "09:45", fin: "10:45", nombre: 'Turno 1' },
-        // { id: 1, inicio: "09:45", fin: "15:28", nombre: 'Turno 1' },
-        { id: 2, inicio: "13:30", fin: "17:30", nombre: 'Turno 2' }
-    ]
-};
+import { CONFIG } from "@/app/dashboard/seguimiento-asesor/escuchas/formulario/preguntas";
 
 export const getTimeFormServer = async () => {
     const tiempo = new Date();
@@ -35,4 +29,18 @@ export const checkTurnoPermitido = async (durationForm: number): Promise<boolean
     });
 
     return estaEnRango;
+}
+
+export const getTurno = async (): Promise<string> => {
+    const ahora = new Date();
+    
+    // Solo permitimos iniciar si aun quedan `durationForm` minutos antes del fin del turno.
+    const estaEnRango = CONFIG.TURNOS_PERMITIDOS.filter(turno => {
+        const inicio = crearFecha(turno.inicio);
+        const fin = crearFecha(turno.fin);
+        
+        return ahora >= inicio && ahora <= fin;
+    });
+
+    return estaEnRango[0].nombre
 }

@@ -20,16 +20,17 @@ import {
     Volume2Icon,
     X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { preguntas } from "./preguntas";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/Provider/UserProvider";
+import { getTurno } from "@/actions/escucha";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 export const formTime = 10 * 60;
-const minFormTime = 2 * 60;
+const minFormTime = 30;
 const TIMER_WARNING_THRESHOLD = Math.floor((5 * 60) / 2);
 const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
 
@@ -46,6 +47,8 @@ const MINUTES_SECONDS_REGEX = /^\d+:[0-5]\d$/;
 
 
 export default function EscuchaFormularioPage() {
+    const searchParams = useSearchParams()
+
     const { colaboradores, loading } = useColaboradores();
     const [currentAdvisorId, setCurrentAdvisorId] = useState<string>("");
 
@@ -156,7 +159,8 @@ export default function EscuchaFormularioPage() {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
-                    turno: "",
+                    id_rep: +searchParams.get('id_reporte')!,
+                    turno: await getTurno(),
                     asesor: selectedAdvisor?.usuario || "",
                     supervisor: user?.usuario,
                     hora_inicio: startTime.current.toISOString().split("T")[1].split(".")[0].slice(0,-3),

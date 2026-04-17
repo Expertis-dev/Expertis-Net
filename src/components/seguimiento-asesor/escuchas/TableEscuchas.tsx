@@ -1,103 +1,68 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, CheckCircle2, ChevronDown, Clock, LayoutGrid, List } from "lucide-react";
-import React, { JSX, useState } from "react";
+import { ChevronDown, CheckCircle2, Clock, LayoutGrid, List } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { Filters } from "./Filtro";
+import { useUser } from "@/Provider/UserProvider";
 
 interface Props {
     filters: Filters
 }
-type EscuchaDetail = {
-  id: string;
-  name: string;
-  campaign: string;
-  supervisor: string;
-  startTime: string;
-  endTime: string;
-  score: string;
-  status: string;
-  color: string;
-};
 
-type EscuchaLog = {
-  id: string;
-  isoDate: string;
-  date: string;
-  registros: number;
-  color: string;
-  bgColor: string;
-  icon: JSX.Element;
-  details: EscuchaDetail[];
-};
+export interface ReporteEscucha {
+    id_reporte_escucha: number;
+    fecha:              string;
+    agencia:            string;
+    supervisor:         string;
+    min_num:            number;
+    num_realizado:      number;
+    escucha:            Escucha[];
+}
+
+export interface Escucha {
+    turno:           string;
+    asesor:          string;
+    hora_fin:        string;
+    formulario:      Formulario[];
+    id_escucha:      number;
+    link_audio:      string;
+    fecha_audio:     Date;
+    hora_inicio:     string;
+    duracion_audio:  string;
+    tiempo_duracion: number;
+    campana?:        string;
+    estado?:         string;
+    score?:          string | number;
+    color?:          string;
+}
+
+export interface Formulario {
+    criterio:  string;
+    respuesta: string;
+}
+
+interface EscuchaDetail {
+    id: string;
+    name: string;
+    turno: string;
+    supervisor: string;
+    startTime: string;
+    endTime: string;
+    duracionAudio: string;
+}
+
+interface EscuchaLog {
+    id: string;
+    date: string;
+    dateIso: string;
+    registros: number;
+    color: string;
+    bgColor: string;
+    icon: React.ReactNode;
+    status: string;
+    details: EscuchaDetail[];
+}
 
 
-const STATIC_LOGS: EscuchaLog[] = [
-  {
-    id: "esc-2026-04-15",
-    isoDate: "2026-04-15",
-    date: "15 Abr 2026",
-    registros: 2,
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-500/10",
-    icon: <CheckCircle2 className="w-5 h-5" />,
-    details: [
-      {
-        id: "esc-001",
-        name: "Luis Ramos",
-        campaign: "Claro Postpago",
-        supervisor: "Ana Torres",
-        startTime: "09:10",
-        endTime: "09:32",
-        score: "96%",
-        status: "Aprobado",
-        color: "text-emerald-700 bg-emerald-500/10",
-      },
-      {
-        id: "esc-002",
-        name: "Mariela Soto",
-        campaign: "Portabilidad",
-        supervisor: "Ana Torres",
-        startTime: "11:05",
-        endTime: "11:28",
-        score: "91%",
-        status: "Aprobado",
-        color: "text-emerald-700 bg-emerald-500/10",
-      },
-    ],
-  },
-  {
-    id: "esc-2026-04-12",
-    isoDate: "2026-04-12",
-    date: "12 Abr 2026",
-    registros: 2,
-    color: "text-amber-600",
-    bgColor: "bg-amber-500/10",
-    icon: <AlertCircle className="w-5 h-5" />,
-    details: [
-      {
-        id: "esc-003",
-        name: "Kevin Salas",
-        campaign: "Renovaciones",
-        supervisor: "Julio Perez",
-        startTime: "15:00",
-        endTime: "15:21",
-        score: "78%",
-        status: "Observado",
-        color: "text-amber-700 bg-amber-500/10",
-      },
-      {
-        id: "esc-004",
-        name: "Rosa Medina",
-        campaign: "Prepago",
-        supervisor: "Julio Perez",
-        startTime: "16:40",
-        endTime: "17:02",
-        score: "88%",
-        status: "En mejora",
-        color: "text-sky-700 bg-sky-500/10",
-      },
-    ],
-  },
-];
 
 const normalizeDate = (value: string, endOfDay = false) => {
   if (!value) return null;
@@ -107,18 +72,100 @@ const normalizeDate = (value: string, endOfDay = false) => {
 
   return parsedDate.getTime();
 };
+
+const fetchDetalleReporteEscucha = async (user: string) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas/${user}`);
+    const result = await response.json();
+    return result?.data ?? result;
+}
+
+const mapReporteEscuchaToLogs = (reports: any[]): EscuchaLog[] => {
+  return reports.map((report) => {
+    const fechaIso = report.fecha
+      ? new Date(report.fecha).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
+    const date = report.fecha
+      ? new Date(report.fecha).toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : new Date().toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+
+    const details: EscuchaDetail[] = (Array.isArray(report.escucha) ? report.escucha : []).map((item: any) => ({
+      id: String(item.id_escucha ?? item.id ?? `${report.id_reporte_escucha ?? report.id}_${item.asesor ?? item.nombre ?? "unknown"}`),
+      name: item.asesor ?? item.nombre ?? "Asesor desconocido",
+      turno: item.turno ?? item.turno_real ?? "N/A",
+      supervisor: item.supervisor ?? report.supervisor ?? "N/A",
+      startTime: item.hora_inicio ?? "--:--",
+      endTime: item.hora_fin ?? "--:--",
+      duracionAudio: item.duracion_audio
+        ? String(item.duracion_audio)
+        : item.tiempo_duracion || item.tiempo_duracion === 0
+        ? `${Math.floor(item.tiempo_duracion / 60)}m ${String(item.tiempo_duracion % 60).padStart(2, '0')}s`
+        : "N/A",
+    }));
+
+    return {
+      id: String(report.id_reporte_escucha ?? report.id ?? report.id_rep ?? fechaIso),
+      date,
+      dateIso: fechaIso,
+      registros: details.length,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-500/10",
+      icon: <CheckCircle2 className="w-5 h-5" />,
+      status: `${report.num_realizado ?? report.realizadas ?? details.length}/${report.min_num ?? report.num_esperado ?? details.length} Realizados`,
+      details,
+    };
+  });
+}
+
 export const TableEscuchas = ({filters}: Props) => {
     const [displayMode, setDisplayMode] = useState<"grid" | "list">("grid");
-    const [expandedRows, setExpandedRows] = useState<string[]>(
-        STATIC_LOGS.map((log) => log.id),
-    );
+    const [expandedRows, setExpandedRows] = useState<string[]>([]);
+    const [logs, setLogs] = useState<EscuchaLog[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    const {user} = useUser()
 
     const searchValue = filters.searchTerm.trim().toLowerCase();
     const startDate = normalizeDate(filters.startDate);
     const endDate = normalizeDate(filters.endDate, true);
 
-    const filteredLogs = STATIC_LOGS.map((log) => {
-        const logDate = normalizeDate(log.isoDate);
+    useEffect(() => {
+        if (!user?.usuario) return;
+
+        let mounted = true;
+        setIsLoading(true);
+
+        fetchDetalleReporteEscucha(user.usuario)
+            .then((raw) => {
+                if (!mounted) return;
+                const reports = Array.isArray(raw) ? raw : [raw];
+                const mapped = mapReporteEscuchaToLogs(reports);
+                setLogs(mapped);
+                setExpandedRows(mapped.map((log) => log.id));
+            })
+            .catch((error) => {
+                console.error("Error al cargar escuchas:", error);
+                if (mounted) setLogs([]);
+            })
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, [user?.usuario]);
+
+    const filteredLogs = logs.map((log) => {
+        const logDate = normalizeDate(log.dateIso || log.date);
         const matchesStartDate =
             startDate === null || (logDate !== null && logDate >= startDate);
         const matchesEndDate =
@@ -133,7 +180,7 @@ export const TableEscuchas = ({filters}: Props) => {
 
             return (
                 detail.name.toLowerCase().includes(searchValue) ||
-                detail.campaign.toLowerCase().includes(searchValue) ||
+                detail.turno.toLowerCase().includes(searchValue) ||
                 detail.supervisor.toLowerCase().includes(searchValue)
             );
         });
@@ -144,6 +191,7 @@ export const TableEscuchas = ({filters}: Props) => {
             details: matchingDetails,
         };
     }).filter((log) => log.details.length > 0);
+
     const totalFilteredRecords = filteredLogs.reduce(
         (accumulator, log) => accumulator + log.details.length,
         0,
@@ -183,7 +231,12 @@ export const TableEscuchas = ({filters}: Props) => {
             </div>
 
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2 sidebar-scroll">
-                {totalFilteredRecords > 0 ? (
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-bold text-muted-foreground">Cargando historial...</p>
+                    </div>
+                ) : totalFilteredRecords > 0 ? (
                     displayMode === "grid" ? (
                         filteredLogs.map((log) => (
                             <div
@@ -242,7 +295,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                 Asesor
                                                             </th>
                                                             <th className="pb-2 px-2">
-                                                                Campana
+                                                                Turno
                                                             </th>
                                                             <th className="pb-2 px-2">
                                                                 Supervisor
@@ -254,10 +307,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                 H. Fin
                                                             </th>
                                                             <th className="pb-2 px-2">
-                                                                Puntaje
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                Estado
+                                                                Duración
                                                             </th>
                                                         </tr>
                                                     </thead>
@@ -277,7 +327,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground">
                                                                         {
-                                                                            item.campaign
+                                                                            item.turno
                                                                         }
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground">
@@ -295,19 +345,10 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                             item.endTime
                                                                         }
                                                                     </td>
-                                                                    <td className="py-2 px-2 font-bold">
+                                                                    <td className="py-2 px-2 text-muted-foreground font-mono">
                                                                         {
-                                                                            item.score
+                                                                            item.duracionAudio
                                                                         }
-                                                                    </td>
-                                                                    <td className="py-2 px-2">
-                                                                        <span
-                                                                            className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.color}`}
-                                                                        >
-                                                                            {
-                                                                                item.status
-                                                                            }
-                                                                        </span>
                                                                     </td>
                                                                 </tr>
                                                             ),
@@ -332,7 +373,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                             Asesor
                                         </th>
                                         <th className="py-2 px-2 font-black">
-                                            Campana
+                                            Turno
                                         </th>
                                         <th className="py-2 px-2 font-black">
                                             Supervisor
@@ -344,10 +385,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                             Fin
                                         </th>
                                         <th className="py-2 px-2 font-black">
-                                            Puntaje
-                                        </th>
-                                        <th className="py-2 px-2 font-black">
-                                            Estado
+                                            Duración
                                         </th>
                                     </tr>
                                 </thead>
@@ -365,7 +403,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                                     {detail.name}
                                                 </td>
                                                 <td className="py-3 px-2 text-muted-foreground">
-                                                    {detail.campaign}
+                                                    {detail.turno}
                                                 </td>
                                                 <td className="py-3 px-2 text-muted-foreground">
                                                     {detail.supervisor}
@@ -376,15 +414,8 @@ export const TableEscuchas = ({filters}: Props) => {
                                                 <td className="py-3 px-2 font-mono text-muted-foreground">
                                                     {detail.endTime}
                                                 </td>
-                                                <td className="py-3 px-2 font-bold">
-                                                    {detail.score}
-                                                </td>
-                                                <td className="py-3 px-2">
-                                                    <span
-                                                        className={`px-2 py-1 rounded-full text-[10px] font-bold ${detail.color}`}
-                                                    >
-                                                        {detail.status}
-                                                    </span>
+                                                <td className="py-3 px-2 text-muted-foreground font-mono">
+                                                    {detail.duracionAudio}
                                                 </td>
                                             </tr>
                                         )),

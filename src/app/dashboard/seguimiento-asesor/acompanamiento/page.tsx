@@ -5,10 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
   Calendar,
-  Download,
-  TrendingUp,
   CheckCircle2,
-  AlertCircle,
   Clock,
   ChevronDown,
   LayoutGrid,
@@ -17,7 +14,6 @@ import {
   Award,
   X,
   Check,
-  MinusCircle,
   ChevronLeft,
   Save,
   MessageSquare,
