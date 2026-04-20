@@ -35,6 +35,14 @@ export interface Escucha {
     color?:          string;
 }
 
+export type RawEscucha = Partial<Escucha> & {
+    id?: number;
+    turno_real?: string;
+    nombre?: string;
+    supervisor?: string;
+    fecha_audio?: Date | string;
+};
+
 export interface Formulario {
     criterio:  string;
     respuesta: string;
@@ -43,6 +51,7 @@ export interface Formulario {
 interface EscuchaDetail {
     id: string;
     name: string;
+    date: string;
     turno: string;
     supervisor: string;
     startTime: string;
@@ -79,37 +88,75 @@ const fetchDetalleReporteEscucha = async (user: string) => {
     return result?.data ?? result;
 }
 
-const mapReporteEscuchaToLogs = (reports: any[]): EscuchaLog[] => {
+interface RawReporteEscucha {
+  id_reporte_escucha?: number;
+  id?: number;
+  id_rep?: number;
+  fecha?: string;
+  agencia?: string;
+  supervisor?: string;
+  min_num?: number;
+  num_realizado?: number;
+  num_esperado?: number;
+  realizadas?: number;
+  escucha?: RawEscucha[];
+}
+
+const mapReporteEscuchaToLogs = (reports: RawReporteEscucha[]): EscuchaLog[] => {
   return reports.map((report) => {
     const fechaIso = report.fecha
       ? new Date(report.fecha).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
-
     const date = report.fecha
       ? new Date(report.fecha).toLocaleDateString("es-ES", {
           day: "numeric",
           month: "short",
           year: "numeric",
+          timeZone: "UTC"
         })
       : new Date().toLocaleDateString("es-ES", {
           day: "numeric",
           month: "short",
           year: "numeric",
+          timeZone: "UTC"
         });
+    const details: EscuchaDetail[] = (
+        Array.isArray(report.escucha) ? report.escucha : []
+    ).map((item: RawEscucha) => {
+        const audioDate = item.fecha_audio
+            ? typeof item.fecha_audio === "string"
+                ? new Date(item.fecha_audio).toLocaleDateString("es-ES", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                  })
+                : item.fecha_audio.toLocaleDateString("es-ES", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                  })
+            : date;
+        
 
-    const details: EscuchaDetail[] = (Array.isArray(report.escucha) ? report.escucha : []).map((item: any) => ({
-      id: String(item.id_escucha ?? item.id ?? `${report.id_reporte_escucha ?? report.id}_${item.asesor ?? item.nombre ?? "unknown"}`),
-      name: item.asesor ?? item.nombre ?? "Asesor desconocido",
-      turno: item.turno ?? item.turno_real ?? "N/A",
-      supervisor: item.supervisor ?? report.supervisor ?? "N/A",
-      startTime: item.hora_inicio ?? "--:--",
-      endTime: item.hora_fin ?? "--:--",
-      duracionAudio: item.duracion_audio
-        ? String(item.duracion_audio)
-        : item.tiempo_duracion || item.tiempo_duracion === 0
-        ? `${Math.floor(item.tiempo_duracion / 60)}m ${String(item.tiempo_duracion % 60).padStart(2, '0')}s`
-        : "N/A",
-    }));
+        return {
+            id: String(
+                item.id_escucha ??
+                    item.id ??
+                    `${report.id_reporte_escucha ?? report.id}_${item.asesor ?? "unknown"}`,
+            ),
+            name: item.asesor ?? item.nombre ?? "Asesor desconocido",
+            date: audioDate,
+            turno: item.turno ?? item.turno_real ?? "N/A",
+            supervisor: item.supervisor ?? report.supervisor ?? "N/A",
+            startTime: item.hora_inicio ?? "--:--",
+            endTime: item.hora_fin ?? "--:--",
+            duracionAudio: item.duracion_audio
+                ? String(item.duracion_audio)
+                : item.tiempo_duracion || item.tiempo_duracion === 0
+                  ? `${Math.floor(item.tiempo_duracion / 60)}m ${String(item.tiempo_duracion % 60).padStart(2, "0")}s`
+                  : "N/A",
+        };
+    });
 
     return {
       id: String(report.id_reporte_escucha ?? report.id ?? report.id_rep ?? fechaIso),
@@ -149,7 +196,7 @@ export const TableEscuchas = ({filters}: Props) => {
                 const reports = Array.isArray(raw) ? raw : [raw];
                 const mapped = mapReporteEscuchaToLogs(reports);
                 setLogs(mapped);
-                setExpandedRows(mapped.map((log) => log.id));
+                // setExpandedRows(mapped.map((log, i, arr) => i === arr.length - 1 ? log.id : ""));
             })
             .catch((error) => {
                 console.error("Error al cargar escuchas:", error);
@@ -238,7 +285,7 @@ export const TableEscuchas = ({filters}: Props) => {
                     </div>
                 ) : totalFilteredRecords > 0 ? (
                     displayMode === "grid" ? (
-                        filteredLogs.map((log) => (
+                        filteredLogs.reverse().map((log) => (
                             <div
                                 key={log.id}
                                 className={`group border border-border rounded-xl overflow-hidden transition-all ${expandedRows.includes(log.id) ? "bg-muted/10" : ""}`}
@@ -295,6 +342,9 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                 Asesor
                                                             </th>
                                                             <th className="pb-2 px-2">
+                                                                Fecha Audio
+                                                            </th>
+                                                            <th className="pb-2 px-2">
                                                                 Turno
                                                             </th>
                                                             <th className="pb-2 px-2">
@@ -323,6 +373,11 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                     <td className="py-2 px-2 font-semibold text-primary">
                                                                         {
                                                                             item.name
+                                                                        }
+                                                                    </td>
+                                                                    <td className="py-2 px-2 text-muted-foreground">
+                                                                        {
+                                                                            item.date
                                                                         }
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground">

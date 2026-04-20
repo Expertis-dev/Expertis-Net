@@ -127,10 +127,3 @@ export const preguntas = [
             "No revela detalles de la deuda a terceros.\nManejar objeciones de familiares sin comprometer información sensible, etc.",
     },
 ];
-
-export const CONFIG = {
-    TURNOS_PERMITIDOS: [
-        { id: 1, inicio: "09:45", fin: "10:45", nombre: '09:45-10:45' },
-        { id: 2, inicio: "13:30", fin: "14:30", nombre: '13:30-14:30' }
-    ]
-};

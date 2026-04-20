@@ -14,11 +14,14 @@ import {
   Clock,
   ClipboardCheck,
   Check,
-  MinusCircle
+  MinusCircle,
+  Clipboard,
+  ClipboardCopyIcon,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { CONFIG } from '../formulario/preguntas'
 import { ReporteEscucha, Escucha, Formulario } from '@/components/seguimiento-asesor/escuchas/TableEscuchas'
+import { CONFIG } from '@/actions/escucha'
 
 interface TurnoConfig {
   id: number
@@ -27,7 +30,10 @@ interface TurnoConfig {
   nombre: string
 }
 
-const TURNOS: TurnoConfig[] = CONFIG.TURNOS_PERMITIDOS
+const getTurnos = async (): Promise<TurnoConfig[]> => {
+    const a = await CONFIG()
+    return a.TURNOS_PERMITIDOS || []
+}
 
 
 export default function JefeOperacionesViewPage() {
@@ -37,6 +43,7 @@ export default function JefeOperacionesViewPage() {
     const [endDate, setEndDate] = useState<string>('')
     const [data, setData] = useState<ReporteEscucha[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(true)
+    const [turnos, setTurnos] = useState<TurnoConfig[]>([])
 
     const [selectedSupervisor, setSelectedSupervisor] = useState<ReporteEscucha | null>(null)
     const [selectedFormDetail, setSelectedFormDetail] = useState<Escucha | null>(null)
@@ -63,8 +70,18 @@ export default function JefeOperacionesViewPage() {
     }
 }
 
+const fetchTurnos = async () => {
+    try {
+        const turnosData = await getTurnos()
+        setTurnos(turnosData)
+    } catch (error) {
+        console.error("Error al cargar turnos:", error)
+    }
+}
+
 useEffect(() => {
     fetchTotalAcompanamientos()
+    fetchTurnos()
 }, [])
 
 const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
@@ -83,6 +100,15 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
     return matchesSearch && matchesGroup && matchesDate
   })
 
+  const copyToClipboard = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        toast.info("Link copiado al portapapeles")
+    } catch (error) {
+        console.error('Error al copiar: ', error);
+    }
+  }
+
   const SombraTable = ({ title, sombras }: { title: string; sombras: Escucha[] }) => (
     <div className="space-y-3">
       <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2 px-1">
@@ -96,6 +122,8 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
               <th className="py-2.5 px-4 text-center">Hora</th>
               <th className="py-2.5 px-4">Asesor</th>
               <th className="py-2.5 px-4 text-center">Duración</th>
+              <th className="py-2.5 px-4 text-center">Fecha audio</th>
+              <th className="py-2.5 px-4 text-center">Duracion audio</th>
               <th className="py-2.5 px-4 text-right">Detalle</th>
             </tr>
           </thead>
@@ -105,9 +133,19 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                 <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio || '--:--'}</td>
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
                 <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion % 60}s</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{(new Date(s.fecha_audio)).toISOString().split("T")[0]}</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{s.duracion_audio}'</td>
                 <td className="py-2 px-4 text-right">
                   <button onClick={() => setSelectedFormDetail(s)} className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all">
                     <Eye className="w-4 h-4" />
+                  </button>
+                  <button className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all group relative"
+                    onClick={() => copyToClipboard(s.link_audio)}
+                  >
+                    <Copy className="w-4 h-4"/>
+                    <span className="pointer-events-none absolute -top-8 scale-0 -left-26 rounded bg-slate-800 p-2 text-[12px] text-white transition-all group-hover:scale-80 w-40">
+                        Copiar al portapapeles
+                    </span>
                   </button>
                 </td>
               </tr>
@@ -205,25 +243,25 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                   <th className="py-3.5 px-6">Supervisor</th>
                   <th className="py-3.5 px-6">Grupo</th>
                   <th className="py-3.5 px-6 text-center">Fecha</th>
-                  <th className="py-3.5 px-6 text-center">{TURNOS[0].nombre}</th>
-                  <th className="py-3.5 px-6 text-center">{TURNOS[1].nombre}</th>
+                  <th className="py-3.5 px-6 text-center">{turnos[0]?.nombre ?? 'Turno 1'}</th>
+                  <th className="py-3.5 px-6 text-center">{turnos[1]?.nombre ?? 'Turno 2'}</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
                   <th className="py-3.5 px-6 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {filteredData.length > 0 ? filteredData.map((item: ReporteEscucha) => {
+                {filteredData.length > 0 ? filteredData.reverse().map((item: ReporteEscucha) => {
                   const initials: string = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                   const escuchas: Escucha[] = item.escucha || []
-                  const countT1: number = escuchas.filter((s: Escucha) => s.turno === TURNOS[0].nombre).length
-                  const countT2: number = escuchas.filter((s: Escucha) => s.turno === TURNOS[1].nombre).length
+                  const countT1: number = escuchas.filter((s: Escucha) => s.turno === turnos[0]?.nombre).length
+                  const countT2: number = escuchas.filter((s: Escucha) => s.turno === turnos[1]?.nombre).length
                   const realizados: number = item.num_realizado
                   const esperados: number = item.min_num
                   const metaAlcanzada: boolean = realizados >= esperados
 
-                  const status: string = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
-                  const statusColor: string = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
+                  const status: string = (countT1 >= 2 && countT2 >= 2) ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
+                  const statusColor: string = (countT1 >= 2 && countT2 >= 2) ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
 
                   return (
                     <tr key={item.id_reporte_escucha} className="hover:bg-muted/10 transition-colors group">
@@ -235,8 +273,8 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                       </td>
                       <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.agencia || 'S/G'}</td>
                       <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha}</td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/3</span></td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/3</span></td>
+                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
+                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
                       <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
                       <td className="py-3 px-6 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
@@ -290,8 +328,8 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 sidebar-scroll bg-[radial-gradient(circle_at_top_right,var(--primary-rgb)/3,transparent)]">
-                <SombraTable title={TURNOS[0].nombre} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === TURNOS[0].nombre)} />
-                <SombraTable title={TURNOS[1].nombre} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === TURNOS[1].nombre)} />
+                <SombraTable title={turnos[0]?.nombre ?? 'Turno 1'} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === turnos[0]?.nombre)} />
+                <SombraTable title={turnos[1]?.nombre ?? 'Turno 2'} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === turnos[1]?.nombre)} />
               </div>
             </motion.div>
           </>

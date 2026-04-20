@@ -26,12 +26,11 @@ import { preguntas } from "./preguntas";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/Provider/UserProvider";
-import { getTurno } from "@/actions/escucha";
+import { getTurno, getTurnoFin } from "@/actions/escucha";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 export const formTime = 10 * 60;
-const minFormTime = 30;
-const TIMER_WARNING_THRESHOLD = Math.floor((5 * 60) / 2);
+const minFormTime = 2 * 60;
 const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
 
 type AudioFormValues = {
@@ -55,10 +54,11 @@ export default function EscuchaFormularioPage() {
     const [validationError, setValidationError] = useState<string | null>(null)
     const [form, setForm] = useState<Map<number, string>>(new Map());
     const startTime = useRef(new Date());
-    const [timer, setTimer] = useState(formTime);
+    const [timer, setTimer] = useState(0);
     const [selectedCriterio, setSelectedCriterio] = useState<string>(criterios[0])
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isTimeExpired, setIsTimeExpired] = useState(false);
+    const [turnoFin, setTurnoFin] = useState<string | null>(null);
     const {user} = useUser()
     const hasTimedOutRef = useRef(false);
     const hasNavigatedRef = useRef(false);
@@ -82,7 +82,15 @@ export default function EscuchaFormularioPage() {
     });
     const audioUrlValue = watch("audioUrl");
     const isLocked = isSubmitting || isTimeExpired;
-    const elapsedTime = formTime - timer;
+    const elapsedTime = timer;
+
+    const parseTurnoFinDate = (time: string) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        date.setMilliseconds(0);
+        return date;
+    };
 
     const navigateBack = () => {
         if (hasNavigatedRef.current) return;
@@ -100,9 +108,6 @@ export default function EscuchaFormularioPage() {
         const newForm = new Map(form);
 
         newForm.set(idx, value);
-        // Object.fromEntries(
-        //     Array.from(form.entries()).sort((a, b) => a[0] - b[0]),
-        // )
         setForm(newForm);
     };
 
@@ -136,7 +141,7 @@ export default function EscuchaFormularioPage() {
                 navigateBack();
                 return;
             }
-            setValidationError("Tiempo minimo para responder el registro es de 2:30 minutos");
+            setValidationError("Tiempo minimo para responder el registro es de 2:00 minutos");
             return;
         }
 
@@ -151,7 +156,25 @@ export default function EscuchaFormularioPage() {
             return;
         }
 
+        if (form.values().toArray().length !== preguntas.length){
+            setValidationError("Faltan completar campos de la evaluacion de escucha")
+            if (forceExit) {
+                toast.error(`Tiempo agotado.`);
+                navigateBack();
+                return;
+            }
+            return;
+        }
+
         setIsSubmitting(true);
+        const formatHora = (date: Date) => {
+            return date.toLocaleTimeString('es-PE', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
 
         try {
             const formulario = preguntas.map((v, i) => ({criterio: v.criterio, respuesta: Object.fromEntries(form)[i] || null}))
@@ -163,9 +186,9 @@ export default function EscuchaFormularioPage() {
                     turno: await getTurno(),
                     asesor: selectedAdvisor?.usuario || "",
                     supervisor: user?.usuario,
-                    hora_inicio: startTime.current.toISOString().split("T")[1].split(".")[0].slice(0,-3),
-                    hora_fin: (new Date()).toISOString().split("T")[1].split(".")[0].slice(0,-3),
-                    tiempo_duracion: formTime - timer,
+                    hora_inicio: formatHora(startTime.current),
+                    hora_fin: formatHora(new Date()),
+                    tiempo_duracion: timer,
                     formulario,
                     link_audio: getValues("audioUrl"),
                     fecha_audio: getValues("audioDate"),
@@ -194,34 +217,56 @@ export default function EscuchaFormularioPage() {
         if (isTimeExpired) return;
 
         const intervalKey = window.setInterval(() => {
-            setTimer((currentTime) => {
-                if (currentTime <= 1) {
-                    window.clearInterval(intervalKey);
-                    return 0;
-                }
-
-                return currentTime - 1;
-            });
+            setTimer((currentTime) => currentTime + 1);
         }, 1000);
 
         return () => window.clearInterval(intervalKey);
     }, [isTimeExpired]);
 
     useEffect(() => {
-        if (timer === TIMER_WARNING_THRESHOLD) {
-            toast.info("quedan menos de 2:30 minutos");
+        let mounted = true;
+
+        const fetchTurnoFin = async () => {
+            try {
+                const turnoFinString = await getTurnoFin();
+                if (!mounted) return;
+                setTurnoFin(turnoFinString);
+            } catch (error) {
+                console.error("Error al obtener el fin del turno:", error);
+            }
+        };
+
+        void fetchTurnoFin();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isTimeExpired || !turnoFin) return;
+
+        const endDate = parseTurnoFinDate(turnoFin);
+        const millisecondsUntilEnd = endDate.getTime() - Date.now();
+
+        if (millisecondsUntilEnd <= 0) {
+            hasTimedOutRef.current = true;
+            setIsTimeExpired(true);
+            toast.info("Se acabó el turno permitido, cerrando formulario...");
+            void submitEscuchaRef.current?.({ forceExit: true });
+            return;
         }
 
-        if (timer === 60) {
-            toast.error("quedan menos de 1 minuto");
-        }
-        if (timer !== 0 || hasTimedOutRef.current) return;
+        const timeoutId = window.setTimeout(() => {
+            if (hasTimedOutRef.current) return;
+            hasTimedOutRef.current = true;
+            setIsTimeExpired(true);
+            toast.info("Se acabó el turno permitido, cerrando formulario...");
+            void submitEscuchaRef.current?.({ forceExit: true });
+        }, millisecondsUntilEnd);
 
-        hasTimedOutRef.current = true;
-        setIsTimeExpired(true);
-        toast.info("Se acabo el tiempo, cerrando formulario...");
-        void submitEscuchaRef.current?.({ forceExit: true });
-    }, [timer]);
+        return () => window.clearTimeout(timeoutId);
+    }, [isTimeExpired, turnoFin]);
 
     return (
         <div className="flex flex-col gap-4">
@@ -267,10 +312,10 @@ export default function EscuchaFormularioPage() {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 bg-muted/40 px-4 py-2 rounded-xl border border-border relative group">
                         <Timer
-                            className={`w-5 h-5 ${timer < 0.3 * formTime ? "text-destructive animate-pulse" : "text-primary"}`}
+                            className={`w-5 h-5 text-primary`}
                         />
                         <span
-                            className={`text-xl font-mono font-black ${timer < 0.3 * formTime ? "text-destructive" : "text-foreground"}`}
+                            className={`text-xl font-mono font-black text-foreground`}
                         >
                             {Math.trunc(timer / 60)}:{(timer % 60) < 10 ? `0${timer % 60}`: timer % 60}
                         </span>
@@ -552,19 +597,19 @@ export default function EscuchaFormularioPage() {
                             const isSelectedNo = form.get(idx) === "NO";
 
                             return (
-                            <div key={idx} className="p-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors">
-                                <div className="flex flex-col lg:flex-row justify-between gap-6">
+                            <div key={idx} className="py-2 px-3 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors border-b border-zinc-200">
+                                <div className="flex flex-row lg:flex-row justify-between gap-6">
                                 <div className="space-y-1.5">
                                     <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
                                     {item.criterio}
                                     </p>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
                                     {item.descripcion}
                                     </p>
                                 </div>
 
                                 {/* Selectores SI/NO */}
-                                <div className="flex items-center gap-4 self-end lg:self-center">
+                                <div className="flex items-center gap-4 lg:self-center self-center">
                                     {/* Botón SI */}
                                     <label className={`relative flex flex-col items-center gap-1.5 group ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                                     <input
@@ -575,10 +620,10 @@ export default function EscuchaFormularioPage() {
                                         checked={isSelectedSi}
                                         disabled={isLocked}
                                     />
-                                    <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
+                                    <div className="w-12 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
                                         <Check className={`w-6 h-6 ${isSelectedSi ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
                                     </div>
-                                    <span className={`text-[10px] font-bold uppercase ${isSelectedSi ? 'text-emerald-600' : 'text-zinc-500'}`}>Sí</span>
+                                    {/* <span className={`text-[10px] font-bold uppercase ${isSelectedSi ? 'text-emerald-600' : 'text-zinc-500'}`}>Sí</span> */}
                                     </label>
 
                                     {/* Botón NO */}
@@ -591,10 +636,10 @@ export default function EscuchaFormularioPage() {
                                         checked={isSelectedNo}
                                         disabled={isLocked}
                                     />
-                                    <div className="w-14 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
+                                    <div className="w-12 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
                                         <X className={`w-6 h-6 ${isSelectedNo ? 'text-red-600 dark:text-red-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
                                     </div>
-                                    <span className={`text-[10px] font-bold uppercase ${isSelectedNo ? 'text-red-600' : 'text-zinc-500'}`}>No</span>
+                                    {/* <span className={`text-[10px] font-bold uppercase ${isSelectedNo ? 'text-red-600' : 'text-zinc-500'}`}>No</span> */}
                                     </label>
                                 </div>
                                 </div>

@@ -108,7 +108,7 @@ export const EscuchasClientPage = () => {
                             },
                             {
                                 label: "Faltante",
-                                value: escuchasRealizadas.numeroDeSombrasFaltantes,
+                                value: escuchasRealizadas.numeroDeSombrasFaltantes >= 0 ? escuchasRealizadas.numeroDeSombrasFaltantes : 0,
                                 color: "bg-amber-500",
                             },
                         ].map((kpi, index) => (
@@ -126,7 +126,7 @@ export const EscuchasClientPage = () => {
                                     <div
                                         className={`h-full ${kpi.color} rounded-full`}
                                         style={{
-                                            width: `${(kpi.value / 4) * 100}%`,
+                                            width: `${((kpi.value > 4 ? 4 : kpi.value) / 4) * 100}%`,
                                         }}
                                     />
                                 </div>
@@ -143,7 +143,7 @@ export const EscuchasClientPage = () => {
                                 Escuchas
                             </p>
                             <span className="bg-primary/10 text-primary px-1.5 rounded text-[11px] font-black">
-                                {escuchasRealizadas.numeroDeSombrasFaltantes} PEND.
+                                {escuchasRealizadas.numeroDeSombrasFaltantes < 0 ? 0 : escuchasRealizadas.numeroDeSombrasFaltantes < 0} PEND.
                             </span>
                         </div>
                         <button
