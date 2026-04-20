@@ -63,8 +63,8 @@ export const getTurnoFin = async (): Promise<string | null> => {
 };
 
 export const CONFIG = async () => ({
-        TURNOS_PERMITIDOS: [
-            { id: 1, inicio: "09:45", fin: "10:00", nombre: "09:45-10:45" },
-            { id: 2, inicio: "10:15", fin: "14:30", nombre: "13:30-14:30" },
-        ]
+    TURNOS_PERMITIDOS: [
+        { id: 1, inicio: "09:45", fin: "10:00", nombre: "09:45-10:45" },
+        { id: 2, inicio: "13:30", fin: "14:30", nombre: "13:30-14:30" },
+    ]
 });

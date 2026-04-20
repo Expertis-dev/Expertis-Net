@@ -83,7 +83,6 @@ export const EscuchasClientPage = () => {
     return (
         <div className="space-y-4">
             <Filtro filters={filters} setFilters={setFilters} />
-
             <div className="px-6 pb-6 space-y-4">
                 <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <motion.div
@@ -106,7 +105,8 @@ export const EscuchasClientPage = () => {
                         className="md:col-span-2 bg-card py-3 rounded-2xl shadow-sm border border-border grid grid-cols-2 grid-rows-2"
                     >
                         <div className="col-span-2 text-center">
-                            <h3 className="font-bold text-muted-foreground text-sm">Turno: {turno}</h3>
+                            <h3 className="font-bold text-muted-foreground text-[14px]">{turno === "" ? "No estas en turno" : "Turno: " + turno}</h3>
+                            <p className="text-[10px] text-gray-600">*Minimo 2 escuchas por turno</p>
                         </div>
                         {[
                             {
@@ -121,8 +121,8 @@ export const EscuchasClientPage = () => {
                             },
                         ].map((kpi, index) => (
                             <div
-                                key={kpi.label}
-                                className={`-mt-4 flex flex-col justify-center items-center text-center ${index === 0 ? "border-r border-border" : ""}`}
+                            key={kpi.label}
+                            className={`-mt-3 flex flex-col justify-center items-center text-center ${index === 0 ? "border-r border-border" : ""}`}
                             >
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase">
                                     {kpi.label}
