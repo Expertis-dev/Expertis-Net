@@ -623,7 +623,7 @@ export default function AcompanamientoPage() {
       className="space-y-5 pb-10"
     >
       {/* Form Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm sticky -top-4 z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
