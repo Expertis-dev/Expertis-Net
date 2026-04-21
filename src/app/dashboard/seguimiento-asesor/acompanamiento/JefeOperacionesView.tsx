@@ -70,11 +70,12 @@ export default function JefeOperacionesView() {
     fetchTotalAcompanamientos(startDate, endDate)
   }, [startDate, endDate])
 
-  const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
+  const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
 
   const filteredData = data.filter(item => {
-    const matchesSearch = (item.supervisor || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesGroup = selectedGroup === 'TODOS' || item.agencia === selectedGroup
+    console.log(item)
+    const matchesSearch = item.sombra.some((v: any) => (v.asesor || '').toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesGroup = selectedGroup === 'TODOS' || item.supervisor.startsWith(selectedGroup)
 
     // Filtro de fecha usando comparación de strings (ISO YYYY-MM-DD)
     let matchesDate = true
@@ -235,7 +236,7 @@ export default function JefeOperacionesView() {
                           <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.agencia || 'S/G'}</td>
+                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0] || 'S/G'}</td>
                       <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha}</td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/3</span></td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/3</span></td>
