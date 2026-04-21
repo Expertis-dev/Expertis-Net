@@ -44,13 +44,13 @@ export default function JefeOperacionesView() {
   const [selectedSupervisor, setSelectedSupervisor] = useState<any>(null)
   const [selectedFormDetail, setSelectedFormDetail] = useState<any>(null)
 
-  const fetchTotalAcompanamientos = async (startDate: string) => {
+  const fetchTotalAcompanamientos = async (startDate: string, endDate: string) => {
     setIsLoading(true)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos-total`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: startDate })
+        body: JSON.stringify({ fechaInicio: startDate, fechaFin: endDate })
       })
 
       if (res.ok) {
@@ -67,8 +67,8 @@ export default function JefeOperacionesView() {
   }
 
   useEffect(() => {
-    fetchTotalAcompanamientos(startDate)
-  }, [startDate])
+    fetchTotalAcompanamientos(startDate, endDate)
+  }, [startDate, endDate])
 
   const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
 
@@ -175,6 +175,12 @@ export default function JefeOperacionesView() {
               onChange={(e) => setStartDate(e.target.value)}
             />
             <div className="w-px h-3 bg-border" />
+            <input
+              type="date"
+              className="bg-transparent text-[10px] font-black outline-none px-2 cursor-pointer"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </div>
 
           <button
