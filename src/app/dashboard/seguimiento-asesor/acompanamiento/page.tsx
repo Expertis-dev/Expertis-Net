@@ -325,7 +325,7 @@ export default function AcompanamientoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           formulariosPendientes: sombrasData.faltantes,
-          agencia: user?.area // O el campo que corresponda a la agencia
+          agencia: user?.id_grupo // O el campo que corresponda a la agencia
         })
       })
 
