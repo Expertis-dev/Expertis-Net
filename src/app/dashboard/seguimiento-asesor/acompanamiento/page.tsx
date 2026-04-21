@@ -160,9 +160,9 @@ export default function AcompanamientoPage() {
 
           setLogs(mappedLogs)
 
-          if (mappedLogs.length > 0) {
-            setExpandedRows(mappedLogs.map(l => l.id))
-          }
+          // if (mappedLogs.length > 0) {
+          //   setExpandedRows(mappedLogs.map(l => l.id))
+          // }
         } else {
           setLogs([])
         }
