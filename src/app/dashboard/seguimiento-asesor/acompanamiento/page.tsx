@@ -194,7 +194,7 @@ export default function AcompanamientoPage() {
 
   useEffect(() => {
     if (view === 'form') {
-      if (timeLeft === 19 * 60) {
+      if (timeLeft === 1 * 60) {
         // Sonido de alerta (beep suave)
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2976/2976-preview.mp3')
         audio.play().catch(e => console.log("Audio play deferred:", e))
@@ -265,7 +265,7 @@ export default function AcompanamientoPage() {
     })
 
     const elapsedSeconds = (20 * 60) - timeLeft
-    const minRequiredSeconds = 0
+    const minRequiredSeconds = 60 * 17
 
     if (!currentAdvisorId) {
       if (wasAutoSave) {
