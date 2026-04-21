@@ -88,7 +88,7 @@ export default function AcompanamientoPage() {
   const [expandedRows, setExpandedRows] = useState<any[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchSombras = async () => {
+  const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
     if (!user?.usuario) return
     setIsLoading(true)
     try {
@@ -108,7 +108,7 @@ export default function AcompanamientoPage() {
         })
 
         if (data.id_acom) {
-          await fetchDetalleAcompanamientos(data.id_acom)
+          await fetchDetalleAcompanamientos(data.id_acom, fechaInicio, fechaFin)
         } else {
           setLogs([])
         }
@@ -121,15 +121,15 @@ export default function AcompanamientoPage() {
   }
 
   useEffect(() => {
-    fetchSombras()
-  }, [user?.usuario])
+    fetchSombras(startDate, endDate)
+  }, [user?.usuario, startDate, endDate])
 
-  const fetchDetalleAcompanamientos = async (grupo: any) => {
+  const fetchDetalleAcompanamientos = async (grupo: any, fechaInicio?: string, fechaFin?: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: user?.usuario })
+        body: JSON.stringify({ grupo: user?.usuario, fechaInicio: fechaInicio || undefined, fechaFin: fechaFin || undefined})
       })
 
       if (res.ok) {
