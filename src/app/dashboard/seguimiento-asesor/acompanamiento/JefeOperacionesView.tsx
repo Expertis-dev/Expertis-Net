@@ -44,13 +44,13 @@ export default function JefeOperacionesView() {
   const [selectedSupervisor, setSelectedSupervisor] = useState<any>(null)
   const [selectedFormDetail, setSelectedFormDetail] = useState<any>(null)
 
-  const fetchTotalAcompanamientos = async () => {
+  const fetchTotalAcompanamientos = async (startDate: string) => {
     setIsLoading(true)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos-total`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: 'OPERACIONES' })
+        body: JSON.stringify({ date: startDate })
       })
 
       if (res.ok) {
@@ -67,8 +67,8 @@ export default function JefeOperacionesView() {
   }
 
   useEffect(() => {
-    fetchTotalAcompanamientos()
-  }, [])
+    fetchTotalAcompanamientos(startDate)
+  }, [startDate])
 
   const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
 
@@ -175,16 +175,9 @@ export default function JefeOperacionesView() {
               onChange={(e) => setStartDate(e.target.value)}
             />
             <div className="w-px h-3 bg-border" />
-            <input
-              type="date"
-              className="bg-transparent text-[10px] font-black outline-none px-2 cursor-pointer"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
           </div>
 
           <button
-            onClick={fetchTotalAcompanamientos}
             className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm ${isLoading ? 'animate-spin' : ''}`}
             title="Sincronizar Datos"
           >
@@ -221,7 +214,7 @@ export default function JefeOperacionesView() {
                   const sombras = item.sombra || []
                   const countT1 = sombras.filter((s: any) => s.turno == 1 || s.turno === '1').length
                   const countT2 = sombras.filter((s: any) => s.turno == 2 || s.turno === '2').length
-                  const realizados = item.num_realizado || 0
+                  const realizados = item.registros || 0
                   const esperados = item.num_esperado || 6
                   const metaAlcanzada = realizados >= esperados
 
