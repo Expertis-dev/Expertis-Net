@@ -96,11 +96,10 @@ export default function AcompanamientoPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-sombras-realizadas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha: hoy, usuario: user.usuario.split(' ')[0] })
+        body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
       })
       if (res.ok) {
         const data = await res.json()
-        console.log("Resumen de sombras recibido:", data)
         setSombrasData({
           realizadas: data.numeroDeSombrasRealizadas,
           faltantes: data.numeroDeSombrasFaltantes,
@@ -130,30 +129,28 @@ export default function AcompanamientoPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: user?.usuario.split(' ')[0] })
+        body: JSON.stringify({ grupo: user?.usuario })
       })
 
       if (res.ok) {
         const result = await res.json()
         const rawData = result.data
-        console.log("Datos brutos recibidos del endpoint:", rawData)
 
         if (rawData) {
           const sessions = Array.isArray(rawData) ? rawData : [rawData]
-
           const mappedLogs = sessions.map((data: any) => ({
             id: data.id_acom,
             date: data.fecha || new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-            registros: data.num_realizado || 0,
+            registros: data.registros,
             color: 'text-emerald-600',
             bgColor: 'bg-emerald-500/10',
             icon: <CheckCircle2 className="w-5 h-5" />,
             status: `${data.num_realizado || 0}/${data.num_esperado || 6} Realizados`,
-            details: Array.isArray(data.sombra) ? data.sombra.map((s: any) => ({
+            details: data.registros !== 0 ? data.sombra.map((s: any) => ({
               id: s.id_sombra,
-              name: s.asesor || 'Asesor sin nombre',
-              startTime: s.hora_inicio || '--:--',
-              endTime: s.hora_fin || '--:--',
+              name: s.name || 'Asesor sin nombre',
+              startTime: s.startTime || '--:--',
+              endTime: s.endTime || '--:--',
               turno: s.turno || 'N/A',
               status: 'OK',
               color: 'text-emerald-600 bg-emerald-500/10',
@@ -161,7 +158,6 @@ export default function AcompanamientoPage() {
             })) : []
           }))
 
-          console.log("Logs mapeados finales:", mappedLogs)
           setLogs(mappedLogs)
 
           if (mappedLogs.length > 0) {
@@ -269,7 +265,7 @@ export default function AcompanamientoPage() {
     })
 
     const elapsedSeconds = (20 * 60) - timeLeft
-    const minRequiredSeconds = 17 * 60
+    const minRequiredSeconds = 0
 
     if (!currentAdvisorId) {
       if (wasAutoSave) {
