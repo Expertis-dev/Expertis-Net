@@ -59,7 +59,7 @@ export const EscuchasClientPage = () => {
             const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-escuchas-realizadas`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({fecha, usuario: user?.usuario || ''})
+                body: JSON.stringify({usuario: user?.usuario || ''})
             }).then(r => r.json())
             return data
         }
@@ -69,6 +69,7 @@ export const EscuchasClientPage = () => {
     }, [])
 
     const onClickRealizar = async () => {
+        console.log(escuchasRealizadas)
         if (await checkTurnoPermitido(formTime / 60)){
             router.push(`/dashboard/seguimiento-asesor/escuchas/formulario?id_reporte=${escuchasRealizadas.id_rep}`)
         }else {

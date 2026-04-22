@@ -43,7 +43,11 @@ const PURECLOUD_URL_REGEX =
     /^https:\/\/apps\.mypurecloud\.com\/directory\/#\/analytics\/interactions\/[0-9a-fA-F-]{36}\/admin\?tabId=[0-9a-fA-F-]{36}$/;
 const MINUTES_SECONDS_REGEX = /^\d+:[0-5]\d$/;
 
-
+const DurationStringToSeconds = (duracion: string) => {
+    const [min, seg] = duracion.split(":")
+    
+    return + seg + (+min)*60
+}
 
 export default function EscuchaFormularioPage() {
     const searchParams = useSearchParams()
@@ -189,10 +193,10 @@ export default function EscuchaFormularioPage() {
                     hora_inicio: formatHora(startTime.current),
                     hora_fin: formatHora(new Date()),
                     tiempo_duracion: timer,
-                    formulario,
+                    formulario: JSON.stringify(formulario),
                     link_audio: getValues("audioUrl"),
                     fecha_audio: getValues("audioDate"),
-                    duracion_audio: getValues("audioDuration")
+                    duracion_audio: DurationStringToSeconds(getValues("audioDuration"))
                 })
             });
 
@@ -319,9 +323,6 @@ export default function EscuchaFormularioPage() {
                         >
                             {Math.trunc(timer / 60)}:{(timer % 60) < 10 ? `0${timer % 60}`: timer % 60}
                         </span>
-                        {/* <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-lg border border-border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                            Mínimo requerido: 17:00
-                        </div> */}
                     </div>
                     <button
                         onClick={() => void submitEscucha()}
@@ -573,7 +574,7 @@ export default function EscuchaFormularioPage() {
                     <div key={criterio} className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
                     
                     {/* Título del Criterio Actual */}
-                    <div className="px-6 py-3 bg-sky-50 dark:bg-sky-500/10 border-y border-sky-100 dark:border-sky-500/20 flex justify-center">
+                    <div className="px-6 py-1.5 bg-sky-50 dark:bg-sky-500/10 border-y border-sky-100 dark:border-sky-500/20 flex justify-center">
                         <span className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-400">
                         Sección: {criterio}
                         </span>

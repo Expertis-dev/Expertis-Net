@@ -82,8 +82,12 @@ const normalizeDate = (value: string, endOfDay = false) => {
   return parsedDate.getTime();
 };
 
-const fetchDetalleReporteEscucha = async (user: string) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas/${user}`);
+const fetchDetalleReporteEscucha = async (user: string, fechaInicio: string | null = null, fechaFin: string | null = null) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas/${user}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({fechaInicio, fechaFin})
+    });
     const result = await response.json();
     return result?.data ?? result;
 }
@@ -190,7 +194,7 @@ export const TableEscuchas = ({filters}: Props) => {
         let mounted = true;
         setIsLoading(true);
 
-        fetchDetalleReporteEscucha(user.usuario)
+        fetchDetalleReporteEscucha(user.usuario, filters.startDate, filters.endDate)
             .then((raw) => {
                 if (!mounted) return;
                 const reports = Array.isArray(raw) ? raw : [raw];
@@ -209,7 +213,7 @@ export const TableEscuchas = ({filters}: Props) => {
         return () => {
             mounted = false;
         };
-    }, [user?.usuario]);
+    }, [user?.usuario, filters]);
 
     const filteredLogs = logs.map((log) => {
         const logDate = normalizeDate(log.dateIso || log.date);
@@ -392,18 +396,16 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground font-mono">
                                                                         {
-                                                                            item.startTime
+                                                                            item.startTime.split("T")[1].split(".")[0].slice(0,-3)
                                                                         }
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground font-mono">
                                                                         {
-                                                                            item.endTime
+                                                                            item.endTime.split("T")[1].split(".")[0].slice(0,-3)
                                                                         }
                                                                     </td>
                                                                     <td className="py-2 px-2 text-muted-foreground font-mono">
-                                                                        {
-                                                                            item.duracionAudio
-                                                                        }
+                                                                        {Math.floor(+item.duracionAudio / 60)}:{+item.duracionAudio % 60 < 10 ? `0${+item.duracionAudio % 60}` : +item.duracionAudio % 60}
                                                                     </td>
                                                                 </tr>
                                                             ),
@@ -464,13 +466,13 @@ export const TableEscuchas = ({filters}: Props) => {
                                                     {detail.supervisor}
                                                 </td>
                                                 <td className="py-3 px-2 font-mono text-muted-foreground">
-                                                    {detail.startTime}
+                                                    {detail.startTime.split("T")[1].split(".")[0].slice(0, -3)}
                                                 </td>
                                                 <td className="py-3 px-2 font-mono text-muted-foreground">
-                                                    {detail.endTime}
+                                                    {detail.endTime.split("T")[1].split(".")[0].slice(0, -3)}
                                                 </td>
                                                 <td className="py-3 px-2 text-muted-foreground font-mono">
-                                                    {detail.duracionAudio}
+                                                    {Math.floor(+detail.duracionAudio / 60)}:{+detail.duracionAudio % 60 < 10 ? `0${+detail.duracionAudio % 60}` : +detail.duracionAudio % 60}
                                                 </td>
                                             </tr>
                                         )),

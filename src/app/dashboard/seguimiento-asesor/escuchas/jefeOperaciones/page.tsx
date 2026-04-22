@@ -46,10 +46,14 @@ export default function JefeOperacionesViewPage() {
     const [selectedSupervisor, setSelectedSupervisor] = useState<ReporteEscucha | null>(null)
     const [selectedFormDetail, setSelectedFormDetail] = useState<Escucha | null>(null)
     
-    const fetchTotalAcompanamientos = async () => {
+    const fetchTotalAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
         setIsLoading(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas`)
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas`, {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({fechaInicio, fechaFin})
+            })
             
             if (res.ok) {
                 const result = await res.json()
@@ -78,9 +82,9 @@ const fetchTurnos = async () => {
 }
 
 useEffect(() => {
-    fetchTotalAcompanamientos()
+    fetchTotalAcompanamientos(startDate, endDate)
     fetchTurnos()
-}, [])
+}, [startDate, endDate])
 
 const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
 
@@ -107,6 +111,10 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
     }
   }
 
+  const onDownloadExcel = () => {
+    
+  }
+  
   const SombraTable = ({ title, sombras }: { title: string; sombras: Escucha[] }) => (
     <div className="space-y-3">
       <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2 px-1">
@@ -128,11 +136,11 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
           <tbody className="divide-y divide-border/40">
             {sombras.length > 0 ? sombras.map((s: Escucha, idx: number) => (
               <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio || '--:--'}</td>
+                <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio.split("T")[1].split(".")[0].slice(0,-3) || '--:--'}</td>
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
                 <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion % 60}s</td>
                 <td className="py-2 px-4 text-center text-muted-foreground font-medium">{(new Date(s.fecha_audio)).toISOString().split("T")[0]}</td>
-                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{s.duracion_audio}'</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor(+s.duracion_audio / 60)}:{+s.duracion_audio % 60 < 10 ? `0${+s.duracion_audio % 60}` : +s.duracion_audio % 60}'</td>
                 <td className="py-2 px-4 text-right">
                   <button onClick={() => setSelectedFormDetail(s)} className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all">
                     <Eye className="w-4 h-4" />
@@ -217,7 +225,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
           </div>
 
           <button
-            // onClick={fetchTotalAcompanamientos}
+            onClick={onDownloadExcel}
             className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm`}
             title="Sincronizar Datos"
           >
@@ -241,8 +249,8 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                   <th className="py-3.5 px-6">Supervisor</th>
                   <th className="py-3.5 px-6">Grupo</th>
                   <th className="py-3.5 px-6 text-center">Fecha</th>
-                  <th className="py-3.5 px-6 text-center">{turnos[0]?.nombre ?? 'Turno 1'}</th>
-                  <th className="py-3.5 px-6 text-center">{turnos[1]?.nombre ?? 'Turno 2'}</th>
+                  <th className="py-3.5 px-6 text-center">TURNO 1</th>
+                  <th className="py-3.5 px-6 text-center">TURNO 2</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
                   <th className="py-3.5 px-6 text-right">Acción</th>
@@ -270,7 +278,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                         </div>
                       </td>
                       <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0]}</td>
-                      <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha}</td>
+                      <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha.split("T")[0]}</td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
                       <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
