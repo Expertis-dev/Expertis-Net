@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
   Search,
-  Calendar,
   Download,
   Eye,
   UserCheck,
@@ -20,6 +19,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
+import { es } from "date-fns/locale"
+import { saveAs } from "file-saver";
+import { format } from "date-fns"
+
 
 const FORM_ITEMS = [
   "Atiende la llamada de manera inmediata",
@@ -33,24 +36,56 @@ const FORM_ITEMS = [
   "No realiza actividades personales (comer, distraerse, etc.)"
 ]
 
+export interface ResponseAcompanamientosTotal {
+  id_acom:    string;
+  fecha:      string;
+  registros:  number;
+  supervisor: string;
+  agencia:    string;
+  num_esperado: number;
+  sombra:     Sombra[];
+}
+
+export interface Sombra {
+  id_sombra:       number | null;
+  asesor:          null | string;
+  hora_inicio:     string;
+  endTime:         string;
+  tiempo_duracion: number | null;
+  turno:           null | string;
+  formulario:      Formulario | null;
+}
+
+export interface Formulario {
+  [key: string]: Response
+}
+
+export interface Response {
+  check:    string;
+  detalle?: string;
+}
+
+
+
 export default function JefeOperacionesView() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('TODOS')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<ResponseAcompanamientosTotal[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const [selectedSupervisor, setSelectedSupervisor] = useState<any>(null)
-  const [selectedFormDetail, setSelectedFormDetail] = useState<any>(null)
+  const [selectedSupervisor, setSelectedSupervisor] = useState<ResponseAcompanamientosTotal | null>(null)
+  const [selectedFormDetail, setSelectedFormDetail] = useState<Sombra | null>(null)
 
   const fetchTotalAcompanamientos = async (startDate: string, endDate: string) => {
     setIsLoading(true)
     try {
+      const rol = localStorage.getItem("rol")
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos-total`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fechaInicio: startDate, fechaFin: endDate })
+        body: JSON.stringify({ fechaInicio: startDate, fechaFin: endDate,  grupo: rol?.slice(1,-1)})
       })
 
       if (res.ok) {
@@ -73,8 +108,7 @@ export default function JefeOperacionesView() {
   const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
 
   const filteredData = data.filter(item => {
-    console.log(item)
-    const matchesSearch = item.sombra.some((v: any) => (v.asesor || '').toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesSearch = item.sombra.some((v) => (v.asesor || '').toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesGroup = selectedGroup === 'TODOS' || item.supervisor.startsWith(selectedGroup)
 
     // Filtro de fecha usando comparación de strings (ISO YYYY-MM-DD)
@@ -87,7 +121,32 @@ export default function JefeOperacionesView() {
     return matchesSearch && matchesGroup && matchesDate
   })
 
-  const SombraTable = ({ title, sombras }: { title: string, sombras: any[] }) => (
+  const onClickDownloadExcel = () => {
+    const aoaData: (string | null)[][] = [["FECHA", "SUPERVISOR", "AGENCIA", "TURNO", "ASESOR", "HORA_INICIO", "HORA_FIN", "DURACION", ...(FORM_ITEMS.map((v, i) => `ITEM_${i+1}:${v}`))]];
+    const excelData = data
+                      .filter(v => v.registros !== 0)
+                      .map((v) => (v.sombra.map((a) => {
+                        return [v.fecha, v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio, a.endTime, `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => `${z.check}${z.detalle === undefined ? "" : (" Nota: " + z.detalle)}`))]
+                      })))
+    for (const superData of excelData) {
+      aoaData.push(...superData)
+    }
+    
+    const aoaDataSinRegistros = data.filter(v => v.registros === 0)
+                                    .map(a => [a.supervisor])
+
+    const excel = XLSX.utils.aoa_to_sheet(aoaData);
+    const excelSinRegistros = XLSX.utils.aoa_to_sheet(aoaDataSinRegistros);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, excel, "DatosSombras");
+    XLSX.utils.book_append_sheet(workbook, excelSinRegistros, "SupervisoresSinSombras");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const dataBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(dataBlob, `datos_sombras_${format((new Date), 'yyyy-MM', { locale: es })}.xlsx`);
+  }
+
+  const SombraTable = ({ title, sombras }: { title: string, sombras: Sombra[] }) => (
     <div className="space-y-3">
       <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2 px-1">
         <Clock className="w-3.5 h-3.5" />
@@ -108,7 +167,7 @@ export default function JefeOperacionesView() {
               <tr key={idx} className="hover:bg-muted/30 transition-colors">
                 <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio || '--:--'}</td>
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
-                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion % 60}s</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion! % 60}s</td>
                 <td className="py-2 px-4 text-right">
                   <button onClick={() => setSelectedFormDetail(s)} className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all">
                     <Eye className="w-4 h-4" />
@@ -186,7 +245,8 @@ export default function JefeOperacionesView() {
 
           <button
             className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm ${isLoading ? 'animate-spin' : ''}`}
-            title="Sincronizar Datos"
+            title="Descargar Excel"
+            onClick={onClickDownloadExcel}
           >
             <Download className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -216,17 +276,17 @@ export default function JefeOperacionesView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {filteredData.length > 0 ? filteredData.map((item) => {
+                {filteredData.length > 0 ? filteredData.reverse().map((item) => {
                   const initials = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                   const sombras = item.sombra || []
-                  const countT1 = sombras.filter((s: any) => s.turno == 1 || s.turno === '1').length
-                  const countT2 = sombras.filter((s: any) => s.turno == 2 || s.turno === '2').length
+                  const countT1 = sombras.filter((s) => +s.turno! == 1 || s.turno === '1').length
+                  const countT2 = sombras.filter((s) => +s.turno! == 2 || s.turno === '2').length
                   const realizados = item.registros || 0
                   const esperados = item.num_esperado || 6
                   const metaAlcanzada = realizados >= esperados
 
-                  let status = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
-                  let statusColor = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
+                  const status = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
+                  const statusColor = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
 
                   return (
                     <tr key={item.id_acom} className="hover:bg-muted/10 transition-colors group">
@@ -284,7 +344,7 @@ export default function JefeOperacionesView() {
                     {selectedSupervisor.supervisor}
                   </h2>
                   <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-1">
-                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.num_realizado}/{selectedSupervisor.num_esperado} Realizados
+                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.registros}/{selectedSupervisor.num_esperado} Realizados
                   </p>
                 </div>
                 <button onClick={() => setSelectedSupervisor(null)} className="p-2 hover:bg-muted bg-background border border-border rounded-xl transition-all">
@@ -293,8 +353,8 @@ export default function JefeOperacionesView() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 sidebar-scroll bg-[radial-gradient(circle_at_top_right,var(--primary-rgb)/3,transparent)]">
-                <SombraTable title="Turno 1 -" sombras={(selectedSupervisor.sombra || []).filter((s: any) => s.turno == 1 || s.turno === '1')} />
-                <SombraTable title="Turno 2 - " sombras={(selectedSupervisor.sombra || []).filter((s: any) => s.turno == 2 || s.turno === '2')} />
+                <SombraTable title="Turno 1 -" sombras={(selectedSupervisor.sombra || []).filter((s) => +s.turno! == 1 || s.turno === '1')} />
+                <SombraTable title="Turno 2 - " sombras={(selectedSupervisor.sombra || []).filter((s) => +s.turno! == 2 || s.turno === '2')} />
               </div>
             </motion.div>
           </>

@@ -201,10 +201,12 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     title: "Seguimiento Asesor",
     icon: Users,
     href: "#",
+    permiso: "Acompañamiento-ver",
     subItems: [
       {
         title: "Acompañamiento",
         href: "/dashboard/seguimiento-asesor/acompanamiento",
+        permiso: "Acompañamiento-ver"
       },
       {
         title: "Escuchas",
@@ -531,7 +533,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         .map((menu) => {
             // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
             // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-            if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
+            if ((menu.permiso === "Feeback-ver" || menu.permiso === "Acompañamiento-ver") && user?.id_grupo === 14) {
               return null
             }
 

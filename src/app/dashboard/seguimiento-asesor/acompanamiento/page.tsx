@@ -5,10 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
   Calendar,
-  Download,
-  TrendingUp,
   CheckCircle2,
-  AlertCircle,
   Clock,
   ChevronDown,
   LayoutGrid,
@@ -17,7 +14,6 @@ import {
   Award,
   X,
   Check,
-  MinusCircle,
   ChevronLeft,
   Save,
   MessageSquare,
@@ -32,6 +28,102 @@ import { useUser } from '@/Provider/UserProvider'
 import { useColaboradores } from '@/hooks/useColaboradores'
 import { toast } from 'sonner'
 import JefeOperacionesView from './JefeOperacionesView'
+
+export interface FetchNumeroSombrasRealizadas {
+  id_acom:                   number;
+  supervisor:                string;
+  numeroDeSombrasRealizadas: number;
+  numeroDeSombrasFaltantes:  number;
+  agencia:                   string;
+}
+
+
+export interface FetchDetalleAcompanamiento {
+  id_acom:   string;
+  fecha:     string;
+  registros: number;
+  num_realizado: number;
+  num_esperado: number;
+  sombra:    Sombra[];
+}
+
+export interface Sombra {
+  id_sombra:  number;
+  name:       string;
+  startTime:  string;
+  endTime:    string;
+  turno:      string;
+  formulario: Formulario;
+}
+
+export interface Formulario {
+  [key: string]: ResponseForm
+}
+
+export interface ResponseForm {
+  check:    string;
+  detalle?: string;
+}
+
+export interface LogDetail {
+  id:         number;
+  name:       string;
+  startTime:  string;
+  endTime:    string;
+  turno:      string;
+  status:     string;
+  color:      string;
+  formulario: Formulario;
+  time?: string;
+}
+
+export interface MappedLogs {
+  id:        string;
+  date:      string;
+  registros: number;
+  color:     string;
+  bgColor:   string;
+  icon:      React.ReactNode;
+  status:    string;
+  details:   Detail[];
+}
+
+export interface Detail {
+  id:         number;
+  name:       string;
+  startTime:  string;
+  endTime:    string;
+  turno:      string;
+  status:     string;
+  color:      string;
+  formulario: Formulario;
+}
+
+export interface Props {
+  className: string;
+}
+
+export interface FetchValidarAccesoTurno {
+  permitido:         boolean;
+  razon:             string;
+  hora:              string;
+  dia:               string;
+  mensaje:           string;
+  turnosDisponibles: TurnosDisponible[];
+  turnoId?: number;
+  turno: string,
+  minutosRestantes: number;
+  puedesLlenar: number,
+}
+
+export interface TurnosDisponible {
+  id:     number;
+  inicio: string;
+  fin:    string;
+  nombre: string;
+}
+
+
 
 const FORM_ITEMS = [
   "Atiende la llamada de manera inmediata",
@@ -49,7 +141,7 @@ export default function AcompanamientoPage() {
   const { user } = useUser()
   const { colaboradores, loading: loadingColab } = useColaboradores()
   const [view, setView] = useState<'dashboard' | 'form'>('dashboard')
-  const [selectedLogDetail, setSelectedLogDetail] = useState<any>(null)
+  const [selectedLogDetail, setSelectedLogDetail] = useState<LogDetail | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -74,18 +166,17 @@ export default function AcompanamientoPage() {
   const [startTime, setStartTime] = useState('')
 
   const [currentAdvisorId, setCurrentAdvisorId] = useState('')
-  const [formAnswers, setFormAnswers] = useState<Record<number, string>>({})
   const [sombrasData, setSombrasData] = useState({ realizadas: 0, faltantes: 6, id_acom: '', supervisor: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid')
-  const [datosValidacion, setDatosValidacion] = useState<any>(null)
+  const [datosValidacion, setDatosValidacion] = useState<FetchValidarAccesoTurno | null>(null)
   const [formulario, setFormulario] = useState<Record<string, { check: string; detalle: string }>>({})
 
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<MappedLogs[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [expandedRows, setExpandedRows] = useState<any[]>([])
+  const [expandedRows, setExpandedRows] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
@@ -99,16 +190,16 @@ export default function AcompanamientoPage() {
         body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
       })
       if (res.ok) {
-        const data = await res.json()
+        const data: FetchNumeroSombrasRealizadas = await res.json()
         setSombrasData({
           realizadas: data.numeroDeSombrasRealizadas,
           faltantes: data.numeroDeSombrasFaltantes,
-          id_acom: data.id_acom,
+          id_acom: String(data.id_acom),
           supervisor: data.supervisor
         })
 
         if (data.id_acom) {
-          await fetchDetalleAcompanamientos(data.id_acom, fechaInicio, fechaFin)
+          await fetchDetalleAcompanamientos(fechaInicio, fechaFin)
         } else {
           setLogs([])
         }
@@ -124,7 +215,7 @@ export default function AcompanamientoPage() {
     fetchSombras(startDate, endDate)
   }, [user?.usuario, startDate, endDate])
 
-  const fetchDetalleAcompanamientos = async (grupo: any, fechaInicio?: string, fechaFin?: string) => {
+  const fetchDetalleAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
@@ -134,11 +225,11 @@ export default function AcompanamientoPage() {
 
       if (res.ok) {
         const result = await res.json()
-        const rawData = result.data
+        const rawData: FetchDetalleAcompanamiento[] = result.data
 
         if (rawData) {
           const sessions = Array.isArray(rawData) ? rawData : [rawData]
-          const mappedLogs = sessions.map((data: any) => ({
+          const mappedLogs = sessions.map((data) => ({
             id: data.id_acom,
             date: data.fecha || new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
             registros: data.registros,
@@ -146,7 +237,7 @@ export default function AcompanamientoPage() {
             bgColor: 'bg-emerald-500/10',
             icon: <CheckCircle2 className="w-5 h-5" />,
             status: `${data.num_realizado || 0}/${data.num_esperado || 6} Realizados`,
-            details: data.registros !== 0 ? data.sombra.map((s: any) => ({
+            details: data.registros !== 0 ? data.sombra.map((s) => ({
               id: s.id_sombra,
               name: s.name || 'Asesor sin nombre',
               startTime: s.startTime || '--:--',
@@ -157,7 +248,6 @@ export default function AcompanamientoPage() {
               formulario: s.formulario || {}
             })) : []
           }))
-
           setLogs(mappedLogs)
 
           // if (mappedLogs.length > 0) {
@@ -215,7 +305,7 @@ export default function AcompanamientoPage() {
 
   const filteredLogs = logs.filter(log => {
     // Filtro por nombre
-    const matchesSearch = searchTerm === '' || (log.details || []).some((detail: any) =>
+    const matchesSearch = searchTerm === '' || (log.details || []).some((detail) =>
       detail.name && detail.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -227,13 +317,13 @@ export default function AcompanamientoPage() {
     if (endDate && itemDate > endDate) matchesDate = false;
 
     return matchesSearch && matchesDate;
-  }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const allFilteredRecords = filteredLogs.flatMap(log =>
     (log.details || [])
-      .filter((d: any) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map((item: any) => ({ ...item, date: log.date }))
-  ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .filter((d) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .map((item) => ({ ...item, date: log.date }))
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -325,11 +415,11 @@ export default function AcompanamientoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           formulariosPendientes: sombrasData.faltantes,
-          agencia: user?.id_grupo // O el campo que corresponda a la agencia
+          agencia: user?.id_grupo
         })
       })
 
-      const data = await res.json()
+      const data: FetchValidarAccesoTurno = await res.json()
       setDatosValidacion(data)
 
       if (!res.ok) {
@@ -342,12 +432,13 @@ export default function AcompanamientoPage() {
       toast.success(data.mensaje)
       // Si permite el acceso, cambiamos la vista
       setView('form')
-    } catch (error: any) {
-      setValidationError("Error de conexión al validar el turno: " + error.message)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error desconocido"
+      setValidationError("Error de conexión al validar el turno: " + message)
     }
   }
 
-  const toggleRow = (id: any) => {
+  const toggleRow = (id: string) => {
     setExpandedRows(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id])
   }
 
@@ -530,8 +621,8 @@ export default function AcompanamientoPage() {
                             </thead>
                             <tbody className="text-[12px]">
                               {log.details
-                                .filter((d: any) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                .map((item: any) => (
+                                .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map((item: Detail) => (
                                   <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                                     <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
                                     <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
@@ -850,7 +941,7 @@ export default function AcompanamientoPage() {
     </motion.div>
   )
 
-  if (userRole?.trim().toUpperCase() === 'JEFE DE OPERACIONES') {
+  if (userRole?.trim().toUpperCase().startsWith('JEFE DE OPERACIONES')) {
     return (
       <div className="min-h-screen bg-transparent text-foreground p-2 lg:p-4 relative">
         <div className="max-w-7xl mx-auto">
@@ -957,3 +1048,4 @@ export default function AcompanamientoPage() {
     </div>
   )
 }
+
