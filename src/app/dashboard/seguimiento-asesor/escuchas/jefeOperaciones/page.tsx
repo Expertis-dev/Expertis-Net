@@ -15,8 +15,6 @@ import {
   ClipboardCheck,
   Check,
   MinusCircle,
-  Clipboard,
-  ClipboardCopyIcon,
   Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -84,11 +82,11 @@ useEffect(() => {
     fetchTurnos()
 }, [])
 
-const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.agencia || 'S/G')))]
+const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
 
 const filteredData: ReporteEscucha[] = data.filter(item => {
-    const matchesSearch = (item.supervisor || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesGroup = selectedGroup === 'TODOS' || item.agencia === selectedGroup
+    const matchesSearch = item.escucha.some((a) => a.asesor.toLowerCase().startsWith(searchTerm.toLowerCase()))
+    const matchesGroup = selectedGroup === 'TODOS' || item.supervisor.startsWith(selectedGroup)
     
     // Filtro de fecha usando comparación de strings (ISO YYYY-MM-DD)
     let matchesDate = true
@@ -184,7 +182,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Buscar supervisor..."
+              placeholder="Buscar asesor..."
               className="w-full bg-card border border-border rounded-xl pl-10 pr-3 py-2 text-xs focus:ring-1 ring-primary/20 outline-none transition-all font-bold"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -219,8 +217,8 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
           </div>
 
           <button
-            onClick={fetchTotalAcompanamientos}
-            className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm ${isLoading ? 'animate-spin' : ''}`}
+            // onClick={fetchTotalAcompanamientos}
+            className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm`}
             title="Sincronizar Datos"
           >
             <Download className="w-4 h-4 text-muted-foreground" />
@@ -271,7 +269,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                           <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.agencia || 'S/G'}</td>
+                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0]}</td>
                       <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha}</td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
                       <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
@@ -376,11 +374,11 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                             <p className="text-[11px] font-bold leading-snug text-foreground/80">{item.criterio}</p>
                             <div className="flex gap-1 shrink-0">
                               {isPositive ? (
-                                <span className="p-1.5 bg-emerald-500 rounded-lg text-white"><Check className="w-3 h-3" /></span>
+                                <span className="p-1.5 bg-emerald-500 rounded-lg text-white self-center"><Check className="w-3 h-3" /></span>
                               ) : isNegative ? (
-                                <span className="p-1.5 bg-red-500 rounded-lg text-white"><MinusCircle className="w-3 h-3" /></span>
+                                <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                               ) : (
-                                <span className="p-1.5 bg-muted rounded-lg text-muted-foreground"><MinusCircle className="w-3 h-3" /></span>
+                                <span className="p-1.5 bg-muted rounded-lg text-muted-foreground self-center"><MinusCircle className="w-3 h-3" /></span>
                               )}
                             </div>
                           </div>
