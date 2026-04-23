@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, Percent, BookIcon } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,8 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Descuentos" | "Feeback"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback" | "SeguimientoAsesor"
+
 type Permisos = Partial<Record<Modulo, string[]>>
 
 interface SubItem {
@@ -225,6 +226,24 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
         href: "/dashboard/bases/seguimiento-grupo",
         modulo: "Bases",
         permiso: "SeguimientoGrupo-ver",
+      },
+    ],
+  },
+  {
+    id: "seguimiento-asesor-new",
+    title: "Seguimiento Asesor",
+    icon: Users,
+    href: "#",
+    permiso: "Acompañamiento-ver",
+    subItems: [
+      {
+        title: "Acompañamiento",
+        href: "/dashboard/seguimiento-asesor/acompanamiento",
+        permiso: "Acompañamiento-ver"
+      },
+      {
+        title: "Escuchas",
+        href: "/dashboard/seguimiento-asesor/escuchas",
       },
     ],
   },
@@ -549,7 +568,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         .map((menu) => {
           // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
           // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-          if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
+          if ((menu.permiso === "Feeback-ver" || menu.permiso === "Acompañamiento-ver") && user?.id_grupo === 14) {
             return null
           }
 
