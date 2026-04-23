@@ -616,6 +616,7 @@ export default function AcompanamientoPage() {
                                 <th className="pb-2 px-2">H. Inicio</th>
                                 <th className="pb-2 px-2">H. Fin</th>
                                 <th className="pb-2 px-2">Turno</th>
+                                <th className="pb-2 px-2">% completado</th>
                                 <th className="pb-2 px-2 text-right">Acción</th>
                               </tr>
                             </thead>
@@ -630,6 +631,7 @@ export default function AcompanamientoPage() {
                                     <td className="py-2 px-2">
                                       <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
                                     </td>
+                                    <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
                                     <td className="py-2 px-2 text-right">
                                       <button
                                         onClick={(e) => {
@@ -661,6 +663,7 @@ export default function AcompanamientoPage() {
                       <th className="py-3 px-4">Hora Inicio</th>
                       <th className="py-3 px-4">Hora Fin</th>
                       <th className="py-3 px-4">Turno</th>
+                      <th className="py-3 px-4">% completado</th>
                       <th className="py-3 px-4 text-right">Acción</th>
                     </tr>
                   </thead>
@@ -674,6 +677,7 @@ export default function AcompanamientoPage() {
                         <td className="py-3 px-4">
                           <span className="bg-muted px-2 py-1 rounded-lg text-[10px] font-black uppercase">Turno {record.turno}</span>
                         </td>
+                        <td className="py-3 px-4 font-mono text-xs">{(Object.keys(record.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => setSelectedLogDetail(record)}
@@ -995,10 +999,14 @@ export default function AcompanamientoPage() {
 
               <div className="flex-1 overflow-y-auto p-5 space-y-4 sidebar-scroll">
                 <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 shadow-sm">
-                  <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 flex items-center gap-2">
-                    <ClipboardCheck className="w-4 h-4" />
-                    Evaluación de Criterios
+                  <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 flex items-center gap-2 justify-between">
+                    <div className='flex flex-row gap-1'>
+                      <ClipboardCheck className="w-4 h-4" />
+                      <p className='self-center'>Evaluación de Criterios</p>
+                    </div>
+                    <span className='text-right text-lg'>{(Object.keys(selectedLogDetail.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</span>
                   </h3>
+
                   <div className="space-y-3">
                     {FORM_ITEMS.map((item, idx) => {
                       const key = `p${idx + 1}`
