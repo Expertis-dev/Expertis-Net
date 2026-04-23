@@ -20,6 +20,11 @@ import {
 import { toast } from 'sonner'
 import { ReporteEscucha, Escucha, Formulario } from '@/components/seguimiento-asesor/escuchas/TableEscuchas'
 import { CONFIG } from '@/actions/escucha'
+import { preguntas } from '../formulario/preguntas'
+import * as XLSX  from "xlsx"
+import { saveAs } from 'file-saver'
+import { format } from "date-fns"
+import { es } from 'date-fns/locale'
 
 interface TurnoConfig {
   id: number
@@ -112,7 +117,28 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
   }
 
   const onDownloadExcel = () => {
+    const aoaData: (string | null)[][] = [["FECHA", "SUPERVISOR", "AGENCIA", "TURNO", "ASESOR", "HORA_INICIO", "HORA_FIN", "DURACION", ...(preguntas.map((v, i) => `ITEM_${i+1}:${v.criterio}`))]];
+    const excelData = data
+                      .filter(v => v.num_realizado !== 0)
+                      .map((v) => (v.escucha.map((a) => {
+                        return [v.fecha, v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio, a.hora_fin, `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => z.respuesta))]
+                      })))
+    for (const superData of excelData) {
+      aoaData.push(...superData)
+    }
     
+    const aoaDataSinRegistros = data.filter(v => v.num_realizado === 0)
+                                    .map(a => [a.supervisor, a.fecha])
+
+    const excel = XLSX.utils.aoa_to_sheet(aoaData);
+    const excelSinRegistros = XLSX.utils.aoa_to_sheet(aoaDataSinRegistros);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, excel, "DatosSombras");
+    XLSX.utils.book_append_sheet(workbook, excelSinRegistros, "SupervisoresSinSombras");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const dataBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(dataBlob, `datos_sombras_${format((new Date), 'yyyy-MM', { locale: es })}.xlsx`);
   }
   
   const SombraTable = ({ title, sombras }: { title: string; sombras: Escucha[] }) => (
