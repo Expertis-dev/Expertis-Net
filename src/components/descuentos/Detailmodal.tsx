@@ -59,16 +59,16 @@ export const Detailmodal = ({ details = [], isOpen, onClose }: Props) => {
                       <TableRow>
                         <TableHead className='text-center'>Fecha</TableHead>
                         <TableHead className='text-center'>Motivo</TableHead>
-                        <TableHead className='text-center'>Monto</TableHead>
                         <TableHead className='text-center'>Tardanza (min)</TableHead>
                         <TableHead className='text-center'>Permiso (min)</TableHead>
+                        <TableHead className='text-center'>Monto</TableHead>
                         {/* <TableHead>Estado</TableHead> */}
                       </TableRow>
                     </TableHeader>
 
                     <TableBody>
                       {hasData ? (
-                        details.map((item, index) => (
+                        details.sort((a, b) => b.monto - a.monto).map((item, index) => (
                           <TableRow key={`${item.alias}-${index}`} className='text-center'>
                             <TableCell>{item.fecha}</TableCell>
 
@@ -76,9 +76,6 @@ export const Detailmodal = ({ details = [], isOpen, onClose }: Props) => {
                               {item.motivo}
                             </TableCell>
 
-                            <TableCell>
-                              S/ {item.monto.toFixed(2)}
-                            </TableCell>
 
                             <TableCell>
                               {item.minutosTardanza ?? "-"}
@@ -88,6 +85,9 @@ export const Detailmodal = ({ details = [], isOpen, onClose }: Props) => {
                               {item.minutosPermiso ?? "-"}
                             </TableCell>
 
+                            <TableCell>
+                              S/ {item.monto.toFixed(2)}
+                            </TableCell>
                             {/* <TableCell>
                               <span className="px-2 py-1 text-xs rounded-md bg-muted">
                                 {item.estado || "—"}
