@@ -113,7 +113,20 @@ const DescuentoEquipo = () => {
           </CardHeader>
           <CardContent className='overflow-y-scroll sm:h-100 md:h-200'>
             <div className="space-y-4 ">
-              {colaboradores.filter(v => v.usuario.startsWith(name.toUpperCase())).map((member, i) => (
+              {colaboradores.sort((a, b) => {
+                const montos = data
+                    ?.filter(v => v[0] === a.usuario)
+                    .map(v => v[1]?.reduce((prev, item) => prev + item.monto, 0)) || [];
+                
+                const x = montos.length === 0 ? "--" : (+montos).toFixed(2);
+                const montosb = data
+                    ?.filter(v => v[0] === b.usuario)
+                    .map(v => v[1]?.reduce((prev, item) => prev + item.monto, 0)) || [];
+                
+                const y = montosb.length === 0 ? "--" : (+montosb).toFixed(2);
+
+                return +y - +x
+              }).filter(v => v.usuario.startsWith(name.toUpperCase())).map((member, i) => (
                 <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer group">
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center bg-cyan-100 text-cyan-700 font-bold">
