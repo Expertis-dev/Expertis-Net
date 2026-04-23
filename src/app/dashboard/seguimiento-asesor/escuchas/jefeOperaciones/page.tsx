@@ -15,7 +15,8 @@ import {
   ClipboardCheck,
   Check,
   MinusCircle,
-  Copy
+  Copy,
+  NotebookIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ReporteEscucha, Escucha, Formulario } from '@/components/seguimiento-asesor/escuchas/TableEscuchas'
@@ -25,6 +26,7 @@ import * as XLSX  from "xlsx"
 import { saveAs } from 'file-saver'
 import { format } from "date-fns"
 import { es } from 'date-fns/locale'
+import { ObservacionModalSuper } from '@/components/seguimiento-asesor/escuchas/observacion/ObservacionModalSuper'
 
 interface TurnoConfig {
   id: number
@@ -50,7 +52,8 @@ export default function JefeOperacionesViewPage() {
 
     const [selectedSupervisor, setSelectedSupervisor] = useState<ReporteEscucha | null>(null)
     const [selectedFormDetail, setSelectedFormDetail] = useState<Escucha | null>(null)
-    
+    const [observacionModal, setObservacionModal] = useState<{isOpen: boolean; item: ReporteEscucha | undefined}>({isOpen: false, item: undefined}) 
+
     const fetchTotalAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
         setIsLoading(true)
         try {
@@ -296,27 +299,30 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                   const statusColor: string = (countT1 >= 2 && countT2 >= 2) ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
 
                   return (
-                    <tr key={item.id_reporte_escucha} className="hover:bg-muted/10 transition-colors group">
-                      <td className="py-3 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">{initials}</div>
-                          <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0]}</td>
-                      <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha.split("T")[0]}</td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
-                      <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
-                      <td className="py-3 px-6 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
-                      </td>
-                      <td className="py-3 px-6 text-right">
-                        <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
-                          <Eye className="w-4.5 h-4.5" />
-                        </button>
-                      </td>
-                    </tr>
+                      <tr key={item.id_reporte_escucha} className="hover:bg-muted/10 transition-colors group">
+                        <td className="py-3 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">{initials}</div>
+                            <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0]}</td>
+                        <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha.split("T")[0]}</td>
+                        <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
+                        <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
+                        <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
+                        <td className="py-3 px-6 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
+                        </td>
+                        <td className="text-center">
+                          <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
+                            <Eye className="w-4.5 h-4.5" />
+                          </button>
+                          <button onClick={() => setObservacionModal({...observacionModal, isOpen: true})} className={`p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90`} hidden={item.observacion === null}>
+                            <NotebookIcon className="w-4.5 h-4.5" />
+                          </button>
+                        </td>
+                      </tr>
                   )
                 }) : (
                   <tr>
@@ -327,6 +333,10 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                 )}
               </tbody>
             </table>
+            <ObservacionModalSuper
+              observacion={observacionModal}
+              setObservacion={setObservacionModal}
+            />
           </div>
         )}
       </div>

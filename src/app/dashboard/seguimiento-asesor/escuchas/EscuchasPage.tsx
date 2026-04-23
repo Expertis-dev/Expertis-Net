@@ -85,7 +85,7 @@ export const EscuchasClientPage = () => {
     }
 
     return (
-        <div className="space-y-4 max-w-[80%] mx-auto">
+        <div className="space-y-4 max-w-[90%] mx-auto">
             <Filtro filters={filters} setFilters={setFilters} />
             <div className="px-6 pb-6 space-y-4">
                 <section className="grid grid-cols-1 md:grid-cols-4 gap-4">

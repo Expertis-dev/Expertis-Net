@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, CheckCircle2, Clock, LayoutGrid, List } from "lucide-react";
+import { ChevronDown, CheckCircle2, Clock, LayoutGrid, List, NotebookPen } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Filters } from "./Filtro";
 import { useUser } from "@/Provider/UserProvider";
+import { ObservacionModal } from "./observacion/ObservacionModal";
 
 interface Props {
     filters: Filters
@@ -15,6 +16,7 @@ export interface ReporteEscucha {
     supervisor:         string;
     min_num:            number;
     num_realizado:      number;
+    observacion?: string;
     escucha:            Escucha[];
 }
 
@@ -69,6 +71,7 @@ interface EscuchaLog {
     icon: React.ReactNode;
     status: string;
     details: EscuchaDetail[];
+    observacion?: string;
 }
 
 
@@ -103,6 +106,7 @@ interface RawReporteEscucha {
   num_realizado?: number;
   num_esperado?: number;
   realizadas?: number;
+  observacion?: string;
   escucha?: RawEscucha[];
 }
 
@@ -172,6 +176,7 @@ const mapReporteEscuchaToLogs = (reports: RawReporteEscucha[]): EscuchaLog[] => 
       icon: <CheckCircle2 className="w-5 h-5" />,
       status: `${report.num_realizado ?? report.realizadas ?? details.length}/${report.min_num ?? report.num_esperado ?? details.length} Realizados`,
       details,
+      observacion: report.observacion ?? "",
     };
   });
 }
@@ -182,6 +187,12 @@ export const TableEscuchas = ({filters}: Props) => {
     const [logs, setLogs] = useState<EscuchaLog[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
+    const [observacionModal, setObservacionModal] = useState({
+        isOpen: false,
+        observacion: "",
+        id_escucha: -1
+    })
+
     const {user} = useUser()
 
     const searchValue = filters.searchTerm.trim().toLowerCase();
@@ -213,7 +224,7 @@ export const TableEscuchas = ({filters}: Props) => {
         return () => {
             mounted = false;
         };
-    }, [user?.usuario, filters]);
+    }, [user?.usuario, filters, observacionModal]);
 
     const filteredLogs = logs.map((log) => {
         const logDate = normalizeDate(log.dateIso || log.date);
@@ -290,132 +301,144 @@ export const TableEscuchas = ({filters}: Props) => {
                 ) : totalFilteredRecords > 0 ? (
                     displayMode === "grid" ? (
                         filteredLogs.reverse().map((log) => (
-                            <div
-                                key={log.id}
-                                className={`group border border-border rounded-xl overflow-hidden transition-all ${expandedRows.includes(log.id) ? "bg-muted/10" : ""}`}
-                            >
+                            <div key={log.id} className="flex flex-row gap-2">
                                 <div
-                                    className="flex items-center justify-between p-3 cursor-pointer select-none"
-                                    onClick={() => toggleRow(log.id)}
+                                    className={`group border border-border rounded-xl overflow-hidden transition-all flex-10/12 ${expandedRows.includes(log.id) ? "bg-muted/10" : ""}`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}
-                                        >
-                                            {log.icon}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold leading-none">
-                                                {log.date}
-                                            </p>
-                                            <p className="text-[11px] text-muted-foreground mt-1">
-                                                {log.registros} registros
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <motion.div
-                                        animate={{
-                                            rotate: expandedRows.includes(
-                                                log.id,
-                                            )
-                                                ? 180
-                                                : 0,
-                                        }}
+                                    <div
+                                        className="flex items-center justify-between p-3 cursor-pointer select-none"
+                                        onClick={() => toggleRow(log.id)}
                                     >
-                                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                    </motion.div>
-                                </div>
-
-                                <AnimatePresence>
-                                    {expandedRows.includes(log.id) && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{
-                                                height: "auto",
-                                                opacity: 1,
-                                            }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden bg-background/50 border-t border-border"
-                                        >
-                                            <div className="p-3 overflow-x-auto">
-                                                <table className="w-full text-left min-w-[720px]">
-                                                    <thead>
-                                                        <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
-                                                            <th className="pb-2 px-2">
-                                                                Asesor
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                Fecha Audio
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                Turno
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                Supervisor
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                H. Inicio
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                H. Fin
-                                                            </th>
-                                                            <th className="pb-2 px-2">
-                                                                Duración
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="text-[12px]">
-                                                        {log.details.map(
-                                                            (item) => (
-                                                                <tr
-                                                                    key={
-                                                                        item.id
-                                                                    }
-                                                                    className="hover:bg-muted/30 transition-colors"
-                                                                >
-                                                                    <td className="py-2 px-2 font-semibold text-primary">
-                                                                        {
-                                                                            item.name
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground">
-                                                                        {
-                                                                            item.date
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground">
-                                                                        {
-                                                                            item.turno
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground">
-                                                                        {
-                                                                            item.supervisor
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground font-mono">
-                                                                        {
-                                                                            item.startTime.split("T")[1].split(".")[0].slice(0,-3)
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground font-mono">
-                                                                        {
-                                                                            item.endTime.split("T")[1].split(".")[0].slice(0,-3)
-                                                                        }
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-muted-foreground font-mono">
-                                                                        {Math.floor(+item.duracionAudio / 60)}:{+item.duracionAudio % 60 < 10 ? `0${+item.duracionAudio % 60}` : +item.duracionAudio % 60}
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}
+                                            >
+                                                {log.icon}
                                             </div>
+                                            <div>
+                                                <p className="text-sm font-bold leading-none">
+                                                    {log.date}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground mt-1">
+                                                    {log.registros} registros
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <motion.div
+                                            animate={{
+                                                rotate: expandedRows.includes(
+                                                    log.id,
+                                                )
+                                                    ? 180
+                                                    : 0,
+                                            }}
+                                        >
+                                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                         </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                    </div>
+                                    <AnimatePresence>
+                                        {expandedRows.includes(log.id) && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{
+                                                    height: "auto",
+                                                    opacity: 1,
+                                                }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden bg-background/50 border-t border-border"
+                                            >
+                                                <div className="p-3 overflow-x-auto">
+                                                    <table className="w-full text-left min-w-[720px]">
+                                                        <thead>
+                                                            <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
+                                                                <th className="pb-2 px-2">
+                                                                    Asesor
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    Fecha Audio
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    Turno
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    Supervisor
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    H. Inicio
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    H. Fin
+                                                                </th>
+                                                                <th className="pb-2 px-2">
+                                                                    Duración
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="text-[12px]">
+                                                            {log.details.map(
+                                                                (item) => (
+                                                                    <tr
+                                                                        key={
+                                                                            item.id
+                                                                        }
+                                                                        className="hover:bg-muted/30 transition-colors"
+                                                                    >
+                                                                        <td className="py-2 px-2 font-semibold text-primary">
+                                                                            {
+                                                                                item.name
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground">
+                                                                            {
+                                                                                item.date
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground">
+                                                                            {
+                                                                                item.turno
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground">
+                                                                            {
+                                                                                item.supervisor
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground font-mono">
+                                                                            {
+                                                                                item.startTime.split("T")[1].split(".")[0].slice(0,-3)
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground font-mono">
+                                                                            {
+                                                                                item.endTime.split("T")[1].split(".")[0].slice(0,-3)
+                                                                            }
+                                                                        </td>
+                                                                        <td className="py-2 px-2 text-muted-foreground font-mono">
+                                                                            {Math.floor(+item.duracionAudio / 60)}:{+item.duracionAudio % 60 < 10 ? `0${+item.duracionAudio % 60}` : +item.duracionAudio % 60}
+                                                                        </td>
+                                                                    </tr>
+                                                                ),
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                                <div 
+                                    className="content-center p-2 rounded-2xl border border-sky-400 dark:border-sky-700 flex-1/12 hover:bg-sky-400 dark:hover:bg-sky-700 hover:text-sky-100 text-sky-600 cursor-pointer max-h-16"
+                                    onClick={() => {
+                                        const parsedId = Number(log.id);
+                                        setObservacionModal({
+                                            isOpen: true,
+                                            observacion: log.observacion ?? "",
+                                            id_escucha: Number.isFinite(parsedId) ? parsedId : -1,
+                                        });
+                                    }}
+                                >
+                                    <NotebookPen className="mx-auto"/>
+                                </div>
                             </div>
                         ))
                     ) : (
@@ -494,6 +517,10 @@ export const TableEscuchas = ({filters}: Props) => {
                     </div>
                 )}
             </div>
+            <ObservacionModal
+                observacionModal={observacionModal}
+                setObservacionModal={setObservacionModal}
+            />
         </section>
     );
 };
