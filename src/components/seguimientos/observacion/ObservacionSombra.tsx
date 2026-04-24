@@ -21,8 +21,8 @@ interface Props {
     }>>;
 }
 
-const actualizarObservacion = async (idEscucha: number, observacion: string) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subir-observacion-sombra/${idEscucha}`, {
+const actualizarObservacion = async (idSeguimiento: number, observacion: string) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subir-observacion-sombra/${idSeguimiento}`, {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({observacion: observacion})
@@ -61,15 +61,15 @@ export const ObservacionSombrasModal = ({observacionModal, setObservacionModal} 
     };
 
     const onSubmit = async (data: ObservacionForm) => {
-        const escuchaId = observacionModal.id_seguimiento;
-        if (!Number.isFinite(escuchaId) || escuchaId < 0) {
+        const idSeguimiento = observacionModal.id_seguimiento;
+        if (!Number.isFinite(idSeguimiento) || idSeguimiento < 0) {
             toast.error("No se encontró el ID de la escucha.");
             return;
         }
 
         setIsSubmitting(true);
         try {
-            const ok = await actualizarObservacion(escuchaId, data.observacion);
+            const ok = await actualizarObservacion(idSeguimiento, data.observacion);
             if (!ok) {
                 toast.error("No se pudo guardar la observación.");
                 return;

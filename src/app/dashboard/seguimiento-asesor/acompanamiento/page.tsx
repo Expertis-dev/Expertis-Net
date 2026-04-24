@@ -191,6 +191,8 @@ export default function AcompanamientoPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const finalizeInFlightRef = useRef(false)
+  const [isFinalizing, setIsFinalizing] = useState(false)
 
   const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
     if (!user?.usuario) return
@@ -278,6 +280,8 @@ export default function AcompanamientoPage() {
 
   useEffect(() => {
     if (view === 'form') {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
       const now = new Date()
       setStartTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
       setTimeLeft(20 * 60)
@@ -390,6 +394,10 @@ export default function AcompanamientoPage() {
       return
     }
 
+    if (finalizeInFlightRef.current) return
+    finalizeInFlightRef.current = true
+    setIsFinalizing(true)
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrar-sombra`, {
         method: 'POST',
@@ -408,6 +416,8 @@ export default function AcompanamientoPage() {
 
       if (!res.ok) {
         toast.error(data.mensaje || "No se pudo registrar la sombra.")
+        finalizeInFlightRef.current = false
+        setIsFinalizing(false)
         return
       }
 
@@ -416,6 +426,8 @@ export default function AcompanamientoPage() {
       fetchSombras()
       setView('dashboard')
     } catch (error) {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
       console.error("Error registering shadow:", error)
       toast.error("Error de conexión al registrar la sombra.")
     }
@@ -782,10 +794,11 @@ export default function AcompanamientoPage() {
           </div>
           <button
             onClick={() => handleFinalize()}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95"
+            disabled={isFinalizing}
+            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <Save className="w-4 h-4" />
-            Finalizar
+            {isFinalizing ? "Guardando..." : "Finalizar"}
           </button>
         </div>
       </div>
