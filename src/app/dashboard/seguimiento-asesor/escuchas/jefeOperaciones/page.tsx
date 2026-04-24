@@ -169,7 +169,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
                 <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion % 60}s</td>
                 <td className="py-2 px-4 text-center text-muted-foreground font-medium">{(new Date(s.fecha_audio)).toISOString().split("T")[0]}</td>
-                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor(+s.duracion_audio / 60)}:{+s.duracion_audio % 60 < 10 ? `0${+s.duracion_audio % 60}` : +s.duracion_audio % 60}'</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor(+s.duracion_audio / 60)}:{+s.duracion_audio % 60 < 10 ? `0${+s.duracion_audio % 60}` : +s.duracion_audio % 60}&rsquo;</td>
                 <td className="py-2 px-4 text-right">
                   <button onClick={() => setSelectedFormDetail(s)} className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all">
                     <Eye className="w-4 h-4" />
@@ -282,7 +282,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                   <th className="py-3.5 px-6 text-center">TURNO 2</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
-                  <th className="py-3.5 px-6 text-right">Acción</th>
+                  <th className="py-3.5 px-6 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -318,7 +318,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                           <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
                             <Eye className="w-4.5 h-4.5" />
                           </button>
-                          <button onClick={() => setObservacionModal({...observacionModal, isOpen: true})} className={`p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90`} hidden={item.observacion === null}>
+                          <button onClick={() => setObservacionModal({item: item, isOpen: true})} className={`p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90`} hidden={item.observacion === null}>
                             <NotebookIcon className="w-4.5 h-4.5" />
                           </button>
                         </td>

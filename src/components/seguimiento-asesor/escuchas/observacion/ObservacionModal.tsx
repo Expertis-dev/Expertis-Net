@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
@@ -123,7 +122,6 @@ export const ObservacionModal = ({observacionModal, setObservacionModal} : Props
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="observacion">Observación</Label>
                                     <Textarea
                                         id="observacion"
                                         placeholder="Escribe tu observación..."
