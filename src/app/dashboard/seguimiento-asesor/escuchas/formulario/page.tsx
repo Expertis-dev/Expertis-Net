@@ -67,6 +67,7 @@ export default function EscuchaFormularioPage() {
     const hasTimedOutRef = useRef(false);
     const hasNavigatedRef = useRef(false);
     const submitEscuchaRef = useRef<((options?: { forceExit?: boolean }) => Promise<void>) | null>(null);
+    const submitEscuchaInFlightRef = useRef(false);
 
     const router = useRouter();
     const selectedAdvisor = colaboradores.find((a) => a.usuario === currentAdvisorId);
@@ -125,62 +126,64 @@ export default function EscuchaFormularioPage() {
     };
 
     const submitEscucha = async ({ forceExit = false }: { forceExit?: boolean } = {}) => {
-        if (isSubmitting) return;
-
-        const audioFieldsAreValid = await trigger(["audioUrl", "audioDate", "audioDuration"]);
-
-        if (!currentAdvisorId) {
-            if (forceExit) {
-                toast.error("Tiempo agotado. No se guardo la escucha porque no se selecciono asesor.");
-                navigateBack();
-                return;
-            }
-            setValidationError("Selecciona un asesor");
-            return;
-        }
-
-        if (elapsedTime <= minFormTime) {
-            if (forceExit) {
-                toast.error("Tiempo agotado. No se guardo la escucha porque no cumplio el tiempo minimo.");
-                navigateBack();
-                return;
-            }
-            setValidationError("Tiempo minimo para responder el registro es de 2:00 minutos");
-            return;
-        }
-
-        if (!audioFieldsAreValid) {
-            const errorMessage = getAudioErrorMessage();
-            if (forceExit) {
-                toast.error(`Tiempo agotado. ${errorMessage}`);
-                navigateBack();
-                return;
-            }
-            setValidationError(errorMessage);
-            return;
-        }
-
-        if (form.values().toArray().length !== preguntas.length){
-            setValidationError("Faltan completar campos de la evaluacion de escucha")
-            if (forceExit) {
-                toast.error(`Tiempo agotado.`);
-                navigateBack();
-                return;
-            }
-            return;
-        }
-
-        setIsSubmitting(true);
-        const formatHora = (date: Date) => {
-            return date.toLocaleTimeString('es-PE', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-        }
+        if (submitEscuchaInFlightRef.current) return;
+        submitEscuchaInFlightRef.current = true;
 
         try {
+            setIsSubmitting(true);
+
+            const audioFieldsAreValid = await trigger(["audioUrl", "audioDate", "audioDuration"]);
+
+            if (!currentAdvisorId) {
+                if (forceExit) {
+                    toast.error("Tiempo agotado. No se guardo la escucha porque no se selecciono asesor.");
+                    navigateBack();
+                    return;
+                }
+                setValidationError("Selecciona un asesor");
+                return;
+            }
+
+            if (elapsedTime <= minFormTime) {
+                if (forceExit) {
+                    toast.error("Tiempo agotado. No se guardo la escucha porque no cumplio el tiempo minimo.");
+                    navigateBack();
+                    return;
+                }
+                setValidationError("Tiempo minimo para responder el registro es de 2:00 minutos");
+                return;
+            }
+
+            if (!audioFieldsAreValid) {
+                const errorMessage = getAudioErrorMessage();
+                if (forceExit) {
+                    toast.error(`Tiempo agotado. ${errorMessage}`);
+                    navigateBack();
+                    return;
+                }
+                setValidationError(errorMessage);
+                return;
+            }
+
+            if (form.values().toArray().length !== preguntas.length){
+                setValidationError("Faltan completar campos de la evaluacion de escucha")
+                if (forceExit) {
+                    toast.error(`Tiempo agotado.`);
+                    navigateBack();
+                    return;
+                }
+                return;
+            }
+
+            const formatHora = (date: Date) => {
+                return date.toLocaleTimeString('es-PE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            }
+
             const formulario = preguntas.map((v, i) => ({criterio: v.criterio, respuesta: Object.fromEntries(form)[i] || null}))
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crear-escucha`, {
                 method: "POST",
@@ -213,6 +216,7 @@ export default function EscuchaFormularioPage() {
             }
         } finally {
             setIsSubmitting(false);
+            submitEscuchaInFlightRef.current = false;
         }
     };
     submitEscuchaRef.current = submitEscucha;
