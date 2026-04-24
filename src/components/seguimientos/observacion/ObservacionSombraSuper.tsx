@@ -54,9 +54,8 @@ export const ObservacionSombraSuper = ({observacion, setObservacion} : Props) =>
                                 </Button>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className="space-y-2">
-                                    <Label htmlFor="observacion">Observación</Label>
-                                    <p className="text-wrap">{observacion.observacion || ""}</p>
+                                <div className="space-y-2 p-2 rounded-2xl border">
+                                    <p className="text-wrap p-1">{observacion.observacion || ""}</p>
                                 </div>
 
                                 <div className="flex gap-2 pt-1">

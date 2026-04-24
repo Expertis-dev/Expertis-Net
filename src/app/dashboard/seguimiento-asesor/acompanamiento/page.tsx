@@ -604,79 +604,89 @@ export default function AcompanamientoPage() {
           ) : allFilteredRecords.length > 0 ? (
             displayMode === 'grid' ? (
               filteredLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className={`group border border-border rounded-xl overflow-hidden transition-all ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
-                >
+                <div key={log.id} className='flex flex-row gap-2'>
                   <div
-                    className="flex items-center justify-between p-3 cursor-pointer select-none"
-                    onClick={() => toggleRow(log.id)}
+                    className={`group border border-border rounded-xl overflow-hidden transition-all flex-10/12 ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
-                        {log.icon}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold leading-none">{log.date}</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
-                      </div>
-                    </div>
-                    <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </motion.div>
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedRows.includes(log.id) && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-background/50 border-t border-border"
-                      >
-                        <div className="p-3">
-                          <table className="w-full text-left">
-                            <thead>
-                              <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
-                                <th className="pb-2 px-2">Asesor</th>
-                                <th className="pb-2 px-2">H. Inicio</th>
-                                <th className="pb-2 px-2">H. Fin</th>
-                                <th className="pb-2 px-2">Turno</th>
-                                <th className="pb-2 px-2">% completado</th>
-                                <th className="pb-2 px-2 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody className="text-[12px]">
-                              {log.details
-                                .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                .map((item: Detail) => (
-                                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
-                                    <td className="py-2 px-2">
-                                      <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
-                                    </td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
-                                    <td className="py-2 px-2 text-right">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedLogDetail(item);
-                                        }}
-                                        className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
-                                      >
-                                        Detalle
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
+                    <div
+                      className="flex items-center justify-between p-3 cursor-pointer select-none"
+                      onClick={() => toggleRow(log.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
+                          {log.icon}
                         </div>
+                        <div>
+                          <p className="text-sm font-bold leading-none">{log.date}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
+                        </div>
+                      </div>
+                      <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </div>
+                    <AnimatePresence>
+                      {expandedRows.includes(log.id) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden bg-background/50 border-t border-border"
+                        >
+                          <div className="p-3">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
+                                  <th className="pb-2 px-2">Asesor</th>
+                                  <th className="pb-2 px-2">H. Inicio</th>
+                                  <th className="pb-2 px-2">H. Fin</th>
+                                  <th className="pb-2 px-2">Turno</th>
+                                  <th className="pb-2 px-2">% completado</th>
+                                  <th className="pb-2 px-2 text-right">Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-[12px]">
+                                {log.details
+                                  .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                  .map((item: Detail) => (
+                                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                      <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
+                                      <td className="py-2 px-2">
+                                        <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
+                                      </td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
+                                      <td className="py-2 px-2 text-right">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedLogDetail(item);
+                                          }}
+                                          className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
+                                        >
+                                          Detalle
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div 
+                    className="content-center p-2 rounded-2xl border border-sky-400 dark:border-sky-700 flex-1/12 hover:bg-sky-400 dark:hover:bg-sky-700 hover:text-sky-100 text-sky-600 cursor-pointer max-h-16"
+                    onClick={() => setObservacionSombra({id_seguimiento: +log.id, isOpen: true, observacion: log.observacion})}
+                    >
+                    <NotebookPenIcon className="mx-auto"/>
+                  </div>
+                    <ObservacionSombrasModal
+                      observacionModal={observacionSombra}
+                      setObservacionModal={setObservacionSombra}
+                    />
                 </div>
               ))
             ) : (
@@ -712,23 +722,11 @@ export default function AcompanamientoPage() {
                           >
                             <Eye className="w-5 h-5" />
                           </button>
-                          <button
-                            onClick={() => setObservacionSombra({id_seguimiento: record.id, observacion: record.observacion, isOpen: true})}
-                            className="p-2 hover:bg-primary/10 text-primary rounded-full transition-all active:scale-90"
-                            title="Ver detalle"
-                            // hidden={record.observacion === null}
-                          >
-                            <NotebookPenIcon className="w-5 h-5" />
-                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <ObservacionSombrasModal
-                  observacionModal={observacionSombra}
-                  setObservacionModal={setObservacionSombra}
-                />
               </div>
             )
           ) : (

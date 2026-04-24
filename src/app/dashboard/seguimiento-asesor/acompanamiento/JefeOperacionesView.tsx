@@ -280,7 +280,7 @@ export default function JefeOperacionesView() {
                   <th className="py-3.5 px-6 text-center">Turno 2</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
-                  <th className="py-3.5 px-6 text-right">Acción</th>
+                  <th className="py-3.5 px-6 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -312,7 +312,7 @@ export default function JefeOperacionesView() {
                       <td className="py-3 px-6 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
                       </td>
-                      <td className="py-3 px-6 text-right">
+                      <td className="py-3 px-6 text-center">
                         <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
                           <Eye className="w-4.5 h-4.5" />
                         </button>

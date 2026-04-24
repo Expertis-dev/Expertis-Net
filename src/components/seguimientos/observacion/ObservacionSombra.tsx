@@ -123,7 +123,6 @@ export const ObservacionSombrasModal = ({observacionModal, setObservacionModal} 
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="observacion">Observación</Label>
                                     <Textarea
                                         id="observacion"
                                         placeholder="Escribe tu observación..."
