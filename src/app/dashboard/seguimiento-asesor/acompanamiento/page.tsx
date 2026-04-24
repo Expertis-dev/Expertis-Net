@@ -23,11 +23,13 @@ import {
   Search,
   Eye,
   ClipboardCheck,
+  NotebookPenIcon,
 } from 'lucide-react'
 import { useUser } from '@/Provider/UserProvider'
 import { useColaboradores } from '@/hooks/useColaboradores'
 import { toast } from 'sonner'
 import JefeOperacionesView from './JefeOperacionesView'
+import { ObservacionSombrasModal } from '@/components/seguimientos/observacion/ObservacionSombra'
 
 export interface FetchNumeroSombrasRealizadas {
   id_acom:                   number;
@@ -44,6 +46,7 @@ export interface FetchDetalleAcompanamiento {
   registros: number;
   num_realizado: number;
   num_esperado: number;
+  observacion: string;
   sombra:    Sombra[];
 }
 
@@ -85,6 +88,7 @@ export interface MappedLogs {
   bgColor:   string;
   icon:      React.ReactNode;
   status:    string;
+  observacion: string;
   details:   Detail[];
 }
 
@@ -145,6 +149,15 @@ export default function AcompanamientoPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [observacionSombra, setObservacionSombra] = useState<{
+        isOpen: boolean;
+        observacion: string;
+        id_seguimiento: number;
+    }>({
+      id_seguimiento: -1,
+      isOpen: false,
+      observacion: "",
+    });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -237,6 +250,7 @@ export default function AcompanamientoPage() {
             bgColor: 'bg-emerald-500/10',
             icon: <CheckCircle2 className="w-5 h-5" />,
             status: `${data.num_realizado || 0}/${data.num_esperado || 6} Realizados`,
+            observacion: data.observacion,
             details: data.registros !== 0 ? data.sombra.map((s) => ({
               id: s.id_sombra,
               name: s.name || 'Asesor sin nombre',
@@ -322,7 +336,7 @@ export default function AcompanamientoPage() {
   const allFilteredRecords = filteredLogs.flatMap(log =>
     (log.details || [])
       .filter((d) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map((item) => ({ ...item, date: log.date }))
+      .map((item) => ({ ...item, date: log.date, observacion: log.observacion }))
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatTime = (seconds: number) => {
@@ -686,11 +700,23 @@ export default function AcompanamientoPage() {
                           >
                             <Eye className="w-5 h-5" />
                           </button>
+                          <button
+                            onClick={() => setObservacionSombra({id_seguimiento: record.id, observacion: record.observacion, isOpen: true})}
+                            className="p-2 hover:bg-primary/10 text-primary rounded-full transition-all active:scale-90"
+                            title="Ver detalle"
+                            // hidden={record.observacion === null}
+                          >
+                            <NotebookPenIcon className="w-5 h-5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <ObservacionSombrasModal
+                  observacionModal={observacionSombra}
+                  setObservacionModal={setObservacionSombra}
+                />
               </div>
             )
           ) : (
