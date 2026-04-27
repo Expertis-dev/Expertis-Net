@@ -572,7 +572,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         .map((menu) => {
           // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
           // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-          if ((menu.permiso === "Feeback-ver" || menu.permiso === "Acompañamiento-ver") && user?.id_grupo === 14) {
+          if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
             return null
           }
 
@@ -584,9 +584,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
-          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
-            return null
-          }
+
           const filteredSubItems = menu.subItems.filter((sub) => {
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
