@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Check, CheckCircle2, ClipboardCheck, Clock, LayoutGrid, List, MinusCircle, NotebookPen, X } from "lucide-react";
+import { ChevronDown, Check, CheckCircle2, ClipboardCheck, Clock, LayoutGrid, List, MinusCircle, NotebookPen, X, ClipboardCopyIcon, CopyIcon, Link, XIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Filters } from "./Filtro";
 import { useUser } from "@/Provider/UserProvider";
@@ -43,6 +43,8 @@ export type RawEscucha = Partial<Escucha> & {
     nombre?: string;
     supervisor?: string;
     fecha_audio?: Date | string;
+    link_audio?: Date | string;
+    linkAudio?: string;
 };
 
 export interface Formulario {
@@ -58,6 +60,7 @@ interface EscuchaDetail {
     supervisor: string;
     startTime: string;
     endTime: string;
+    link_audio: string;
     duracionAudio: string;
     formulario: Formulario[];
 }
@@ -159,6 +162,7 @@ const mapReporteEscuchaToLogs = (reports: RawReporteEscucha[]): EscuchaLog[] => 
             supervisor: item.supervisor ?? report.supervisor ?? "N/A",
             startTime: item.hora_inicio ?? "--:--",
             endTime: item.hora_fin ?? "--:--",
+            link_audio: String(item.link_audio ?? item.linkAudio ?? ""),
             duracionAudio: item.duracion_audio
                 ? String(item.duracion_audio)
                 : item.tiempo_duracion || item.tiempo_duracion === 0
@@ -568,8 +572,24 @@ export const TableEscuchas = ({filters}: Props) => {
                         <X className="w-5 h-5 text-muted-foreground" />
                         </button>
                     </div>
-
-                    <div className="flex-1 overflow-y-auto p-5 space-y-4 sidebar-scroll">
+                    <div className="px-5 py-2 text-xs">
+                        {selectedLogDetail.link_audio ? (
+                            <>
+                            <a
+                                href={selectedLogDetail.link_audio}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary underline break-all flex flex-row gap-2"
+                                >
+                                Abrir enlace del audio
+                                <Link size={20}/>
+                            </a>
+                            </>
+                        ) : (
+                            <span className="text-muted-foreground">Sin link de audio</span>
+                        )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4 sidebar-scroll">
                         <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
                         <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4">Criterios de Sesión</h3>
                         <div className="space-y-4">
@@ -584,9 +604,9 @@ export const TableEscuchas = ({filters}: Props) => {
                                     {isPositive ? (
                                         <span className="p-1.5 bg-emerald-500 rounded-lg text-white self-center"><Check className="w-3 h-3" /></span>
                                     ) : isNegative ? (
-                                        <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
+                                        <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><XIcon className="w-3 h-3" /></span>
                                     ) : (
-                                        <span className="p-1.5 bg-muted rounded-lg text-muted-foreground self-center"><MinusCircle className="w-3 h-3" /></span>
+                                        <span className="p-1.5 bg-orange-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                                     )}
                                     </div>
                                 </div>

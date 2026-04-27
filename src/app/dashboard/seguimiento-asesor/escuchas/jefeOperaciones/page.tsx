@@ -422,7 +422,7 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                               ) : isNegative ? (
                                 <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                               ) : (
-                                <span className="p-1.5 bg-muted rounded-lg text-muted-foreground self-center"><MinusCircle className="w-3 h-3" /></span>
+                                <span className="p-1.5 bg-orange-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                               )}
                             </div>
                           </div>

@@ -14,6 +14,7 @@ import {
     ChevronLeft,
     Clock,
     Link2,
+    MinusCircleIcon,
     Save,
     Timer,
     TimerReset,
@@ -28,7 +29,6 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/Provider/UserProvider";
 import { getTurno, getTurnoFin } from "@/actions/escucha";
-import { ConfirmationModal } from "@/components/confirmation-modal";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 export const formTime = 10 * 60;
@@ -41,8 +41,10 @@ type AudioFormValues = {
     audioDuration: string;
 };
 
+type FormAnswer = "SI" | "NO" | "NO APLICA";
+
 const PURECLOUD_URL_REGEX =
-    /^https:\/\/apps\.mypurecloud\.com\/directory\/#\/analytics\/interactions\/[0-9a-fA-F-]{36}\/admin\?tabId=[0-9a-fA-F-]{36}$/;
+    /^https:\/\/apps\.mypurecloud\.com\/directory\/#\/analytics\/interactions\/[0-9a-fA-F-]{36}\/.*$/;
 const MINUTES_SECONDS_REGEX = /^\d+:[0-5]\d$/;
 
 const DurationStringToSeconds = (duracion: string) => {
@@ -51,6 +53,48 @@ const DurationStringToSeconds = (duracion: string) => {
     return + seg + (+min)*60
 }
 
+const secondsToMinutesSeconds = (value: string) => {
+    const totalSeconds = Number(value);
+    if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0:00";
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+interface Audio {
+    fecha: string;
+    asesor: string;
+    grupo: string;
+    hora_inicio: string;
+    hora_fin: string;
+    duracion: string;
+    tipo: string;
+    url: string;
+}
+
+const dataAudiosPrueba: Audio[] = [
+    {
+        fecha: "2026-04-27",
+        asesor: "FRANCO HUAMANI",
+        grupo: "JORGE",
+        hora_inicio: "9:01",
+        hora_fin: "9:05",
+        duracion: "180",
+        tipo: "MCT",
+        url: "https://apps.mypurecloud.com/directory/#/analytics/interactions/695d3118-4306-4021-89e5-0b3bff3d73a4/ad"
+    },
+    {
+        fecha: "2026-04-26",
+        asesor: "JIMENA MEDINA",
+        grupo: "JORGE",
+        hora_inicio: "13:01",
+        hora_fin: "13:03",
+        duracion: "120",
+        tipo: "MCT",
+        url: "https://apps.mypurecloud.com/directory/#/analytics/interactions/695d3118-4306-4021-89e5-0b3bff3d73a4/ad"
+    },
+]
+
 export default function EscuchaFormularioPage() {
     const searchParams = useSearchParams()
 
@@ -58,7 +102,7 @@ export default function EscuchaFormularioPage() {
     const [currentAdvisorId, setCurrentAdvisorId] = useState<string>("");
 
     const [validationError, setValidationError] = useState<string | null>(null)
-    const [form, setForm] = useState<Map<number, string>>(new Map());
+    const [form, setForm] = useState<Map<number, FormAnswer>>(new Map());
     const startTime = useRef(new Date());
     const [timer, setTimer] = useState(0);
     const [selectedCriterio, setSelectedCriterio] = useState<string>(criterios[0])
@@ -73,6 +117,11 @@ export default function EscuchaFormularioPage() {
 
     const [showExitConfirm, setShowExitConfirm] = useState(false)
 
+    const [audioModal, setAudioModal] = useState<{isOpen: boolean, selectedAudio: Audio | undefined}>({
+        isOpen: false,
+        selectedAudio: undefined
+    })
+
     const router = useRouter();
     const selectedAdvisor = colaboradores.find((a) => a.usuario === currentAdvisorId);
     const {
@@ -82,6 +131,7 @@ export default function EscuchaFormularioPage() {
         getValues,
         getFieldState,
         trigger,
+        setValue,
     } = useForm<AudioFormValues>({
         defaultValues: {
             audioUrl: "",
@@ -111,7 +161,7 @@ export default function EscuchaFormularioPage() {
         }, 250);
     };
 
-    const onInputChange = (idx: number, value: string) => {
+    const onInputChange = (idx: number, value: FormAnswer) => {
         if (isLocked) return;
 
         const newForm = new Map(form);
@@ -342,7 +392,7 @@ export default function EscuchaFormularioPage() {
                     </button>
                 </div>
             </div>
-            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm flex flex-col md:flex-row md:items-center gap-5">
+            <div className="bg-card rounded-2xl border border-border px-4 pb-1.5 shadow-sm flex flex-col md:flex-row md:items-center gap-5">
                 <div className="flex-1 space-y-1.5">
                     <label className="text-[11px] font-black uppercase text-muted-foreground tracking-widest pl-1">
                         Seleccionar Asesor
@@ -399,19 +449,42 @@ export default function EscuchaFormularioPage() {
                     )}
                 </AnimatePresence>
             </div>
-            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm flex flex-col md:flex-row md:items-center gap-5">
-                <div className="flex-1 space-y-1.5">
-                    <label className="text-[11px] font-black uppercase text-muted-foreground tracking-widest pl-1">
+            <div className="bg-card rounded-2xl border border-border px-3 py-2 shadow-sm flex flex-col md:flex-row md:items-center gap-2">
+                <div className="flex-1 space-y-0.5">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
                         Seleccionar Audio
                     </label>
+                    <div className="px-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <p className="text-[10px] text-muted-foreground leading-tight">
+                            Elige un audio desde la tabla para autocompletar URL, fecha y duracion.
+                        </p>
+                        <button
+                            className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wide shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => setAudioModal((prev) => ({...prev, isOpen: true}))}
+                            disabled={isLocked}
+                        >
+                            <Volume2Icon className="w-3.5 h-3.5" />
+                            Buscar Audio
+                        </button>
+                    </div>
+                    {audioModal.selectedAudio && (
+                        <div className="px-1">
+                            <div className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <p className="text-[9px] font-bold text-emerald-700 leading-tight">
+                                    Audio seleccionado: {audioModal.selectedAudio.asesor} - {audioModal.selectedAudio.fecha}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <div className="px-1">
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-2">
+                            <div className="space-y-0.5">
+                                <label className="text-[9px] font-black uppercase text-muted-foreground tracking-wider pl-1">
                                     URL de PureCloud
                                 </label>
                                 <div className="relative">
-                                    <Link2 className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                     <input
                                         type="url"
                                         placeholder="https://apps.mypurecloud.com/directory/#/analytics/interactions/..."
@@ -421,23 +494,23 @@ export default function EscuchaFormularioPage() {
                                                 PURECLOUD_URL_REGEX.test(value.trim()) ||
                                                 "La URL debe tener el formato de interaccion de PureCloud.",
                                         })}
-                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 ${errors.audioUrl ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        className={`w-full rounded-lg border bg-muted/40 pl-8.5 pr-3 py-2 text-xs font-medium outline-none transition-all placeholder:text-muted-foreground/50 ${errors.audioUrl ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
                                         disabled={isLocked}
                                     />
                                 </div>
                                 {!!errors.audioUrl?.message ?
-                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioUrl ? "text-destructive" : "text-muted-foreground"}`}>
+                                <p className={`text-[9px] leading-tight pl-1 ${errors.audioUrl ? "text-destructive" : "text-muted-foreground"}`}>
                                     {errors.audioUrl?.message}
                                 </p>: <></>
                                 }
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                            <div className="space-y-0.5">
+                                <label className="text-[9px] font-black uppercase text-muted-foreground tracking-wider pl-1">
                                     Fecha de la escucha
                                 </label>
                                 <div className="relative">
-                                    <CalendarDays className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                     <input
                                         min={(() => {
                                             const ayerDate = new Date();
@@ -450,23 +523,23 @@ export default function EscuchaFormularioPage() {
                                         {...register("audioDate", {
                                             required: "Selecciona la fecha del audio.",
                                         })}
-                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-semibold outline-none transition-all ${errors.audioDate ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        className={`w-full rounded-lg border bg-muted/40 pl-8.5 pr-3 py-2 text-xs font-semibold outline-none transition-all ${errors.audioDate ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
                                         disabled={isLocked}
                                     />
                                 </div>
                                 {!!errors.audioDate?.message ?
-                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioDate ? "text-destructive" : "text-muted-foreground"}`}>
+                                <p className={`text-[9px] leading-tight pl-1 ${errors.audioDate ? "text-destructive" : "text-muted-foreground"}`}>
                                     {errors.audioDate?.message}
                                 </p>: <></>
                                 }
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider pl-1">
+                            <div className="space-y-0.5">
+                                <label className="text-[9px] font-black uppercase text-muted-foreground tracking-wider pl-1">
                                     Duracion
                                 </label>
                                 <div className="relative">
-                                    <TimerReset className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                    <TimerReset className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                     <input
                                         type="text"
                                         inputMode="numeric"
@@ -477,31 +550,26 @@ export default function EscuchaFormularioPage() {
                                                 MINUTES_SECONDS_REGEX.test(value.trim()) ||
                                                 "Usa el formato min:seg, por ejemplo 2:30.",
                                         })}
-                                        className={`w-full rounded-2xl border bg-muted/40 pl-10 pr-16 py-3 text-sm font-semibold outline-none transition-all ${errors.audioDuration ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
+                                        className={`w-full rounded-lg border bg-muted/40 pl-8.5 pr-14 py-2 text-xs font-semibold outline-none transition-all ${errors.audioDuration ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
                                         disabled={isLocked}
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-wider text-muted-foreground">
                                         min:seg
                                     </span>
                                 </div>
                                 {!!errors.audioDuration?.message ?
-                                <p className={`text-[11px] leading-relaxed pl-1 ${errors.audioDuration ? "text-destructive" : "text-muted-foreground"}`}>
+                                <p className={`text-[9px] leading-tight pl-1 ${errors.audioDuration ? "text-destructive" : "text-muted-foreground"}`}>
                                     {errors.audioDuration?.message}
                                 </p>: <></>
                                 }
                             </div>
                         </div>
                         {audioUrlValue?.trim() && !errors.audioUrl ? (
-                            <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
-                                <Volume2Icon className="w-4 h-4 text-emerald-600 mt-0.5" />
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                                        URL validada
-                                    </p>
-                                    <p className="text-xs text-emerald-700/80 break-all">
-                                        {audioUrlValue}
-                                    </p>
-                                </div>
+                            <div className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5">
+                                <Volume2Icon className="w-3 h-3 text-emerald-600" />
+                                <p className="text-[9px] text-emerald-700/90 truncate" title={audioUrlValue}>
+                                    URL validada: {audioUrlValue}
+                                </p>
                             </div>
                         ) : null}
                     </div>
@@ -546,7 +614,7 @@ export default function EscuchaFormularioPage() {
                             key={v}
                             onClick={() => setSelectedCriterio(v)}
                             className={`
-                                group flex items-center gap-3 px-4 py-2 border-2 transition-all duration-200 rounded-xl cursor-pointer
+                                group flex items-center gap-3 px-2 py-1 border-2 transition-all duration-200 rounded-xl cursor-pointer text-sm
                                 ${selectedCriterio === v 
                                 ? "border-blue-500 bg-blue-50 shadow-sm  dark:bg-blue-900" 
                                 : "border-transparent bg-gray-50 dark:bg-zinc-600 hover:bg-gray-100 text-gray-600"}
@@ -604,9 +672,10 @@ export default function EscuchaFormularioPage() {
                             if (item.grupo !== criterio) return null;
                             const isSelectedSi = form.get(idx) === "SI";
                             const isSelectedNo = form.get(idx) === "NO";
+                            const isSelectedNoAplica = form.get(idx) === "NO APLICA";
 
                             return (
-                            <div key={idx} className="py-2 px-3 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors border-b border-zinc-200">
+                            <div key={idx} className="py-2 px-3 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors border-b border-zinc-200 dark:border-zinc-700">
                                 <div className="flex flex-row lg:flex-row justify-between gap-6">
                                 <div className="space-y-1.5">
                                     <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
@@ -649,6 +718,21 @@ export default function EscuchaFormularioPage() {
                                         <X className={`w-6 h-6 ${isSelectedNo ? 'text-red-600 dark:text-red-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
                                     </div>
                                     {/* <span className={`text-[10px] font-bold uppercase ${isSelectedNo ? 'text-red-600' : 'text-zinc-500'}`}>No</span> */}
+                                    </label>
+                                    {/* Botón No Aplica */}
+                                    <label className={`relative flex flex-col items-center gap-1.5 group ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+                                    <input
+                                        type="radio"
+                                        name={`item-${idx}`}
+                                        className="hidden peer"
+                                        onChange={() => onInputChange(idx, "NO APLICA")}
+                                        checked={isSelectedNoAplica}
+                                        disabled={isLocked}
+                                    />
+                                    <div className="w-12 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-transparent peer-checked:border-amber-500 peer-checked:bg-amber-50 dark:peer-checked:bg-amber-500/10 transition-all shadow-sm group-hover:scale-105 active:scale-95">
+                                        <MinusCircleIcon className={`w-6 h-6 ${isSelectedNoAplica ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400 dark:text-zinc-600'}`} />
+                                    </div>
+                                    {/* <span className={`text-[10px] font-bold uppercase ${isSelectedNoAplica ? 'text-amber-600' : 'text-zinc-500'}`}>No aplica</span> */}
                                     </label>
                                 </div>
                                 </div>
@@ -694,6 +778,75 @@ export default function EscuchaFormularioPage() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {
+            audioModal.isOpen && (
+                <div className="fixed inset-0 flex items-center justify-center z-[100] p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-background/80 backdrop-blur-md"
+                    />
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                        className="bg-card border border-border p-6 rounded-3xl shadow-2xl max-w-6xl w-full relative z-10 space-y-4"
+                    >
+                        <div className="flex justify-between items-center gap-3">
+                            <h3 className="text-base font-black uppercase text-muted-foreground tracking-wide">Seleccionar Audio</h3>
+                            <button
+                                onClick={() => setAudioModal((prev) => ({...prev, isOpen: false}))}
+                                className="px-4 py-2 text-sm bg-muted font-bold rounded-xl border border-border cursor-pointer"
+                            >
+                                Salir
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto border border-border rounded-2xl">
+                            <table className="w-full min-w-[900px] text-sm">
+                                <thead className="bg-muted/50">
+                                    <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                                        <th className="px-3 py-2">Fecha</th>
+                                        <th className="px-3 py-2">Asesor</th>
+                                        <th className="px-3 py-2">Grupo</th>
+                                        <th className="px-3 py-2">Inicio</th>
+                                        <th className="px-3 py-2">Fin</th>
+                                        <th className="px-3 py-2">Duracion</th>
+                                        <th className="px-3 py-2">Tipo</th>
+                                        <th className="px-3 py-2">URL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataAudiosPrueba.map((audio, index) => {
+                                        const isSelected = audioModal.selectedAudio?.url === audio.url;
+                                        return (
+                                            <tr
+                                                key={`${audio.url}-${index}`}
+                                                className={`border-t border-border cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : "hover:bg-muted/40"}`}
+                                                onClick={() => {
+                                                    if (isLocked) return;
+                                                    setValue("audioUrl", audio.url, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                                                    setValue("audioDate", audio.fecha, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                                                    setValue("audioDuration", secondsToMinutesSeconds(audio.duracion), { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                                                    setAudioModal({ isOpen: false, selectedAudio: audio });
+                                                }}
+                                            >
+                                                <td className="px-3 py-2 font-semibold">{audio.fecha}</td>
+                                                <td className="px-3 py-2">{audio.asesor}</td>
+                                                <td className="px-3 py-2">{audio.grupo}</td>
+                                                <td className="px-3 py-2">{audio.hora_inicio}</td>
+                                                <td className="px-3 py-2">{audio.hora_fin}</td>
+                                                <td className="px-3 py-2">{secondsToMinutesSeconds(audio.duracion)}</td>
+                                                <td className="px-3 py-2">{audio.tipo}</td>
+                                                <td className="px-3 py-2 max-w-[340px] truncate" title={audio.url}>{audio.url}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </motion.div>
+                </div>
+            )
+        }
       </AnimatePresence>
             <ValidationErrorModal
                 setValidationError={setValidationError}
