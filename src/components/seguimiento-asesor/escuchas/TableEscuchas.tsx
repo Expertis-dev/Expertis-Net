@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, CheckCircle2, Clock, LayoutGrid, List, NotebookPen } from "lucide-react";
+import { ChevronDown, Check, CheckCircle2, ClipboardCheck, Clock, LayoutGrid, List, MinusCircle, NotebookPen, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Filters } from "./Filtro";
 import { useUser } from "@/Provider/UserProvider";
@@ -59,6 +59,7 @@ interface EscuchaDetail {
     startTime: string;
     endTime: string;
     duracionAudio: string;
+    formulario: Formulario[];
 }
 
 interface EscuchaLog {
@@ -163,6 +164,7 @@ const mapReporteEscuchaToLogs = (reports: RawReporteEscucha[]): EscuchaLog[] => 
                 : item.tiempo_duracion || item.tiempo_duracion === 0
                   ? `${Math.floor(item.tiempo_duracion / 60)}m ${String(item.tiempo_duracion % 60).padStart(2, "0")}s`
                   : "N/A",
+            formulario: Array.isArray(item.formulario) ? item.formulario : [],
         };
     });
 
@@ -186,7 +188,8 @@ export const TableEscuchas = ({filters}: Props) => {
     const [expandedRows, setExpandedRows] = useState<string[]>([]);
     const [logs, setLogs] = useState<EscuchaLog[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    
+    const [selectedLogDetail, setSelectedLogDetail] = useState<EscuchaDetail | null>(null)
+
     const [observacionModal, setObservacionModal] = useState({
         isOpen: false,
         observacion: "",
@@ -372,6 +375,7 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                 <th className="pb-2 px-2">
                                                                     Duración
                                                                 </th>
+                                                                <th className="pb-2 px-2">Acción</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="text-[12px]">
@@ -415,6 +419,17 @@ export const TableEscuchas = ({filters}: Props) => {
                                                                         </td>
                                                                         <td className="py-2 px-2 text-muted-foreground font-mono">
                                                                             {Math.floor(+item.duracionAudio / 60)}:{+item.duracionAudio % 60 < 10 ? `0${+item.duracionAudio % 60}` : +item.duracionAudio % 60}
+                                                                        </td>
+                                                                        <td>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                    setSelectedLogDetail(item);
+                                                                                }}
+                                                                                className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
+                                                                            >
+                                                                                Detalle
+                                                                            </button>
                                                                         </td>
                                                                     </tr>
                                                                 ),
@@ -467,6 +482,9 @@ export const TableEscuchas = ({filters}: Props) => {
                                         <th className="py-2 px-2 font-black">
                                             Duración
                                         </th>
+                                        <th className="py-2 px-2 font-black text-right">
+                                            Acción
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
@@ -497,6 +515,14 @@ export const TableEscuchas = ({filters}: Props) => {
                                                 <td className="py-3 px-2 text-muted-foreground font-mono">
                                                     {Math.floor(+detail.duracionAudio / 60)}:{+detail.duracionAudio % 60 < 10 ? `0${+detail.duracionAudio % 60}` : +detail.duracionAudio % 60}
                                                 </td>
+                                                <td className="py-3 px-2 text-right">
+                                                    <button
+                                                        onClick={() => setSelectedLogDetail(detail)}
+                                                        className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
+                                                    >
+                                                        Detalle
+                                                    </button>
+                                                </td>
                                             </tr>
                                         )),
                                     )}
@@ -517,6 +543,69 @@ export const TableEscuchas = ({filters}: Props) => {
                     </div>
                 )}
             </div>
+            <AnimatePresence>
+                {selectedLogDetail && (
+                <>
+                    <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setSelectedLogDetail(null)}
+                    className="fixed inset-0 bg-background/20 z-[80] backdrop-blur-[1px]"
+                    />
+                    <motion.div
+                    initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-[90] overflow-hidden flex flex-col"
+                    >
+                    <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20">
+                        <div>
+                        <h2 className="text-sm font-black flex items-center gap-2 uppercase">
+                            <ClipboardCheck className="w-5 h-5 text-primary" />
+                            Hoja de Evaluación
+                        </h2>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase mt-0.5">Asesor: <span className="text-foreground">{selectedLogDetail.name}</span></p>
+                        </div>
+                        <button onClick={() => setSelectedLogDetail(null)} className="p-2.5 hover:bg-muted rounded-full">
+                        <X className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4 sidebar-scroll">
+                        <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
+                        <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4">Criterios de Sesión</h3>
+                        <div className="space-y-4">
+                            {(selectedLogDetail.formulario || []).map((item: Formulario, idx: number) => {
+                            const isPositive: boolean = item.respuesta === 'SI'
+                            const isNegative: boolean = item.respuesta === 'NO'
+                            return (
+                                <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
+                                <div className="flex justify-between gap-4">
+                                    <p className="text-[11px] font-bold leading-snug text-foreground/80">{item.criterio}</p>
+                                    <div className="flex gap-1 shrink-0">
+                                    {isPositive ? (
+                                        <span className="p-1.5 bg-emerald-500 rounded-lg text-white self-center"><Check className="w-3 h-3" /></span>
+                                    ) : isNegative ? (
+                                        <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
+                                    ) : (
+                                        <span className="p-1.5 bg-muted rounded-lg text-muted-foreground self-center"><MinusCircle className="w-3 h-3" /></span>
+                                    )}
+                                    </div>
+                                </div>
+                                </div>
+                            )
+                            })}
+                        </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 border-t border-border">
+                        <button onClick={() => setSelectedLogDetail(null)} className="w-full py-3 bg-primary text-primary-foreground font-black text-xs uppercase rounded-2xl hover:opacity-90 transition-all shadow-md">
+                        Finalizar Revisión
+                        </button>
+                    </div>
+                    </motion.div>
+                </>
+                )}
+            </AnimatePresence>
             <ObservacionModal
                 observacionModal={observacionModal}
                 setObservacionModal={setObservacionModal}
@@ -524,3 +613,6 @@ export const TableEscuchas = ({filters}: Props) => {
         </section>
     );
 };
+
+
+

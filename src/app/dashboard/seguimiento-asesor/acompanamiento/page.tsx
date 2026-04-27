@@ -92,7 +92,7 @@ export default function AcompanamientoPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-sombras-realizadas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha: hoy, usuario: user.usuario.split(' ')[0] })
+        body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
       })
       if (res.ok) {
         const data = await res.json()
@@ -126,7 +126,7 @@ export default function AcompanamientoPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: user?.usuario.split(' ')[0] })
+        body: JSON.stringify({ grupo: user?.usuario })
       })
 
       if (res.ok) {
