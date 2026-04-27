@@ -286,7 +286,7 @@ export default function EscuchaFormularioPage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setShowExitConfirm(true)}
-                        className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                        className="p-2 hover:bg-muted cursor-pointer rounded-full transition-colors text-muted-foreground hover:text-foreground"
                         disabled={isLocked}
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -334,7 +334,7 @@ export default function EscuchaFormularioPage() {
                     </div>
                     <button
                         onClick={() => void submitEscucha()}
-                        className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-6 py-2 cursor-pointer bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                         disabled={isLocked}
                     >
                         <Save className="w-4 h-4" />
@@ -688,8 +688,8 @@ export default function EscuchaFormularioPage() {
               <h3 className="text-xl font-bold italic">¿Deseas salir?</h3>
               <p className="text-sm text-muted-foreground">Se perderán todos los datos registrados en el formulario actual.</p>
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-2.5 bg-muted font-bold rounded-xl border border-border">Continuar</button>
-                <button onClick={() => {setShowExitConfirm(false); router.back()}} className="flex-1 py-2.5 bg-destructive text-white font-bold rounded-xl shadow-lg">Sí, Salir</button>
+                <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-2.5 bg-muted font-bold rounded-xl border border-border cursor-pointer">Continuar</button>
+                <button onClick={() => {setShowExitConfirm(false); router.back()}} className="flex-1 py-2.5 bg-destructive text-white font-bold rounded-xl shadow-lg cursor-pointer">Sí, Salir</button>
               </div>
             </motion.div>
           </div>
