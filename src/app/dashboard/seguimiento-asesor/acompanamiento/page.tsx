@@ -191,7 +191,10 @@ export default function AcompanamientoPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const endTimeRef = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const finalizeInFlightRef = useRef(false)
+  const warningShownRef = useRef(false)
   const [isFinalizing, setIsFinalizing] = useState(false)
 
   const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
@@ -282,17 +285,40 @@ export default function AcompanamientoPage() {
     if (view === 'form') {
       finalizeInFlightRef.current = false
       setIsFinalizing(false)
+      warningShownRef.current = false
+      
+      // Pre-cargar el audio para que el navegador lo permita en segundo plano
+      if (!audioRef.current) {
+        audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2976/2976-preview.mp3')
+        audioRef.current.load()
+      }
+
       const now = new Date()
-      setStartTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      const startTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      setStartTime(startTimeStr)
+      
+      // Establecer el tiempo final (20 minutos desde ahora)
+      const duration = 20 * 60 * 1000
+      const endTime = Date.now() + duration
+      endTimeRef.current = endTime
+      
       setTimeLeft(20 * 60)
       setFormulario({})
       setCurrentAdvisorId('')
 
+      // Usamos el tiempo real para calcular lo que queda, así no se pausa en segundo plano
       timerRef.current = setInterval(() => {
-        setTimeLeft(prev => (prev > 0 ? prev - 1 : 0))
+        if (endTimeRef.current) {
+          const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000))
+          setTimeLeft(remaining)
+          if (remaining === 0 && timerRef.current) {
+            clearInterval(timerRef.current)
+          }
+        }
       }, 1000)
     } else {
       if (timerRef.current) clearInterval(timerRef.current)
+      endTimeRef.current = null
     }
 
     return () => {
@@ -300,12 +326,30 @@ export default function AcompanamientoPage() {
     }
   }, [view])
 
+  // Efecto adicional para sincronizar inmediatamente al volver a la pestaña
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && view === 'form' && endTimeRef.current) {
+        const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000))
+        setTimeLeft(remaining)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [view])
+
   useEffect(() => {
     if (view === 'form') {
-      if (timeLeft === 1 * 60) {
-        // Sonido de alerta (beep suave)
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2976/2976-preview.mp3')
-        audio.play().catch(e => console.log("Audio play deferred:", e))
+      if (timeLeft <= 60 && timeLeft > 0 && !warningShownRef.current) {
+        warningShownRef.current = true
+        
+        // Intentar reproducir el audio pre-cargado
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => {
+            console.log("Audio play deferred or blocked by browser policy:", e)
+          })
+        }
 
         toast.warning("¡Aviso!", {
           description: "Queda solo 1 minuto para que termine la sesión. El formulario se guardará automáticamente al finalizar el tiempo."
