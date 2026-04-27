@@ -99,7 +99,7 @@ export default function NuevaJustificacion() {
 
   // Función para obtener la fecha mínima permitida (3 días hábiles atrás)
   const obtenerFechaMinima = () => {
-    return startOfDay(subBusinessDays(new Date(), 1))
+    return startOfDay(subBusinessDays(new Date(), 0))
   }
 
   // Función para obtener la fecha por defecto formateada
