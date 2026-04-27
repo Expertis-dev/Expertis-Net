@@ -4,6 +4,7 @@ import { ValidationErrorModal } from "@/components/seguimiento-asesor/escuchas/f
 import { useColaboradores } from "@/hooks/useColaboradores";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+    AlertTriangle,
     ArrowLeft,
     ArrowRight,
     Calendar,
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/Provider/UserProvider";
 import { getTurno, getTurnoFin } from "@/actions/escucha";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 export const formTime = 10 * 60;
@@ -68,6 +70,8 @@ export default function EscuchaFormularioPage() {
     const hasNavigatedRef = useRef(false);
     const submitEscuchaRef = useRef<((options?: { forceExit?: boolean }) => Promise<void>) | null>(null);
     const submitEscuchaInFlightRef = useRef(false);
+
+    const [showExitConfirm, setShowExitConfirm] = useState(false)
 
     const router = useRouter();
     const selectedAdvisor = colaboradores.find((a) => a.usuario === currentAdvisorId);
@@ -281,7 +285,7 @@ export default function EscuchaFormularioPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm sticky -top-4 z-10">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigateBack()}
+                        onClick={() => setShowExitConfirm(true)}
                         className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
                         disabled={isLocked}
                     >
@@ -667,6 +671,30 @@ export default function EscuchaFormularioPage() {
                 })}
             </div>
             </div>
+            <AnimatePresence>
+        {showExitConfirm && (
+          <div className="fixed inset-0 flex items-center justify-center z-[100] p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-border p-6 rounded-3xl shadow-2xl max-w-sm w-full relative z-10 text-center space-y-4"
+            >
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-bold italic">¿Deseas salir?</h3>
+              <p className="text-sm text-muted-foreground">Se perderán todos los datos registrados en el formulario actual.</p>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-2.5 bg-muted font-bold rounded-xl border border-border">Continuar</button>
+                <button onClick={() => {setShowExitConfirm(false); router.back()}} className="flex-1 py-2.5 bg-destructive text-white font-bold rounded-xl shadow-lg">Sí, Salir</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
             <ValidationErrorModal
                 setValidationError={setValidationError}
                 validationError={validationError}
