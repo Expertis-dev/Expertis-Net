@@ -23,11 +23,13 @@ import {
   Search,
   Eye,
   ClipboardCheck,
+  NotebookPenIcon,
 } from 'lucide-react'
 import { useUser } from '@/Provider/UserProvider'
 import { useColaboradores } from '@/hooks/useColaboradores'
 import { toast } from 'sonner'
 import JefeOperacionesView from './JefeOperacionesView'
+import { ObservacionSombrasModal } from '@/components/seguimientos/observacion/ObservacionSombra'
 
 export interface FetchNumeroSombrasRealizadas {
   id_acom:                   number;
@@ -44,6 +46,7 @@ export interface FetchDetalleAcompanamiento {
   registros: number;
   num_realizado: number;
   num_esperado: number;
+  observacion: string;
   sombra:    Sombra[];
 }
 
@@ -85,6 +88,7 @@ export interface MappedLogs {
   bgColor:   string;
   icon:      React.ReactNode;
   status:    string;
+  observacion: string;
   details:   Detail[];
 }
 
@@ -145,6 +149,15 @@ export default function AcompanamientoPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [observacionSombra, setObservacionSombra] = useState<{
+        isOpen: boolean;
+        observacion: string;
+        id_seguimiento: number;
+    }>({
+      id_seguimiento: -1,
+      isOpen: false,
+      observacion: "",
+    });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -178,6 +191,8 @@ export default function AcompanamientoPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const finalizeInFlightRef = useRef(false)
+  const [isFinalizing, setIsFinalizing] = useState(false)
 
   const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
     if (!user?.usuario) return
@@ -237,6 +252,7 @@ export default function AcompanamientoPage() {
             bgColor: 'bg-emerald-500/10',
             icon: <CheckCircle2 className="w-5 h-5" />,
             status: `${data.num_realizado || 0}/${data.num_esperado || 6} Realizados`,
+            observacion: data.observacion,
             details: data.registros !== 0 ? data.sombra.map((s) => ({
               id: s.id_sombra,
               name: s.name || 'Asesor sin nombre',
@@ -264,6 +280,8 @@ export default function AcompanamientoPage() {
 
   useEffect(() => {
     if (view === 'form') {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
       const now = new Date()
       setStartTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
       setTimeLeft(20 * 60)
@@ -322,7 +340,7 @@ export default function AcompanamientoPage() {
   const allFilteredRecords = filteredLogs.flatMap(log =>
     (log.details || [])
       .filter((d) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map((item) => ({ ...item, date: log.date }))
+      .map((item) => ({ ...item, date: log.date, observacion: log.observacion }))
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatTime = (seconds: number) => {
@@ -376,6 +394,10 @@ export default function AcompanamientoPage() {
       return
     }
 
+    if (finalizeInFlightRef.current) return
+    finalizeInFlightRef.current = true
+    setIsFinalizing(true)
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrar-sombra`, {
         method: 'POST',
@@ -394,6 +416,8 @@ export default function AcompanamientoPage() {
 
       if (!res.ok) {
         toast.error(data.mensaje || "No se pudo registrar la sombra.")
+        finalizeInFlightRef.current = false
+        setIsFinalizing(false)
         return
       }
 
@@ -402,6 +426,8 @@ export default function AcompanamientoPage() {
       fetchSombras()
       setView('dashboard')
     } catch (error) {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
       console.error("Error registering shadow:", error)
       toast.error("Error de conexión al registrar la sombra.")
     }
@@ -578,79 +604,89 @@ export default function AcompanamientoPage() {
           ) : allFilteredRecords.length > 0 ? (
             displayMode === 'grid' ? (
               filteredLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className={`group border border-border rounded-xl overflow-hidden transition-all ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
-                >
+                <div key={log.id} className='flex flex-row gap-2'>
                   <div
-                    className="flex items-center justify-between p-3 cursor-pointer select-none"
-                    onClick={() => toggleRow(log.id)}
+                    className={`group border border-border rounded-xl overflow-hidden transition-all flex-10/12 ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
-                        {log.icon}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold leading-none">{log.date}</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
-                      </div>
-                    </div>
-                    <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </motion.div>
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedRows.includes(log.id) && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-background/50 border-t border-border"
-                      >
-                        <div className="p-3">
-                          <table className="w-full text-left">
-                            <thead>
-                              <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
-                                <th className="pb-2 px-2">Asesor</th>
-                                <th className="pb-2 px-2">H. Inicio</th>
-                                <th className="pb-2 px-2">H. Fin</th>
-                                <th className="pb-2 px-2">Turno</th>
-                                <th className="pb-2 px-2">% completado</th>
-                                <th className="pb-2 px-2 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody className="text-[12px]">
-                              {log.details
-                                .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                .map((item: Detail) => (
-                                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
-                                    <td className="py-2 px-2">
-                                      <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
-                                    </td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
-                                    <td className="py-2 px-2 text-right">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedLogDetail(item);
-                                        }}
-                                        className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
-                                      >
-                                        Detalle
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
+                    <div
+                      className="flex items-center justify-between p-3 cursor-pointer select-none"
+                      onClick={() => toggleRow(log.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
+                          {log.icon}
                         </div>
+                        <div>
+                          <p className="text-sm font-bold leading-none">{log.date}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
+                        </div>
+                      </div>
+                      <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </div>
+                    <AnimatePresence>
+                      {expandedRows.includes(log.id) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden bg-background/50 border-t border-border"
+                        >
+                          <div className="p-3">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
+                                  <th className="pb-2 px-2">Asesor</th>
+                                  <th className="pb-2 px-2">H. Inicio</th>
+                                  <th className="pb-2 px-2">H. Fin</th>
+                                  <th className="pb-2 px-2">Turno</th>
+                                  <th className="pb-2 px-2">% completado</th>
+                                  <th className="pb-2 px-2 text-right">Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-[12px]">
+                                {log.details
+                                  .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                  .map((item: Detail) => (
+                                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                      <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
+                                      <td className="py-2 px-2">
+                                        <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
+                                      </td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
+                                      <td className="py-2 px-2 text-right">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedLogDetail(item);
+                                          }}
+                                          className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
+                                        >
+                                          Detalle
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div 
+                    className="content-center p-2 rounded-2xl border border-sky-400 dark:border-sky-700 flex-1/12 hover:bg-sky-400 dark:hover:bg-sky-700 hover:text-sky-100 text-sky-600 cursor-pointer max-h-16"
+                    onClick={() => setObservacionSombra({id_seguimiento: +log.id, isOpen: true, observacion: log.observacion})}
+                    >
+                    <NotebookPenIcon className="mx-auto"/>
+                  </div>
+                    <ObservacionSombrasModal
+                      observacionModal={observacionSombra}
+                      setObservacionModal={setObservacionSombra}
+                    />
                 </div>
               ))
             ) : (
@@ -756,10 +792,11 @@ export default function AcompanamientoPage() {
           </div>
           <button
             onClick={() => handleFinalize()}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95"
+            disabled={isFinalizing}
+            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <Save className="w-4 h-4" />
-            Finalizar
+            {isFinalizing ? "Guardando..." : "Finalizar"}
           </button>
         </div>
       </div>
