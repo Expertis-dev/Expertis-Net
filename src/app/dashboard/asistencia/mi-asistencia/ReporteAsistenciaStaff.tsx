@@ -274,7 +274,7 @@ const ReporteAsistenciaStaff = () => {
             return { entrada: "08:30", tolerancia: 0 }; // 08:30 AM
         }
         if (esSupervisorInterno) {
-            return { entrada: "07:00", tolerancia: 10 }; // 07:10 AM
+            return { entrada: "07:00", tolerancia: 5 }; // 07:10 AM
         }
         if (aliasUpper === "ROBERTO INZUA") {
             return { entrada: "07:00", tolerancia: 0 }; // 07:10 AM
@@ -602,8 +602,8 @@ const ReporteAsistenciaStaff = () => {
                                                                 const minsIngreso = h * 60 + m;
                                                                 const minsBase = baseH * 60 + baseM;
                                                                 const minsTarde = minsIngreso - minsBase;
-                                                                if (minsTarde <= 0) return "text-emerald-600 font-semibold";
-                                                                return minsTarde > 15
+                                                                if (minsTarde <= 0 + horarioConfig.tolerancia) return "text-emerald-600 font-semibold";
+                                                                return minsTarde > 15 + horarioConfig.tolerancia
                                                                     ? "text-red-600 font-semibold"
                                                                     : "text-amber-600 font-semibold";
                                                             })()

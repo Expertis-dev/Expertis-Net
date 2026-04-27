@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users, Percent } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 
 // ================== TIPOS Y HELPERS DE PERMISOS ==================
 
-type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback" | "SeguimientoAsesor"
+type Modulo = "Bases" | "Justificaciones" | "Vacaciones" | "Admin" | "Asistencia" | "Encuesta" | "Feeback" | "SeguimientoAsesor" | "Descuentos"
 
 type Permisos = Partial<Record<Modulo, string[]>>
 
@@ -47,8 +47,9 @@ interface MenuItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   href: string
   subItems: SubItem[]
-  modulo?: Modulo       // permiso a nivel de módulo padre
-  permiso?: string      // permiso a nivel de módulo padre
+  modulo?: Modulo
+  permiso?: string
+
 }
 
 // Leer permisos desde localStorage (JSON)
@@ -177,6 +178,38 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     ],
   },
   {
+    id: "descuentos",
+    title: "Descuentos",
+    icon: Percent,
+    href: "#",
+    modulo: "Descuentos",
+    permiso: "Descuento-ver",
+    subItems: [
+      {
+        title: "Mi Descuento",
+        href: "/dashboard/asistencia/descuentos/mi-descuento",
+        modulo: "Descuentos",
+        permiso: "DescuentoUsuario-ver"
+      },
+      {
+        title: "Descuento Equipo",
+        href: "/dashboard/asistencia/descuentos/equipo",
+        modulo: "Descuentos",
+        permiso: "DescuentoEquipo-ver"
+      },
+      {
+        title: "Descuento Grupos",
+        href: "/dashboard/asistencia/descuentos/grupos",
+        modulo: "Descuentos",
+        permiso: "DescuentoReporte-ver"
+      },
+      // {
+      //   title: "Historial Descuentos",
+      //   href: "/dashboard/asistencia/descuentos/historial",
+      // },
+    ]
+  },
+  {
     id: "bases",
     title: "Bases",
     icon: BookCheck,
@@ -201,10 +234,12 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     title: "Seguimiento Asesor",
     icon: Users,
     href: "#",
+    permiso: "Acompañamiento-ver",
     subItems: [
       {
         title: "Acompañamiento",
         href: "/dashboard/seguimiento-asesor/acompanamiento",
+        permiso: "Acompañamiento-ver"
       },
       {
         title: "Escuchas",
@@ -407,7 +442,8 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
       },
 
     ]
-  },
+  }
+
 
   /*{
     id: "mcp",
@@ -416,6 +452,7 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     href: "/dashboard/consultas",
     subItems: [], // sin permiso → acceso libre
   },*/
+
 ]
 
 // ================== COMPONENTE PRINCIPAL ==================
@@ -533,21 +570,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       MENU_CONFIG(user.usuario, user.idEmpleado)
         // Filtramos subItems por permisos; si el menú se queda sin subitems, se oculta
         .map((menu) => {
-            // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
-            // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-            if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
-              return null
-            }
+          // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
+          // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
+          if ((menu.permiso === "Feeback-ver" || menu.permiso === "Acompañamiento-ver") && user?.id_grupo === 14) {
+            return null
+          }
 
-            // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
-            if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
-              return null
-            }
+          // Si el módulo padre tiene un permiso definido y no lo tiene, ocultar todo
+          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+            return null
+          }
 
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
-
+          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
+            return null
+          }
           const filteredSubItems = menu.subItems.filter((sub) => {
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false

@@ -23,11 +23,15 @@ import {
   Search,
   Eye,
   ClipboardCheck,
+  NotebookPenIcon,
 } from 'lucide-react'
 import { useUser } from '@/Provider/UserProvider'
 import { useColaboradores } from '@/hooks/useColaboradores'
 import { toast } from 'sonner'
 import JefeOperacionesView from './JefeOperacionesView'
+import { ObservacionSombrasModal } from '@/components/seguimientos/observacion/ObservacionSombra'
+import { Detail, FetchDetalleAcompanamiento, FetchNumeroSombrasRealizadas, FetchValidarAccesoTurno, LogDetail, MappedLogs } from './typesPage'
+
 
 const FORM_ITEMS = [
   "Atiende la llamada de manera inmediata",
@@ -45,10 +49,19 @@ export default function AcompanamientoPage() {
   const { user } = useUser()
   const { colaboradores, loading: loadingColab } = useColaboradores()
   const [view, setView] = useState<'dashboard' | 'form'>('dashboard')
-  const [selectedLogDetail, setSelectedLogDetail] = useState<any>(null)
+  const [selectedLogDetail, setSelectedLogDetail] = useState<LogDetail | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [observacionSombra, setObservacionSombra] = useState<{
+        isOpen: boolean;
+        observacion: string;
+        id_seguimiento: number;
+    }>({
+      id_seguimiento: -1,
+      isOpen: false,
+      observacion: "",
+    });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -70,21 +83,25 @@ export default function AcompanamientoPage() {
   const [startTime, setStartTime] = useState('')
 
   const [currentAdvisorId, setCurrentAdvisorId] = useState('')
-  const [formAnswers, setFormAnswers] = useState<Record<number, string>>({})
   const [sombrasData, setSombrasData] = useState({ realizadas: 0, faltantes: 6, id_acom: '', supervisor: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid')
-  const [datosValidacion, setDatosValidacion] = useState<any>(null)
+  const [datosValidacion, setDatosValidacion] = useState<FetchValidarAccesoTurno | null>(null)
   const [formulario, setFormulario] = useState<Record<string, { check: string; detalle: string }>>({})
 
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<MappedLogs[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [expandedRows, setExpandedRows] = useState<any[]>([])
+  const [expandedRows, setExpandedRows] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const endTimeRef = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const finalizeInFlightRef = useRef(false)
+  const warningShownRef = useRef(false)
+  const [isFinalizing, setIsFinalizing] = useState(false)
 
-  const fetchSombras = async () => {
+  const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
     if (!user?.usuario) return
     setIsLoading(true)
     try {
@@ -95,17 +112,16 @@ export default function AcompanamientoPage() {
         body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
       })
       if (res.ok) {
-        const data = await res.json()
-        console.log("Resumen de sombras recibido:", data)
+        const data: FetchNumeroSombrasRealizadas = await res.json()
         setSombrasData({
           realizadas: data.numeroDeSombrasRealizadas,
           faltantes: data.numeroDeSombrasFaltantes,
-          id_acom: data.id_acom,
+          id_acom: String(data.id_acom),
           supervisor: data.supervisor
         })
 
         if (data.id_acom) {
-          await fetchDetalleAcompanamientos(data.id_acom)
+          await fetchDetalleAcompanamientos(fechaInicio, fechaFin)
         } else {
           setLogs([])
         }
@@ -118,51 +134,48 @@ export default function AcompanamientoPage() {
   }
 
   useEffect(() => {
-    fetchSombras()
-  }, [user?.usuario])
+    fetchSombras(startDate, endDate)
+  }, [user?.usuario, startDate, endDate])
 
-  const fetchDetalleAcompanamientos = async (grupo: any) => {
+  const fetchDetalleAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: user?.usuario })
+        body: JSON.stringify({ grupo: user?.usuario, fechaInicio: fechaInicio || undefined, fechaFin: fechaFin || undefined})
       })
 
       if (res.ok) {
         const result = await res.json()
-        const rawData = result.data
-        console.log("Datos brutos recibidos del endpoint:", rawData)
+        const rawData: FetchDetalleAcompanamiento[] = result.data
 
         if (rawData) {
           const sessions = Array.isArray(rawData) ? rawData : [rawData]
-
-          const mappedLogs = sessions.map((data: any) => ({
+          const mappedLogs = sessions.map((data) => ({
             id: data.id_acom,
             date: data.fecha || new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-            registros: data.num_realizado || 0,
+            registros: data.registros,
             color: 'text-emerald-600',
             bgColor: 'bg-emerald-500/10',
             icon: <CheckCircle2 className="w-5 h-5" />,
             status: `${data.num_realizado || 0}/${data.num_esperado || 6} Realizados`,
-            details: Array.isArray(data.sombra) ? data.sombra.map((s: any) => ({
+            observacion: data.observacion,
+            details: data.registros !== 0 ? data.sombra.map((s) => ({
               id: s.id_sombra,
-              name: s.asesor || 'Asesor sin nombre',
-              startTime: s.hora_inicio || '--:--',
-              endTime: s.hora_fin || '--:--',
+              name: s.name || 'Asesor sin nombre',
+              startTime: s.startTime || '--:--',
+              endTime: s.endTime || '--:--',
               turno: s.turno || 'N/A',
               status: 'OK',
               color: 'text-emerald-600 bg-emerald-500/10',
               formulario: s.formulario || {}
             })) : []
           }))
-
-          console.log("Logs mapeados finales:", mappedLogs)
           setLogs(mappedLogs)
 
-          if (mappedLogs.length > 0) {
-            setExpandedRows(mappedLogs.map(l => l.id))
-          }
+          // if (mappedLogs.length > 0) {
+          //   setExpandedRows(mappedLogs.map(l => l.id))
+          // }
         } else {
           setLogs([])
         }
@@ -174,17 +187,42 @@ export default function AcompanamientoPage() {
 
   useEffect(() => {
     if (view === 'form') {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
+      warningShownRef.current = false
+      
+      // Pre-cargar el audio para que el navegador lo permita en segundo plano
+      if (!audioRef.current) {
+        audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2976/2976-preview.mp3')
+        audioRef.current.load()
+      }
+
       const now = new Date()
-      setStartTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      const startTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      setStartTime(startTimeStr)
+      
+      // Establecer el tiempo final (20 minutos desde ahora)
+      const duration = 20 * 60 * 1000
+      const endTime = Date.now() + duration
+      endTimeRef.current = endTime
+      
       setTimeLeft(20 * 60)
       setFormulario({})
       setCurrentAdvisorId('')
 
+      // Usamos el tiempo real para calcular lo que queda, así no se pausa en segundo plano
       timerRef.current = setInterval(() => {
-        setTimeLeft(prev => (prev > 0 ? prev - 1 : 0))
+        if (endTimeRef.current) {
+          const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000))
+          setTimeLeft(remaining)
+          if (remaining === 0 && timerRef.current) {
+            clearInterval(timerRef.current)
+          }
+        }
       }, 1000)
     } else {
       if (timerRef.current) clearInterval(timerRef.current)
+      endTimeRef.current = null
     }
 
     return () => {
@@ -192,12 +230,30 @@ export default function AcompanamientoPage() {
     }
   }, [view])
 
+  // Efecto adicional para sincronizar inmediatamente al volver a la pestaña
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && view === 'form' && endTimeRef.current) {
+        const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000))
+        setTimeLeft(remaining)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [view])
+
   useEffect(() => {
     if (view === 'form') {
-      if (timeLeft === 19 * 60) {
-        // Sonido de alerta (beep suave)
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2976/2976-preview.mp3')
-        audio.play().catch(e => console.log("Audio play deferred:", e))
+      if (timeLeft <= 60 && timeLeft > 0 && !warningShownRef.current) {
+        warningShownRef.current = true
+        
+        // Intentar reproducir el audio pre-cargado
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => {
+            console.log("Audio play deferred or blocked by browser policy:", e)
+          })
+        }
 
         toast.warning("¡Aviso!", {
           description: "Queda solo 1 minuto para que termine la sesión. El formulario se guardará automáticamente al finalizar el tiempo."
@@ -215,7 +271,7 @@ export default function AcompanamientoPage() {
 
   const filteredLogs = logs.filter(log => {
     // Filtro por nombre
-    const matchesSearch = searchTerm === '' || (log.details || []).some((detail: any) =>
+    const matchesSearch = searchTerm === '' || (log.details || []).some((detail) =>
       detail.name && detail.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -227,13 +283,13 @@ export default function AcompanamientoPage() {
     if (endDate && itemDate > endDate) matchesDate = false;
 
     return matchesSearch && matchesDate;
-  }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const allFilteredRecords = filteredLogs.flatMap(log =>
     (log.details || [])
-      .filter((d: any) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map((item: any) => ({ ...item, date: log.date }))
-  ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .filter((d) => d.name && d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .map((item) => ({ ...item, date: log.date, observacion: log.observacion }))
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -265,7 +321,7 @@ export default function AcompanamientoPage() {
     })
 
     const elapsedSeconds = (20 * 60) - timeLeft
-    const minRequiredSeconds = 17 * 60
+    const minRequiredSeconds = 60 * 17
 
     if (!currentAdvisorId) {
       if (wasAutoSave) {
@@ -286,6 +342,10 @@ export default function AcompanamientoPage() {
       return
     }
 
+    if (finalizeInFlightRef.current) return
+    finalizeInFlightRef.current = true
+    setIsFinalizing(true)
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrar-sombra`, {
         method: 'POST',
@@ -304,6 +364,8 @@ export default function AcompanamientoPage() {
 
       if (!res.ok) {
         toast.error(data.mensaje || "No se pudo registrar la sombra.")
+        finalizeInFlightRef.current = false
+        setIsFinalizing(false)
         return
       }
 
@@ -312,6 +374,8 @@ export default function AcompanamientoPage() {
       fetchSombras()
       setView('dashboard')
     } catch (error) {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
       console.error("Error registering shadow:", error)
       toast.error("Error de conexión al registrar la sombra.")
     }
@@ -325,11 +389,11 @@ export default function AcompanamientoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           formulariosPendientes: sombrasData.faltantes,
-          agencia: user?.area // O el campo que corresponda a la agencia
+          agencia: user?.id_grupo
         })
       })
 
-      const data = await res.json()
+      const data: FetchValidarAccesoTurno = await res.json()
       setDatosValidacion(data)
 
       if (!res.ok) {
@@ -342,12 +406,13 @@ export default function AcompanamientoPage() {
       toast.success(data.mensaje)
       // Si permite el acceso, cambiamos la vista
       setView('form')
-    } catch (error: any) {
-      setValidationError("Error de conexión al validar el turno: " + error.message)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error desconocido"
+      setValidationError("Error de conexión al validar el turno: " + message)
     }
   }
 
-  const toggleRow = (id: any) => {
+  const toggleRow = (id: string) => {
     setExpandedRows(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id])
   }
 
@@ -487,77 +552,89 @@ export default function AcompanamientoPage() {
           ) : allFilteredRecords.length > 0 ? (
             displayMode === 'grid' ? (
               filteredLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className={`group border border-border rounded-xl overflow-hidden transition-all ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
-                >
+                <div key={log.id} className='flex flex-row gap-2'>
                   <div
-                    className="flex items-center justify-between p-3 cursor-pointer select-none"
-                    onClick={() => toggleRow(log.id)}
+                    className={`group border border-border rounded-xl overflow-hidden transition-all flex-10/12 ${expandedRows.includes(log.id) ? 'bg-muted/10' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
-                        {log.icon}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold leading-none">{log.date}</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
-                      </div>
-                    </div>
-                    <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </motion.div>
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedRows.includes(log.id) && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-background/50 border-t border-border"
-                      >
-                        <div className="p-3">
-                          <table className="w-full text-left">
-                            <thead>
-                              <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
-                                <th className="pb-2 px-2">Asesor</th>
-                                <th className="pb-2 px-2">H. Inicio</th>
-                                <th className="pb-2 px-2">H. Fin</th>
-                                <th className="pb-2 px-2">Turno</th>
-                                <th className="pb-2 px-2 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody className="text-[12px]">
-                              {log.details
-                                .filter((d: any) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                .map((item: any) => (
-                                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
-                                    <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
-                                    <td className="py-2 px-2">
-                                      <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
-                                    </td>
-                                    <td className="py-2 px-2 text-right">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedLogDetail(item);
-                                        }}
-                                        className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
-                                      >
-                                        Detalle
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
+                    <div
+                      className="flex items-center justify-between p-3 cursor-pointer select-none"
+                      onClick={() => toggleRow(log.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bgColor} ${log.color}`}>
+                          {log.icon}
                         </div>
+                        <div>
+                          <p className="text-sm font-bold leading-none">{log.date}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1">{log.registros} Registros</p>
+                        </div>
+                      </div>
+                      <motion.div animate={{ rotate: expandedRows.includes(log.id) ? 180 : 0 }}>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </div>
+                    <AnimatePresence>
+                      {expandedRows.includes(log.id) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden bg-background/50 border-t border-border"
+                        >
+                          <div className="p-3">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="text-[9px] text-muted-foreground uppercase font-black tracking-widest border-b border-border">
+                                  <th className="pb-2 px-2">Asesor</th>
+                                  <th className="pb-2 px-2">H. Inicio</th>
+                                  <th className="pb-2 px-2">H. Fin</th>
+                                  <th className="pb-2 px-2">Turno</th>
+                                  <th className="pb-2 px-2">% completado</th>
+                                  <th className="pb-2 px-2 text-right">Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-[12px]">
+                                {log.details
+                                  .filter((d) => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                  .map((item: Detail) => (
+                                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                      <td className="py-2 px-2 font-semibold text-primary">{item.name}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.startTime}</td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{item.endTime}</td>
+                                      <td className="py-2 px-2">
+                                        <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">T-{item.turno}</span>
+                                      </td>
+                                      <td className="py-2 px-2 text-muted-foreground font-mono">{(Object.keys(item.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
+                                      <td className="py-2 px-2 text-right">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedLogDetail(item);
+                                          }}
+                                          className="px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:scale-105 transition-all"
+                                        >
+                                          Detalle
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div 
+                    className="content-center p-2 rounded-2xl border border-sky-400 dark:border-sky-700 flex-1/12 hover:bg-sky-400 dark:hover:bg-sky-700 hover:text-sky-100 text-sky-600 cursor-pointer max-h-16"
+                    onClick={() => setObservacionSombra({id_seguimiento: +log.id, isOpen: true, observacion: log.observacion})}
+                    >
+                    <NotebookPenIcon className="mx-auto"/>
+                  </div>
+                    <ObservacionSombrasModal
+                      observacionModal={observacionSombra}
+                      setObservacionModal={setObservacionSombra}
+                    />
                 </div>
               ))
             ) : (
@@ -570,6 +647,7 @@ export default function AcompanamientoPage() {
                       <th className="py-3 px-4">Hora Inicio</th>
                       <th className="py-3 px-4">Hora Fin</th>
                       <th className="py-3 px-4">Turno</th>
+                      <th className="py-3 px-4">% completado</th>
                       <th className="py-3 px-4 text-right">Acción</th>
                     </tr>
                   </thead>
@@ -583,6 +661,7 @@ export default function AcompanamientoPage() {
                         <td className="py-3 px-4">
                           <span className="bg-muted px-2 py-1 rounded-lg text-[10px] font-black uppercase">Turno {record.turno}</span>
                         </td>
+                        <td className="py-3 px-4 font-mono text-xs">{(Object.keys(record.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</td>
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => setSelectedLogDetail(record)}
@@ -623,7 +702,7 @@ export default function AcompanamientoPage() {
       className="space-y-5 pb-10"
     >
       {/* Form Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm sticky -top-4 z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
@@ -661,10 +740,11 @@ export default function AcompanamientoPage() {
           </div>
           <button
             onClick={() => handleFinalize()}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95"
+            disabled={isFinalizing}
+            className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             <Save className="w-4 h-4" />
-            Finalizar
+            {isFinalizing ? "Guardando..." : "Finalizar"}
           </button>
         </div>
       </div>
@@ -850,7 +930,7 @@ export default function AcompanamientoPage() {
     </motion.div>
   )
 
-  if (userRole?.trim().toUpperCase() === 'JEFE DE OPERACIONES') {
+  if (userRole?.trim().toUpperCase().startsWith('JEFE DE OPERACIONES')) {
     return (
       <div className="min-h-screen bg-transparent text-foreground p-2 lg:p-4 relative">
         <div className="max-w-7xl mx-auto">
@@ -904,10 +984,14 @@ export default function AcompanamientoPage() {
 
               <div className="flex-1 overflow-y-auto p-5 space-y-4 sidebar-scroll">
                 <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 shadow-sm">
-                  <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 flex items-center gap-2">
-                    <ClipboardCheck className="w-4 h-4" />
-                    Evaluación de Criterios
+                  <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 flex items-center gap-2 justify-between">
+                    <div className='flex flex-row gap-1'>
+                      <ClipboardCheck className="w-4 h-4" />
+                      <p className='self-center'>Evaluación de Criterios</p>
+                    </div>
+                    <span className='text-right text-lg'>{(Object.keys(selectedLogDetail.formulario).length / FORM_ITEMS.length * 100).toFixed(2)}%</span>
                   </h3>
+
                   <div className="space-y-3">
                     {FORM_ITEMS.map((item, idx) => {
                       const key = `p${idx + 1}`
@@ -957,3 +1041,4 @@ export default function AcompanamientoPage() {
     </div>
   )
 }
+

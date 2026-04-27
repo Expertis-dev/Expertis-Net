@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Check, CheckCircle2, ClipboardCheck, Clock, LayoutGrid, List, MinusCircle, NotebookPen, X, ClipboardCopyIcon, CopyIcon, Link, XIcon } from "lucide-react";
+import { ChevronDown, Check, CheckCircle2, ClipboardCheck, Clock, LayoutGrid, List, MinusCircle, NotebookPen, X, Link, XIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Filters } from "./Filtro";
 import { useUser } from "@/Provider/UserProvider";

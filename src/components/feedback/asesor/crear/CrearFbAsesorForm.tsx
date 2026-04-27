@@ -23,7 +23,8 @@ interface Props {
     router: AppRouterInstance,
     asesor?: Colaborador,
     defaultValues?: Form,
-    periodoSeleccionado?: string
+    periodoSeleccionado?: string,
+    currentFeedback: string
 }
 
 export interface Form {
@@ -144,10 +145,10 @@ export const CrearFbAsesorForm = ({
     router,
     asesor,
     defaultValues,
-    periodoSeleccionado
+    periodoSeleccionado,
+    currentFeedback
 }: Props) => {
     const { id: idFeedback } = useParams<{ id: string }>()
-
     const [isFetching, setIsFetching] = useState(false)
     const [isDisable, setIsDisable] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -168,7 +169,7 @@ export const CrearFbAsesorForm = ({
         observacionesGenerales: fields === undefined ? "" : fields.observacionesGenerales,
     })
 
-    const { control, handleSubmit, setError, clearErrors, formState: { errors }, reset, setValue } = useForm<Form>({
+    const { control, handleSubmit, setError, clearErrors, formState: { errors }, reset, setValue, watch } = useForm<Form>({
         defaultValues: buildDefaults(defaultValues)
     })
     const { user } = useUser()
@@ -230,7 +231,7 @@ export const CrearFbAsesorForm = ({
                 body: JSON.stringify({
                     idEmpleado: asesor.idEmpleado,
                     periodo: periodoIso,
-                    tipoEvaluacion: "RUTINA",
+                    tipoEvaluacion: currentFeedback.toUpperCase(),
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observacionesGenerales,
                     resultadoEvaluacion: data,
@@ -311,6 +312,16 @@ export const CrearFbAsesorForm = ({
             reset(buildDefaults(defaultValues))
         }
     }, [defaultValues, reset])
+
+    const calculateRatioAlcance = () => {
+        const recupero = Number((watch("recupero") || "").replace(/,/g, ""))
+        const recuperoMeta = Number((watch("recuperoMeta") || "").replace(/,/g, ""))
+
+        const ratio = recupero / recuperoMeta * 100
+
+        return ratio.toFixed(2)
+    }
+
     return (
         <>
             <div className="flex flex-col mt-4 p-2 border rounded-sm bg-white dark:bg-zinc-900 dark:border-zinc-700">
@@ -343,7 +354,12 @@ export const CrearFbAsesorForm = ({
                         metricFields.map((field) => {
                             return (
                                 <div className="flex flex-col p-2" key={field.name}>
-                                    <h4>{field.name} </h4>
+                                    <div className="flex flex-row justify-between">
+                                        <h4>{field.name} </h4>
+                                        {field.name === "Recupero" ? 
+                                            <p className="font-extralight">Alcance recupero: {isNaN(+calculateRatioAlcance()) ? "" : calculateRatioAlcance() + "%"}</p>
+                                        : <></>}
+                                    </div>
                                     {errors[field.values[0].name] && <span className="text-red-600 text-xs">{errors[field.values[0].name]!.message}</span>}
                                     {errors[field.values[1].name] && <span className="text-red-600 text-xs">{errors[field.values[1].name]!.message}</span>}
                                     <div className="mt-1 flex flex-wrap gap-2">

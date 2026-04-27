@@ -10,8 +10,7 @@ import {
     Award,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { formTime } from "./formulario/page";
+import { useEffect, useState } from "react";
 import { useUser } from "@/Provider/UserProvider";
 
 type FiltersState = {
@@ -19,6 +18,8 @@ type FiltersState = {
     startDate: string;
     endDate: string;
 };
+
+const formTime = 10 * 60
 
 export interface CantidadEscucha {
     id_rep:                    number | undefined;
@@ -48,11 +49,6 @@ export const EscuchasClientPage = () => {
     })
     
     const {user} = useUser()
-    const fecha = useMemo(() => {
-        const date = (new Date()).toISOString();
-        const formattedDate = date.split('T')[0];
-        return formattedDate
-    }, [])
 
     useEffect(() => {
         const fetchNumeroEscuchas = async (): Promise<CantidadEscucha> => {
@@ -66,7 +62,7 @@ export const EscuchasClientPage = () => {
         getTurnoActual()
         fetchNumeroEscuchas()
             .then(r => setEscuchasRealizadas(r))
-    }, [])
+    }, [user?.usuario])
 
     const onClickRealizar = async () => {
         if (escuchasRealizadas.id_rep === -1){

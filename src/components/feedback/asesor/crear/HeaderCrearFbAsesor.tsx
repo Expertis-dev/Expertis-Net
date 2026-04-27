@@ -201,7 +201,7 @@ export const HeaderCrearFbAsesor = ({
                                 }`}
                             onClick={() => {
                                 if (!!USUARIO) return;
-                                setCurrentFeedback("negativa")
+                                setCurrentFeedback("negativo")
                             }}
                         >
                             Negativa

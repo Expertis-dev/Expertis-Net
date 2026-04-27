@@ -31,7 +31,6 @@ import { useUser } from "@/Provider/UserProvider";
 import { getTurno, getTurnoFin } from "@/actions/escucha";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
-export const formTime = 10 * 60;
 const minFormTime = 2 * 60;
 const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
 
