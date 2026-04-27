@@ -88,11 +88,27 @@ export const tienePermiso = (
   permiso?: string
 ): boolean => {
   if (!modulo || !permiso) return true
+  if (!permisos) return false
 
-  const lista = permisos?.[modulo]
-  if (!Array.isArray(lista)) return false
+  // Normalizar texto: quitar tildes, eñes y pasar a minúsculas
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
 
-  return lista.includes(permiso)
+  const target = normalize(permiso)
+
+  const checkInList = (lista: string[]) =>
+    lista.some(p => normalize(p) === target)
+
+  // 1. Buscar en el módulo específico
+  const listaEspecifica = permisos[modulo]
+  if (Array.isArray(listaEspecifica) && checkInList(listaEspecifica)) {
+    return true
+  }
+
+  // 2. Respaldo: Buscar en todos los módulos (por si el nombre del módulo en DB es distinto)
+  return Object.values(permisos).some(lista =>
+    Array.isArray(lista) && checkInList(lista)
+  )
 }
 
 
