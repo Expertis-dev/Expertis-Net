@@ -234,16 +234,20 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     title: "Seguimiento Asesor",
     icon: Users,
     href: "#",
+    modulo: "SeguimientoAsesor",
     permiso: "Acompañamiento-ver",
     subItems: [
       {
         title: "Acompañamiento",
         href: "/dashboard/seguimiento-asesor/acompanamiento",
+        modulo: "SeguimientoAsesor",
         permiso: "Acompañamiento-ver"
       },
       {
         title: "Escuchas",
         href: "/dashboard/seguimiento-asesor/escuchas",
+        modulo: "SeguimientoAsesor",
+        permiso: "Acompañamiento-ver"
       },
     ],
   },
