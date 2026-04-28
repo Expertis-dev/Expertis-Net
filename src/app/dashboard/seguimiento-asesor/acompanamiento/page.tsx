@@ -231,8 +231,9 @@ export default function AcompanamientoPage() {
   }
 
   useEffect(() => {
+    if (observacionSombra.isOpen) return;
     fetchSombras(startDate, endDate)
-  }, [user?.usuario, startDate, endDate])
+  }, [user?.usuario, startDate, endDate, observacionSombra.isOpen])
 
   const fetchDetalleAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
     try {
@@ -367,6 +368,7 @@ export default function AcompanamientoPage() {
   }, [timeLeft, view])
 
   useEffect(() => {
+    if (view === "dashboard") return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = ""
