@@ -887,7 +887,24 @@ export default function EscuchaFormularioPage() {
                                             </td>
                                         </tr>
                                     ) : (
-                                    dataAudios.filter((v) => v.asesor === currentAdvisorId).map((audio, index) => {
+                                    dataAudios
+                                        .filter((v) => v.asesor === currentAdvisorId)
+                                        .sort((a, b) => {
+                                            const aIsBottom = a.tipo === "MCT" || a.tipo === "REN";
+                                            const bIsBottom = b.tipo === "MCT" || b.tipo === "REN";
+
+                                            if (aIsBottom !== bIsBottom) {
+                                                return aIsBottom ? 1 : -1;
+                                            }
+
+                                            // Agrupa por tipo dentro de cada bloque (arriba y abajo)
+                                            const byTipo = a.tipo.localeCompare(b.tipo);
+                                            if (byTipo !== 0) return byTipo;
+
+                                            // Dentro del mismo tipo, más reciente primero
+                                            return b.fecha.localeCompare(a.fecha);
+                                        })
+                                        .map((audio, index) => {
                                         const isSelected = audioModal.selectedAudio?.url === audio.url;
                                         return (
                                             <tr
