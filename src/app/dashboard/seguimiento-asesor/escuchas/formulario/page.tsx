@@ -111,6 +111,7 @@ export default function EscuchaFormularioPage() {
     const {user} = useUser()
     const hasTimedOutRef = useRef(false);
     const hasNavigatedRef = useRef(false);
+    const blockingPopstateRef = useRef(false);
     const submitEscuchaRef = useRef<((options?: { forceExit?: boolean }) => Promise<void>) | null>(null);
     const submitEscuchaInFlightRef = useRef(false);
 
@@ -328,6 +329,33 @@ export default function EscuchaFormularioPage() {
 
         return () => window.clearTimeout(timeoutId);
     }, [isTimeExpired, turnoFin]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, []);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            if (blockingPopstateRef.current) return;
+            blockingPopstateRef.current = true;
+            setShowExitConfirm(true);
+            window.history.pushState({ escuchaFormGuard: true }, "", window.location.href);
+            blockingPopstateRef.current = false;
+        };
+
+        window.history.pushState({ escuchaFormGuard: true }, "", window.location.href);
+        window.addEventListener("popstate", handlePopState);
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, []);
 
     return (
         <div className="flex flex-col gap-4">
@@ -772,7 +800,7 @@ export default function EscuchaFormularioPage() {
               <p className="text-sm text-muted-foreground">Se perderán todos los datos registrados en el formulario actual.</p>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-2.5 bg-muted font-bold rounded-xl border border-border cursor-pointer">Continuar</button>
-                <button onClick={() => {setShowExitConfirm(false); router.back()}} className="flex-1 py-2.5 bg-destructive text-white font-bold rounded-xl shadow-lg cursor-pointer">Sí, Salir</button>
+                <button onClick={() => {setShowExitConfirm(false); navigateBack()}} className="flex-1 py-2.5 bg-destructive text-white font-bold rounded-xl shadow-lg cursor-pointer">Sí, Salir</button>
               </div>
             </motion.div>
           </div>
