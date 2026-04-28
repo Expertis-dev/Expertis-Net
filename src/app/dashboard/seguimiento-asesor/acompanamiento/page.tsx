@@ -194,6 +194,7 @@ export default function AcompanamientoPage() {
   const endTimeRef = useRef<number | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const finalizeInFlightRef = useRef(false)
+  const blockingPopstateRef = useRef(false)
   const warningShownRef = useRef(false)
   const [isFinalizing, setIsFinalizing] = useState(false)
 
@@ -365,6 +366,42 @@ export default function AcompanamientoPage() {
     }
   }, [timeLeft, view])
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ""
+    }
+    
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'form') {
+      blockingPopstateRef.current = false
+      return
+    }
+
+    const handlePopState = () => {
+      if (blockingPopstateRef.current) return
+      blockingPopstateRef.current = true
+      setShowExitConfirm(true)
+      window.history.pushState({ acompanamientoGuard: true }, "", window.location.href)
+      blockingPopstateRef.current = false
+    }
+
+    window.history.pushState({ acompanamientoGuard: true }, "", window.location.href)
+    window.addEventListener("popstate", handlePopState)
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [view])
+  
+  
   const filteredLogs = logs.filter(log => {
     // Filtro por nombre
     const matchesSearch = searchTerm === '' || (log.details || []).some((detail) =>
