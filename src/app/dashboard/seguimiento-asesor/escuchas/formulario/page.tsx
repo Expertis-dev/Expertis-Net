@@ -64,6 +64,7 @@ interface Audio {
     duracion: string;
     tipo: string;
     url: string;
+    escuchado: boolean;
 }
 
 export default function EscuchaFormularioPage() {
@@ -84,6 +85,7 @@ export default function EscuchaFormularioPage() {
     const hasTimedOutRef = useRef(false);
     const hasNavigatedRef = useRef(false);
     const blockingPopstateRef = useRef(false);
+    const isNavigatingAwayRef = useRef(false);
     const submitEscuchaRef = useRef<((options?: { forceExit?: boolean }) => Promise<void>) | null>(null);
     const submitEscuchaInFlightRef = useRef(false);
 
@@ -129,6 +131,8 @@ export default function EscuchaFormularioPage() {
     const navigateBack = () => {
         if (hasNavigatedRef.current) return;
 
+        isNavigatingAwayRef.current = true;
+        setShowExitConfirm(false);
         hasNavigatedRef.current = true;
         router.back();
         window.setTimeout(() => {
@@ -344,6 +348,7 @@ export default function EscuchaFormularioPage() {
 
     useEffect(() => {
         const handlePopState = () => {
+            if (isNavigatingAwayRef.current) return;
             if (blockingPopstateRef.current) return;
             blockingPopstateRef.current = true;
             setShowExitConfirm(true);
@@ -887,9 +892,10 @@ export default function EscuchaFormularioPage() {
                                         return (
                                             <tr
                                                 key={`${audio.url}-${index}`}
-                                                className={`border-t border-border cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : "hover:bg-muted/40"}`}
+                                                className={`border-t border-border cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : "hover:bg-muted/40"} ${audio.escuchado ? "text-muted-foreground" : ""}`}
                                                 onClick={() => {
                                                     if (isLocked) return;
+                                                    if (audio.escuchado) return toast.info("Este audio ya fue revisado");
                                                     setValue("audioUrl", audio.url, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
                                                     setValue("audioDate", audio.fecha, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
                                                     setValue("audioDuration", audio.duracion, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
