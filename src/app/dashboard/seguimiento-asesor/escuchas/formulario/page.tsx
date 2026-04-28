@@ -13,6 +13,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     Clock,
+    CopyIcon,
     Link2,
     MinusCircleIcon,
     Save,
@@ -260,7 +261,7 @@ export default function EscuchaFormularioPage() {
     }, [isTimeExpired]);
 
     useEffect(() => {
-        if (!user?.nombre) return;
+        if (!user?.usuario) return;
 
         let mounted = true;
 
@@ -268,7 +269,7 @@ export default function EscuchaFormularioPage() {
             setIsLoadingAudios(true);
             try {
                 const data: Audio[] = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAudioGestion/${user.nombre}`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAudioGestion/${user.usuario}`,
                 ).then((v) => v.json());
                 if (mounted) setDataAudios(Array.isArray(data) ? data : []);
             } catch (error) {
@@ -284,7 +285,7 @@ export default function EscuchaFormularioPage() {
         return () => {
             mounted = false;
         };
-    }, [user?.nombre])
+    }, [user?.usuario])
 
     useEffect(() => {
         let mounted = true;
@@ -357,7 +358,20 @@ export default function EscuchaFormularioPage() {
             window.removeEventListener("popstate", handlePopState);
         };
     }, []);
+    const copyUrl = async () => {
+        const urlToCopy = getValues("audioUrl")?.trim();
+        if (!urlToCopy) {
+            toast.error("No hay URL para copiar.");
+            return;
+        }
 
+        try {
+            await navigator.clipboard.writeText(urlToCopy);
+            toast.success("URL copiada al portapapeles.");
+        } catch {
+            toast.error("No se pudo copiar la URL.");
+        }
+    }
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm sticky -top-4 z-10">
@@ -514,7 +528,7 @@ export default function EscuchaFormularioPage() {
                                 <label className="text-[9px] font-black uppercase text-muted-foreground tracking-wider pl-1">
                                     URL de PureCloud
                                 </label>
-                                <div className="relative">
+                                <div className="relative flex flex-row gap-1">
                                     <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                     <input
                                         type="url"
@@ -528,6 +542,16 @@ export default function EscuchaFormularioPage() {
                                         className={`w-full rounded-lg border bg-muted/40 pl-8.5 pr-3 py-2 text-xs font-medium outline-none transition-all placeholder:text-muted-foreground/50 ${errors.audioUrl ? "border-destructive ring-2 ring-destructive/15" : "border-border focus:border-primary focus:ring-2 focus:ring-primary/15"}`}
                                         disabled={isLocked}
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={copyUrl}
+                                        disabled={isLocked || !audioUrlValue?.trim()}
+                                        className="cursor-pointer shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
+                                        title="Copiar URL"
+                                        aria-label="Copiar URL"
+                                    >
+                                        <CopyIcon size={15} className="group-hover:transition group-hover:-translate-y-0.5 ease-in-out"/>
+                                    </button>
                                 </div>
                                 {!!errors.audioUrl?.message ?
                                 <p className={`text-[9px] leading-tight pl-1 ${errors.audioUrl ? "text-destructive" : "text-muted-foreground"}`}>
