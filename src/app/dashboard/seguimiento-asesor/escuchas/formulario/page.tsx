@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/Provider/UserProvider";
 import { getTurno, getTurnoFin } from "@/actions/escucha";
+import { LoadingModal } from "@/components/loading-modal";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 const minFormTime = 2 * 60;
@@ -43,7 +44,7 @@ type AudioFormValues = {
 type FormAnswer = "SI" | "NO" | "NO APLICA";
 
 const PURECLOUD_URL_REGEX =
-    /^https:\/\/apps\.mypurecloud\.com\/directory\/#\/analytics\/interactions\/[0-9a-fA-F-]{36}\/.*$/;
+    /https:\/\/apps\.mypurecloud\.com\/directory\/#\/engage\/admin\/interactions\/[0-9a-fA-F-]{36}/;
 const MINUTES_SECONDS_REGEX = /^\d+:[0-5]\d$/;
 
 const DurationStringToSeconds = (duracion: string) => {
@@ -52,15 +53,8 @@ const DurationStringToSeconds = (duracion: string) => {
     return + seg + (+min)*60
 }
 
-const secondsToMinutesSeconds = (value: string) => {
-    const totalSeconds = Number(value);
-    if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0:00";
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
 interface Audio {
+    id?: number | string;
     fecha: string;
     asesor: string;
     grupo: string;
@@ -70,29 +64,6 @@ interface Audio {
     tipo: string;
     url: string;
 }
-
-const dataAudiosPrueba: Audio[] = [
-    {
-        fecha: "2026-04-27",
-        asesor: "FRANCO HUAMANI",
-        grupo: "JORGE",
-        hora_inicio: "9:01",
-        hora_fin: "9:05",
-        duracion: "180",
-        tipo: "MCT",
-        url: "https://apps.mypurecloud.com/directory/#/analytics/interactions/695d3118-4306-4021-89e5-0b3bff3d73a4/ad"
-    },
-    {
-        fecha: "2026-04-26",
-        asesor: "JIMENA MEDINA",
-        grupo: "JORGE",
-        hora_inicio: "13:01",
-        hora_fin: "13:03",
-        duracion: "120",
-        tipo: "MCT",
-        url: "https://apps.mypurecloud.com/directory/#/analytics/interactions/695d3118-4306-4021-89e5-0b3bff3d73a4/ad"
-    },
-]
 
 export default function EscuchaFormularioPage() {
     const searchParams = useSearchParams()
@@ -121,6 +92,9 @@ export default function EscuchaFormularioPage() {
         isOpen: false,
         selectedAudio: undefined
     })
+
+    const [dataAudios, setDataAudios] = useState<Audio[]>([])
+    const [isLoadingAudios, setIsLoadingAudios] = useState(false)
 
     const router = useRouter();
     const selectedAdvisor = colaboradores.find((a) => a.usuario === currentAdvisorId);
@@ -286,6 +260,33 @@ export default function EscuchaFormularioPage() {
     }, [isTimeExpired]);
 
     useEffect(() => {
+        if (!user?.nombre) return;
+
+        let mounted = true;
+
+        const fetchAudios = async () => {
+            setIsLoadingAudios(true);
+            try {
+                const data: Audio[] = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/obtenerAudioGestion/${user.nombre}`,
+                ).then((v) => v.json());
+                if (mounted) setDataAudios(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error("Error al cargar audios:", error);
+                if (mounted) setDataAudios([]);
+            } finally {
+                if (mounted) setIsLoadingAudios(false);
+            }
+        };
+
+        void fetchAudios();
+
+        return () => {
+            mounted = false;
+        };
+    }, [user?.nombre])
+
+    useEffect(() => {
         let mounted = true;
 
         const fetchTurnoFin = async () => {
@@ -419,7 +420,7 @@ export default function EscuchaFormularioPage() {
                     </button>
                 </div>
             </div>
-            <div className="bg-card rounded-2xl border border-border px-4 pb-1.5 shadow-sm flex flex-col md:flex-row md:items-center gap-5">
+            <div className="bg-card rounded-2xl border border-border px-4 py-1.5 shadow-sm flex flex-col md:flex-row md:items-center gap-5">
                 <div className="flex-1 space-y-1.5">
                     <label className="text-[11px] font-black uppercase text-muted-foreground tracking-widest pl-1">
                         Seleccionar Asesor
@@ -439,7 +440,7 @@ export default function EscuchaFormularioPage() {
                                     ? "-- Cargando asesores... --"
                                     : "-- Buscar Asesor en el equipo --"}
                             </option>
-                            {colaboradores.map((adv) => (
+                            {colaboradores.filter(v => dataAudios.some(a => a.asesor === v.usuario)).map((adv) => (
                                 <option
                                     key={adv.idEmpleado}
                                     value={adv.usuario}
@@ -487,7 +488,10 @@ export default function EscuchaFormularioPage() {
                         </p>
                         <button
                             className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wide shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={() => setAudioModal((prev) => ({...prev, isOpen: true}))}
+                            onClick={() => {
+                                if (currentAdvisorId === "") return toast.info("Seleccione un asesor")
+                                setAudioModal((prev) => ({...prev, isOpen: true}))
+                            }}
                             disabled={isLocked}
                         >
                             <Volume2Icon className="w-3.5 h-3.5" />
@@ -827,10 +831,10 @@ export default function EscuchaFormularioPage() {
                                 Salir
                             </button>
                         </div>
-                        <div className="overflow-x-auto border border-border rounded-2xl">
+                        <div className="overflow-x-auto overflow-y-auto border border-border rounded-2xl h-max-90">
                             <table className="w-full min-w-[900px] text-sm">
-                                <thead className="bg-muted/50">
-                                    <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                                <thead className="bg-muted/50 sticky top-0">
+                                    <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground bg-zinc-200">
                                         <th className="px-3 py-2">Fecha</th>
                                         <th className="px-3 py-2">Asesor</th>
                                         <th className="px-3 py-2">Grupo</th>
@@ -842,7 +846,19 @@ export default function EscuchaFormularioPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dataAudiosPrueba.map((audio, index) => {
+                                    {dataAudios.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} className="px-4 py-8 text-center">
+                                                <p className="text-sm font-semibold text-muted-foreground">
+                                                    No hay audios disponibles para mostrar.
+                                                </p>
+                                                <p className="text-xs text-muted-foreground/80 mt-1">
+                                                    Intenta nuevamente más tarde o ajusta los filtros de búsqueda.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                    dataAudios.filter((v) => v.asesor === currentAdvisorId).map((audio, index) => {
                                         const isSelected = audioModal.selectedAudio?.url === audio.url;
                                         return (
                                             <tr
@@ -852,7 +868,7 @@ export default function EscuchaFormularioPage() {
                                                     if (isLocked) return;
                                                     setValue("audioUrl", audio.url, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
                                                     setValue("audioDate", audio.fecha, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-                                                    setValue("audioDuration", secondsToMinutesSeconds(audio.duracion), { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                                                    setValue("audioDuration", audio.duracion, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
                                                     setAudioModal({ isOpen: false, selectedAudio: audio });
                                                 }}
                                             >
@@ -861,12 +877,12 @@ export default function EscuchaFormularioPage() {
                                                 <td className="px-3 py-2">{audio.grupo}</td>
                                                 <td className="px-3 py-2">{audio.hora_inicio}</td>
                                                 <td className="px-3 py-2">{audio.hora_fin}</td>
-                                                <td className="px-3 py-2">{secondsToMinutesSeconds(audio.duracion)}</td>
+                                                <td className="px-3 py-2">{audio.duracion}</td>
                                                 <td className="px-3 py-2">{audio.tipo}</td>
                                                 <td className="px-3 py-2 max-w-[340px] truncate" title={audio.url}>{audio.url}</td>
                                             </tr>
                                         );
-                                    })}
+                                    }))}
                                 </tbody>
                             </table>
                         </div>
@@ -878,6 +894,10 @@ export default function EscuchaFormularioPage() {
             <ValidationErrorModal
                 setValidationError={setValidationError}
                 validationError={validationError}
+            />
+            <LoadingModal
+                isOpen={isLoadingAudios}
+                message="Cargando audios..."
             />
         </div>
     );
