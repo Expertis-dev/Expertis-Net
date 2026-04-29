@@ -88,11 +88,27 @@ export const tienePermiso = (
   permiso?: string
 ): boolean => {
   if (!modulo || !permiso) return true
+  if (!permisos) return false
 
-  const lista = permisos?.[modulo]
-  if (!Array.isArray(lista)) return false
+  // Normalizar texto: quitar tildes, eñes y pasar a minúsculas
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
 
-  return lista.includes(permiso)
+  const target = normalize(permiso)
+
+  const checkInList = (lista: string[]) =>
+    lista.some(p => normalize(p) === target)
+
+  // 1. Buscar en el módulo específico
+  const listaEspecifica = permisos[modulo]
+  if (Array.isArray(listaEspecifica) && checkInList(listaEspecifica)) {
+    return true
+  }
+
+  // 2. Respaldo: Buscar en todos los módulos (por si el nombre del módulo en DB es distinto)
+  return Object.values(permisos).some(lista =>
+    Array.isArray(lista) && checkInList(lista)
+  )
 }
 
 
@@ -234,20 +250,26 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     title: "Seguimiento Asesor",
     icon: Users,
     href: "#",
+    modulo: "SeguimientoAsesor",
     permiso: "Acompañamiento-ver",
     subItems: [
       {
         title: "Acompañamiento",
         href: "/dashboard/seguimiento-asesor/acompanamiento",
+        modulo: "SeguimientoAsesor",
         permiso: "Acompañamiento-ver"
       },
       {
         title: "Escuchas",
         href: "/dashboard/seguimiento-asesor/escuchas",
+        modulo: "SeguimientoAsesor",
+        permiso: "AcompañamientosAsesor-ver"
       },
       {
         title: "Escuchas Jefe Operaciones",
         href: "/dashboard/seguimiento-asesor/escuchas/jefeOperaciones",
+        modulo: "SeguimientoAsesor",
+        permiso: "AcompañamientoSupervisor-ver"
       },
     ],
   },
@@ -572,7 +594,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         .map((menu) => {
           // VALIDACIÓN DE VISIBILIDAD DE MÓDULO (Master Check)
           // Si el módulo tiene permiso Feeback-ver y el grupo es 14, ocultar todo
-          if ((menu.permiso === "Feeback-ver" || menu.permiso === "Acompañamiento-ver") && user?.id_grupo === 14) {
+          if (menu.permiso === "Feeback-ver" && user?.id_grupo === 14) {
             return null
           }
 
@@ -584,9 +606,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           if (!menu.subItems || menu.subItems.length === 0) {
             return menu
           }
-          if (menu.permiso && !tienePermiso(permisos, menu.modulo, menu.permiso)) {
-            return null
-          }
+
           const filteredSubItems = menu.subItems.filter((sub) => {
             if (!tienePermiso(permisos, sub.modulo, sub.permiso)) {
               return false
