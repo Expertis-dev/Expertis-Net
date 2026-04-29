@@ -13,10 +13,10 @@ import {
     CheckCircle2,
     ChevronLeft,
     Clock,
-    CopyIcon,
     Link2,
     MinusCircleIcon,
     Save,
+    SquareArrowOutUpRightIcon,
     Timer,
     TimerReset,
     Users,
@@ -33,6 +33,7 @@ import { getTurno, getTurnoFin } from "@/actions/escucha";
 import { LoadingModal } from "@/components/loading-modal";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
+criterios.push("Detalle")
 const minFormTime = 2 * 60;
 const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
 
@@ -40,9 +41,10 @@ type AudioFormValues = {
     audioUrl: string;
     audioDate: string;
     audioDuration: string;
+    detalle: string
 };
 
-type FormAnswer = "SI" | "NO" | "NO APLICA";
+type FormAnswer = "SI" | "NO" | "NO APLICA" | string;
 
 const PURECLOUD_URL_REGEX =
     /https:\/\/apps\.mypurecloud\.com\/directory\/#\/engage\/admin\/interactions\/[0-9a-fA-F-]{36}/;
@@ -114,6 +116,7 @@ export default function EscuchaFormularioPage() {
             audioUrl: "",
             audioDate: "",
             audioDuration: "",
+            detalle: ""
         },
     });
     const audioUrlValue = watch("audioUrl");
@@ -218,6 +221,7 @@ export default function EscuchaFormularioPage() {
             }
 
             const formulario = preguntas.map((v, i) => ({criterio: v.criterio, respuesta: Object.fromEntries(form)[i] || null}))
+            formulario.push({criterio: "detalle", respuesta: getValues("detalle")})
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crear-escucha`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -370,19 +374,14 @@ export default function EscuchaFormularioPage() {
             window.removeEventListener("popstate", handlePopState);
         };
     }, []);
-    const copyUrl = async () => {
-        const urlToCopy = getValues("audioUrl")?.trim();
-        if (!urlToCopy) {
+    const redirectUrl = () => {
+        const urlRedirect = getValues("audioUrl")?.trim();
+        if (!urlRedirect) {
             toast.error("No hay URL para copiar.");
             return;
         }
 
-        try {
-            await navigator.clipboard.writeText(urlToCopy);
-            toast.success("URL copiada al portapapeles.");
-        } catch {
-            toast.error("No se pudo copiar la URL.");
-        }
+        window.open(urlRedirect)
     }
     return (
         <div className="flex flex-col gap-4">
@@ -556,13 +555,13 @@ export default function EscuchaFormularioPage() {
                                     />
                                     <button
                                         type="button"
-                                        onClick={copyUrl}
+                                        onClick={redirectUrl}
                                         disabled={isLocked || !audioUrlValue?.trim()}
                                         className="cursor-pointer shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
-                                        title="Copiar URL"
-                                        aria-label="Copiar URL"
+                                        title="Ir al audio"
+                                        aria-label="Ir al audio"
                                     >
-                                        <CopyIcon size={15} className="group-hover:transition group-hover:-translate-y-0.5 ease-in-out"/>
+                                        <SquareArrowOutUpRightIcon size={15} className="group-hover:transition group-hover:-translate-y-0.5 ease-in-out"/>
                                     </button>
                                 </div>
                                 {!!errors.audioUrl?.message ?
@@ -676,25 +675,44 @@ export default function EscuchaFormularioPage() {
                     criterios.map((v) => {
                         const preguntasContestadas = preguntas.reduce((prev, curr, currI) => (Object.keys(Object.fromEntries(form)).filter((val) => +val === currI && curr.grupo === v).length) ? prev + 1 : prev, 0)
                         const totalPreguntas = preguntas.filter(p => p.grupo === v).length
+                        if (v === "Detalle") {
+                            return (
+                                <div
+                                    key={v}
+                                    onClick={() => setSelectedCriterio(v)}
+                                    className={`
+                                        group flex items-center gap-3 px-1.5 py-1 border-2 transition-all duration-200 rounded-xl cursor-pointer text-sm
+                                        ${selectedCriterio === v 
+                                        ? "border-blue-500 bg-blue-50 shadow-sm  dark:bg-blue-900" 
+                                        : "border-transparent bg-gray-50 dark:bg-zinc-600 hover:bg-gray-100 text-gray-600"}
+                                    `}
+                                >
+                                {/* Texto del Criterio */}
+                                <span className={`text-xs font-medium transition-colors ${selectedCriterio === v ? "text-blue-700 dark:text-blue-200" : "text-gray-700 dark:text-gray-300"}`}>
+                                    {v}
+                                </span>
+                            </div>
+                            )   
+                        }
                         return (
                         <div
                             key={v}
                             onClick={() => setSelectedCriterio(v)}
                             className={`
-                                group flex items-center gap-3 px-2 py-1 border-2 transition-all duration-200 rounded-xl cursor-pointer text-sm
+                                group flex items-center gap-3 px-1 py-1 border-2 transition-all duration-200 rounded-xl cursor-pointer text-sm
                                 ${selectedCriterio === v 
                                 ? "border-blue-500 bg-blue-50 shadow-sm  dark:bg-blue-900" 
                                 : "border-transparent bg-gray-50 dark:bg-zinc-600 hover:bg-gray-100 text-gray-600"}
                             `}
                             >
                             {/* Texto del Criterio */}
-                            <span className={`text-sm font-medium transition-colors ${selectedCriterio === v ? "text-blue-700 dark:text-blue-200" : "text-gray-700 dark:text-gray-300"}`}>
+                            <span className={`text-xs font-medium transition-colors ${selectedCriterio === v ? "text-blue-700 dark:text-blue-200" : "text-gray-700 dark:text-gray-300"}`}>
                                 {v}
                             </span>
 
                             {/* Badge de Progreso */}
                             <div className={`
-                                flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border
+                                flex items-center px-1 py-0.5 rounded-lg text-xs font-bold border
                                 ${preguntasContestadas === totalPreguntas 
                                 ? "bg-green-100 dark:bg-green-500 border-green-200 dark:border-green-600 text-green-700 dark:text-green-100" 
                                 : "bg-amber-100 dark:bg-orange-500/80 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-200"}
@@ -713,6 +731,49 @@ export default function EscuchaFormularioPage() {
             <div className="relative">
                 {criterios.map((criterio, i, arr) => {
                 if (criterio !== selectedCriterio) return null;
+                if (criterio === "Detalle"){
+                    return (
+                        <div key={criterio} className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
+                            {/* Título del Criterio Actual */}
+                            <div className="px-6 py-1.5 bg-sky-50 dark:bg-sky-500/10 border-y border-sky-100 dark:border-sky-500/20 flex justify-center">
+                                <span className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-400">
+                                Sección: {criterio}
+                                </span>
+                            </div>
+                            <div className="flex flex-row">
+                        {/* Botón Navegación Izquierda */}
+                        <button
+                            onClick={() => setSelectedCriterio(arr[(i - 1 + arr.length) % arr.length])}
+                            className="hover:border hover:border-blue-300 cursor-pointer flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-r border-zinc-200 dark:border-zinc-800 transition-all group"
+                            disabled={isLocked}
+                        >
+                            <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:-translate-x-1 transition-transform" />
+                        </button>
+                        <div className="flex-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+                            <div className="w-full max-w-3xl p-5 mx-auto">
+                                <textarea
+                                    id="detalle"
+                                    rows={7}
+                                    maxLength={1200}
+                                    placeholder="Escribe aquí el detalle de la escucha..."
+                                    className="w-full min-h-[180px] resize-y rounded-xl border border-sky-200 bg-white/90 px-4 py-3 text-sm text-zinc-800 shadow-sm outline-none transition-all placeholder:text-zinc-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-sky-500/30 dark:bg-zinc-900/70 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-sky-400 dark:focus:ring-sky-500/20"
+                                    {
+                                        ...register("detalle")
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <button
+                        onClick={() => setSelectedCriterio(arr[(i + 1) % arr.length])}
+                        className="hover:border hover:border-blue-300 cursor-pointer flex-none w-12 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-sky-100 dark:hover:bg-sky-500/20 border-l border-zinc-200 dark:border-zinc-800 transition-all group"
+                        disabled={isLocked}
+                        >
+                        <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        </div>
+                        </div>
+                    )
+                }
                 return (
                     <div key={criterio} className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
                     

@@ -412,6 +412,18 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
                     {(selectedFormDetail.formulario || []).map((item: Formulario, idx: number) => {
                       const isPositive: boolean = item.respuesta === 'SI'
                       const isNegative: boolean = item.respuesta === 'NO'
+                            if (item.criterio === "detalle"){
+                                return (
+                                <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
+                                    <p className="text-[11px] font-bold leading-snug text-foreground/80 uppercase tracking-wide">{item.criterio}</p>
+                                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2">
+                                        <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap break-words">
+                                            {item.respuesta || "Sin detalle registrado."}
+                                        </p>
+                                    </div>
+                                </div>
+                                )
+                            }
                       return (
                         <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
                           <div className="flex justify-between gap-4">
