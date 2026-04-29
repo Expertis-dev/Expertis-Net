@@ -340,6 +340,7 @@ export default function EscuchaFormularioPage() {
         setValue("audioDate", "")
         setValue("audioDuration", "")
         setValue("audioUrl", "")
+        setAudioModal({...audioModal, selectedAudio: undefined})
     }, [currentAdvisorId])
     
     useEffect(() => {
@@ -896,18 +897,15 @@ export default function EscuchaFormularioPage() {
                                     dataAudios
                                         .filter((v) => v.asesor === currentAdvisorId)
                                         .sort((a, b) => {
-                                            const aIsBottom = a.tipo === "MCT" || a.tipo === "REN";
-                                            const bIsBottom = b.tipo === "MCT" || b.tipo === "REN";
+                                            const order = ["RPP", "VLL", "TAT", "MCT", "REN"];
 
-                                            if (aIsBottom !== bIsBottom) {
-                                                return aIsBottom ? 1 : -1;
+                                            const aIndex = order.indexOf(a.tipo);
+                                            const bIndex = order.indexOf(b.tipo);
+
+                                            if (aIndex !== bIndex) {
+                                                return aIndex - bIndex;
                                             }
 
-                                            // Agrupa por tipo dentro de cada bloque (arriba y abajo)
-                                            const byTipo = a.tipo.localeCompare(b.tipo);
-                                            if (byTipo !== 0) return byTipo;
-
-                                            // Dentro del mismo tipo, más reciente primero
                                             return b.fecha.localeCompare(a.fecha);
                                         })
                                         .map((audio, index) => {
