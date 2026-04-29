@@ -345,7 +345,7 @@ export default function EscuchaFormularioPage() {
         setValue("audioDuration", "")
         setValue("audioUrl", "")
         setAudioModal({...audioModal, selectedAudio: undefined})
-    }, [currentAdvisorId])
+    }, [currentAdvisorId, audioModal, setValue])
     
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
