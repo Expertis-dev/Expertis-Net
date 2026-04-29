@@ -337,6 +337,12 @@ export default function EscuchaFormularioPage() {
     }, [isTimeExpired, turnoFin]);
 
     useEffect(() => {
+        setValue("audioDate", "")
+        setValue("audioDuration", "")
+        setValue("audioUrl", "")
+    }, [currentAdvisorId])
+    
+    useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             e.preventDefault();
             e.returnValue = "";
