@@ -1,5 +1,5 @@
 import { ChangeEvent, Dispatch, SetStateAction } from "react";
-import { Calendar, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 export interface Filters {
