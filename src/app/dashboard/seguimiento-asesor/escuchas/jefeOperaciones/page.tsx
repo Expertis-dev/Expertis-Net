@@ -124,14 +124,14 @@ const filteredData: ReporteEscucha[] = data.filter(item => {
     const excelData = data
                       .filter(v => v.num_realizado !== 0)
                       .map((v) => (v.escucha.map((a) => {
-                        return [v.fecha, v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio, a.hora_fin, `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => z.respuesta))]
+                        return [v.fecha.split("T")[0], v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio.split("T")[1].split(".")[0], a.hora_fin.split("T")[1].split(".")[0], `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => z.respuesta))]
                       })))
     for (const superData of excelData) {
       aoaData.push(...superData)
     }
     
     const aoaDataSinRegistros = data.filter(v => v.num_realizado === 0)
-                                    .map(a => [a.supervisor, a.fecha])
+                                    .map(a => [a.supervisor, a.fecha.split("T")[0]])
 
     const excel = XLSX.utils.aoa_to_sheet(aoaData);
     const excelSinRegistros = XLSX.utils.aoa_to_sheet(aoaDataSinRegistros);

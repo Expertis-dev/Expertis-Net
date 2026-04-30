@@ -740,7 +740,7 @@ export default function EscuchaFormularioPage() {
                                 Sección: {criterio}
                                 </span>
                             </div>
-                            <div className="flex flex-row">
+                            <div className="flex flex-row min-w-0 items-stretch">
                         {/* Botón Navegación Izquierda */}
                         <button
                             onClick={() => setSelectedCriterio(arr[(i - 1 + arr.length) % arr.length])}
@@ -749,7 +749,7 @@ export default function EscuchaFormularioPage() {
                         >
                             <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:-translate-x-1 transition-transform" />
                         </button>
-                        <div className="flex-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+                        <div className="flex-1 min-w-0 divide-y divide-zinc-100 dark:divide-zinc-800">
                             <div className="w-full max-w-3xl p-5 mx-auto">
                                 <textarea
                                     id="detalle"
@@ -784,7 +784,7 @@ export default function EscuchaFormularioPage() {
                         </span>
                     </div>
 
-                    <div className="flex flex-row">
+                    <div className="flex flex-row min-w-0 items-stretch">
                         {/* Botón Navegación Izquierda */}
                         <button
                         onClick={() => setSelectedCriterio(arr[(i - 1 + arr.length) % arr.length])}
@@ -795,7 +795,7 @@ export default function EscuchaFormularioPage() {
                         </button>
 
                         {/* Lista de Preguntas */}
-                        <div className="flex-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+                        <div className="flex-1 min-w-0 divide-y divide-zinc-100 dark:divide-zinc-800">
                         {preguntas.map((item, idx) => {
                             if (item.grupo !== criterio) return null;
                             const isSelectedSi = form.get(idx) === "SI";
@@ -804,18 +804,18 @@ export default function EscuchaFormularioPage() {
 
                             return (
                             <div key={idx} className="py-2 px-3 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors border-b border-zinc-200 dark:border-zinc-700">
-                                <div className="flex flex-row lg:flex-row justify-between gap-6">
-                                <div className="space-y-1.5">
+                                <div className="flex min-w-0 flex-col justify-between gap-3 sm:flex-row sm:gap-6">
+                                <div className="min-w-0 flex-1 space-y-1.5">
                                     <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
                                     {item.criterio}
                                     </p>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl break-words">
                                     {item.descripcion}
                                     </p>
                                 </div>
 
                                 {/* Selectores SI/NO */}
-                                <div className="flex items-center gap-4 lg:self-center self-center">
+                                <div className="flex shrink-0 items-center gap-3 self-center sm:gap-4">
                                     {/* Botón SI */}
                                     <label className={`relative flex flex-col items-center gap-1.5 group ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                                     <input
