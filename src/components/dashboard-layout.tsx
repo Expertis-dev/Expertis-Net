@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
-import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users, Percent } from "lucide-react"
+import { Menu, Home, FileText, Calendar, User, UserPlus, BookCheck, AudioLines, ClipboardCheck, PencilIcon, BookIcon, Users, Percent, BellIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { AnimatedThemeToggler } from "./magicui/animated-theme-toggler"
@@ -22,6 +22,7 @@ import { useUser } from "@/Provider/UserProvider"
 import { getSpeechPermisos } from "@/lib/speechPermissions"
 import { SocketContext } from "@/Context/SocketContex"
 import * as UAParser from "ua-parser-js";
+import { BellButton } from "./notifications/BellButton"
 
 interface DashboardLayoutProps {
   readonly children: React.ReactNode
@@ -694,9 +695,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
           </div>
-
           {/* Usuario + theme toggler */}
-          <div className="flex items-center gap-4">
+          <div className="relative flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
               <User className="h-4 w-4 text-muted-foreground" />
               {user && (
@@ -710,6 +710,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               )}
             </div>
+            <BellButton/>
             <AnimatedThemeToggler className="cursor-pointer" />
           </div>
         </header>
