@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
@@ -13,111 +13,93 @@ import {
   X,
   Clock,
   ClipboardCheck,
-  MessageSquare,
   Check,
   MinusCircle,
-  NotebookPenIcon
+  Copy,
+  NotebookIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
-import * as XLSX from 'xlsx'
-import { es } from "date-fns/locale"
-import { saveAs } from "file-saver";
+import { ReporteEscucha, Escucha, Formulario } from '@/components/seguimiento-asesor/escuchas/TableEscuchas'
+import { CONFIG } from '@/actions/escucha'
+import { preguntas } from '../formulario/preguntas'
+import * as XLSX  from "xlsx"
+import { saveAs } from 'file-saver'
 import { format } from "date-fns"
-import { ObservacionSombraSuper } from '@/components/seguimientos/observacion/ObservacionSombraSuper'
+import { es } from 'date-fns/locale'
+import { ObservacionModalSuper } from '@/components/seguimiento-asesor/escuchas/observacion/ObservacionModalSuper'
 
-const FORM_ITEMS = [
-  "Atiende la llamada de manera inmediata",
-  "Buena fluidez (sin tiempos muertos)",
-  "Explica la deuda claramente",
-  "Registra la gestión de manera correcta",
-  "Uso del corporativo (SMS, llamadas)",
-  "Proactividad con el ingreso de gestiones",
-  "Distracciones frecuentes",
-  "Navega de forma ágil en herramientas",
-  "No realiza actividades personales (comer, distraerse, etc.)"
-]
-
-export interface ResponseAcompanamientosTotal {
-  id_acom:    string;
-  fecha:      string;
-  registros:  number;
-  supervisor: string;
-  agencia:    string;
-  observacion?: string;
-  num_esperado: number;
-  sombra:     Sombra[];
+interface TurnoConfig {
+  id: number
+  inicio: string
+  fin: string
+  nombre: string
 }
 
-export interface Sombra {
-  id_sombra:       number | null;
-  asesor:          null | string;
-  hora_inicio:     string;
-  endTime:         string;
-  tiempo_duracion: number | null;
-  turno:           null | string;
-  formulario:      Formulario | null;
-}
-
-export interface Formulario {
-  [key: string]: Response
-}
-
-export interface Response {
-  check:    string;
-  detalle?: string;
+const getTurnos = async (): Promise<TurnoConfig[]> => {
+    const a = await CONFIG()
+    return a.TURNOS_PERMITIDOS || []
 }
 
 
+export default function JefeOperacionesViewPage() {
+    const [searchTerm, setSearchTerm] = useState<string>('')
+    const [selectedGroup, setSelectedGroup] = useState<string>('TODOS')
+    const [startDate, setStartDate] = useState<string>('')
+    const [endDate, setEndDate] = useState<string>('')
+    const [data, setData] = useState<ReporteEscucha[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(true)
+    const [turnos, setTurnos] = useState<TurnoConfig[]>([])
 
-export default function JefeOperacionesView() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedGroup, setSelectedGroup] = useState('TODOS')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [data, setData] = useState<ResponseAcompanamientosTotal[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+    const [selectedSupervisor, setSelectedSupervisor] = useState<ReporteEscucha | null>(null)
+    const [selectedFormDetail, setSelectedFormDetail] = useState<Escucha | null>(null)
+    const [observacionModal, setObservacionModal] = useState<{isOpen: boolean; item: ReporteEscucha | undefined}>({isOpen: false, item: undefined}) 
 
-  const [observacionModal, setObservacionModal] = useState({
-    isOpen: false,
-    observacion: ""
-  })
-
-  const [selectedSupervisor, setSelectedSupervisor] = useState<ResponseAcompanamientosTotal | null>(null)
-  const [selectedFormDetail, setSelectedFormDetail] = useState<Sombra | null>(null)
-
-  const fetchTotalAcompanamientos = async (startDate: string, endDate: string) => {
-    setIsLoading(true)
-    try {
-      const rol = localStorage.getItem("rol")
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos-total`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fechaInicio: startDate, fechaFin: endDate,  grupo: rol?.slice(1,-1)})
-      })
-
-      if (res.ok) {
-        const result = await res.json()
-        setData(result.data || [])
-      } else {
-        toast.error("Error al cargar datos maestros.")
-      }
-    } catch (error) {
-      console.error("Error fetching total details:", error)
+    const fetchTotalAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
+        setIsLoading(true)
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-reporte-escuchas`, {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({fechaInicio, fechaFin})
+            })
+            
+            if (res.ok) {
+                const result = await res.json()
+                // El endpoint devuelve un array directamente o envuelto en .data
+                const reportes = Array.isArray(result) ? result : result?.data || []
+                console.log("Datos cargados:", reportes)
+                setData(reportes)
+            } else {
+                toast.error("Error al cargar datos maestros.")
+            }
+        } catch (error) {
+            console.error("Error fetching total details:", error)
+            toast.error("Error de conexión")
     } finally {
-      setIsLoading(false)
+        setIsLoading(false)
     }
-  }
+}
 
-  useEffect(() => {
+const fetchTurnos = async () => {
+    try {
+        const turnosData = await getTurnos()
+        setTurnos(turnosData)
+    } catch (error) {
+        console.error("Error al cargar turnos:", error)
+    }
+}
+
+useEffect(() => {
     fetchTotalAcompanamientos(startDate, endDate)
-  }, [startDate, endDate])
+    fetchTurnos()
+}, [startDate, endDate])
 
-  const groups = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
+const groups: string[] = ['TODOS', ...Array.from(new Set(data.map(item => item.supervisor.split(" ")[0] || 'S/G')))]
 
-  const filteredData = data.filter(item => {
-    const matchesSearch = item.sombra.some((v) => (v.asesor || '').toLowerCase().includes(searchTerm.toLowerCase()))
+const filteredData: ReporteEscucha[] = data.filter(item => {
+    const matchesSearch = item.escucha.some((a) => a.asesor.toLowerCase().startsWith(searchTerm.toLowerCase()))
     const matchesGroup = selectedGroup === 'TODOS' || item.supervisor.startsWith(selectedGroup)
-
+    
     // Filtro de fecha usando comparación de strings (ISO YYYY-MM-DD)
     let matchesDate = true
     const itemDate = item.fecha // Asumimos formato YYYY-MM-DD del backend
@@ -128,19 +110,28 @@ export default function JefeOperacionesView() {
     return matchesSearch && matchesGroup && matchesDate
   })
 
-  const onClickDownloadExcel = () => {
-    const aoaData: (string | null)[][] = [["FECHA", "SUPERVISOR", "AGENCIA", "TURNO", "ASESOR", "HORA_INICIO", "HORA_FIN", "DURACION", ...(FORM_ITEMS.map((v, i) => `ITEM_${i+1}:${v}`))]];
+  const copyToClipboard = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        toast.info("Link copiado al portapapeles")
+    } catch (error) {
+        console.error('Error al copiar: ', error);
+    }
+  }
+
+  const onDownloadExcel = () => {
+    const aoaData: (string | null)[][] = [["FECHA", "SUPERVISOR", "AGENCIA", "TURNO", "ASESOR", "HORA_INICIO", "HORA_FIN", "DURACION", ...(preguntas.map((v, i) => `ITEM_${i+1}:${v.criterio}`))]];
     const excelData = data
-                      .filter(v => v.registros !== 0)
-                      .map((v) => (v.sombra.map((a) => {
-                        return [v.fecha, v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio, a.endTime, `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => `${z.check}${z.detalle === undefined ? "" : (" Nota: " + z.detalle)}`))]
+                      .filter(v => v.num_realizado !== 0)
+                      .map((v) => (v.escucha.map((a) => {
+                        return [v.fecha.split("T")[0], v.supervisor, v.agencia, a.turno, a.asesor, a.hora_inicio.split("T")[1].split(".")[0], a.hora_fin.split("T")[1].split(".")[0], `${Math.floor(a.tiempo_duracion! / 60)}m ${a.tiempo_duracion! % 60}`,...(Object.values(a.formulario!).map((z) => z.respuesta))]
                       })))
     for (const superData of excelData) {
       aoaData.push(...superData)
     }
     
-    const aoaDataSinRegistros = data.filter(v => v.registros === 0)
-                                    .map(a => [a.supervisor])
+    const aoaDataSinRegistros = data.filter(v => v.num_realizado === 0)
+                                    .map(a => [a.supervisor, a.fecha.split("T")[0]])
 
     const excel = XLSX.utils.aoa_to_sheet(aoaData);
     const excelSinRegistros = XLSX.utils.aoa_to_sheet(aoaDataSinRegistros);
@@ -152,8 +143,8 @@ export default function JefeOperacionesView() {
     const dataBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     saveAs(dataBlob, `datos_sombras_${format((new Date), 'yyyy-MM', { locale: es })}.xlsx`);
   }
-
-  const SombraTable = ({ title, sombras }: { title: string, sombras: Sombra[] }) => (
+  
+  const SombraTable = ({ title, sombras }: { title: string; sombras: Escucha[] }) => (
     <div className="space-y-3">
       <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2 px-1">
         <Clock className="w-3.5 h-3.5" />
@@ -166,18 +157,30 @@ export default function JefeOperacionesView() {
               <th className="py-2.5 px-4 text-center">Hora</th>
               <th className="py-2.5 px-4">Asesor</th>
               <th className="py-2.5 px-4 text-center">Duración</th>
+              <th className="py-2.5 px-4 text-center">Fecha audio</th>
+              <th className="py-2.5 px-4 text-center">Duracion audio</th>
               <th className="py-2.5 px-4 text-right">Detalle</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {sombras.length > 0 ? sombras.map((s, idx) => (
+            {sombras.length > 0 ? sombras.map((s: Escucha, idx: number) => (
               <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio || '--:--'}</td>
+                <td className="py-2 px-4 text-center font-bold text-primary">{s.hora_inicio.split("T")[1].split(".")[0].slice(0,-3) || '--:--'}</td>
                 <td className="py-2 px-4 font-bold uppercase">{s.asesor || 'S/N'}</td>
-                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion! % 60}s</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor((s.tiempo_duracion || 0) / 60)}m {s.tiempo_duracion % 60}s</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{(new Date(s.fecha_audio)).toISOString().split("T")[0]}</td>
+                <td className="py-2 px-4 text-center text-muted-foreground font-medium">{Math.floor(+s.duracion_audio / 60)}:{+s.duracion_audio % 60 < 10 ? `0${+s.duracion_audio % 60}` : +s.duracion_audio % 60}&rsquo;</td>
                 <td className="py-2 px-4 text-right">
                   <button onClick={() => setSelectedFormDetail(s)} className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all">
                     <Eye className="w-4 h-4" />
+                  </button>
+                  <button className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all group relative"
+                    onClick={() => copyToClipboard(s.link_audio)}
+                  >
+                    <Copy className="w-4 h-4"/>
+                    <span className="pointer-events-none absolute -top-8 scale-0 -left-26 rounded bg-slate-800 p-2 text-[12px] text-white transition-all group-hover:scale-80 w-40">
+                        Copiar al portapapeles
+                    </span>
                   </button>
                 </td>
               </tr>
@@ -216,7 +219,7 @@ export default function JefeOperacionesView() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Buscar supervisor..."
+              placeholder="Buscar asesor..."
               className="w-full bg-card border border-border rounded-xl pl-10 pr-3 py-2 text-xs focus:ring-1 ring-primary/20 outline-none transition-all font-bold"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -251,9 +254,9 @@ export default function JefeOperacionesView() {
           </div>
 
           <button
-            className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm ${isLoading ? 'animate-spin' : ''}`}
-            title="Descargar Excel"
-            onClick={onClickDownloadExcel}
+            onClick={onDownloadExcel}
+            className={`p-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm`}
+            title="Sincronizar Datos"
           >
             <Download className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -275,53 +278,51 @@ export default function JefeOperacionesView() {
                   <th className="py-3.5 px-6">Supervisor</th>
                   <th className="py-3.5 px-6">Grupo</th>
                   <th className="py-3.5 px-6 text-center">Fecha</th>
-                  <th className="py-3.5 px-6 text-center">Turno 1</th>
-                  <th className="py-3.5 px-6 text-center">Turno 2</th>
+                  <th className="py-3.5 px-6 text-center">TURNO 1</th>
+                  <th className="py-3.5 px-6 text-center">TURNO 2</th>
                   <th className="py-3.5 px-6 text-center">Total</th>
                   <th className="py-3.5 px-6 text-center">Estado</th>
                   <th className="py-3.5 px-6 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {filteredData.length > 0 ? filteredData.reverse().map((item) => {
-                  const initials = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                  const sombras = item.sombra || []
-                  const countT1 = sombras.filter((s) => +s.turno! == 1 || s.turno === '1').length
-                  const countT2 = sombras.filter((s) => +s.turno! == 2 || s.turno === '2').length
-                  const realizados = item.registros || 0
-                  const esperados = item.num_esperado || 6
-                  const metaAlcanzada = realizados >= esperados
+                {filteredData.length > 0 ? filteredData.reverse().map((item: ReporteEscucha) => {
+                  const initials: string = (item.supervisor || 'S N').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                  const escuchas: Escucha[] = item.escucha || []
+                  const countT1: number = escuchas.filter((s: Escucha) => s.turno === turnos[0]?.nombre).length
+                  const countT2: number = escuchas.filter((s: Escucha) => s.turno === turnos[1]?.nombre).length
+                  const realizados: number = item.num_realizado
+                  const esperados: number = item.min_num
+                  const metaAlcanzada: boolean = realizados >= esperados
 
-                  const status = metaAlcanzada ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
-                  const statusColor = metaAlcanzada ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
+                  const status: string = (countT1 >= 2 && countT2 >= 2) ? 'CUMPLIDO' : realizados > 0 ? 'PARCIAL' : 'PENDIENTE'
+                  const statusColor: string = (countT1 >= 2 && countT2 >= 2) ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : realizados > 0 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
 
                   return (
-                    <tr key={item.id_acom} className="hover:bg-muted/10 transition-colors group">
-                      <td className="py-3 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">{initials}</div>
-                          <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0] || 'S/G'}</td>
-                      <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha}</td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/3</span></td>
-                      <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/3</span></td>
-                      <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
-                      <td className="py-3 px-6 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
-                      </td>
-                      <td className="py-3 px-6 text-center">
-                        <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
-                          <Eye className="w-4.5 h-4.5" />
-                        </button>
-                        <button onClick={() => setObservacionModal({observacion: item.observacion || "", isOpen: true})} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90"
-                            hidden={item.observacion === null}
-                          >
-                          <NotebookPenIcon className="w-4.5 h-4.5" />
-                        </button>
-                      </td>
-                    </tr>
+                      <tr key={item.id_reporte_escucha} className="hover:bg-muted/10 transition-colors group">
+                        <td className="py-3 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">{initials}</div>
+                            <span className="font-bold text-foreground uppercase">{item.supervisor}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-6 font-bold text-muted-foreground uppercase">{item.supervisor.split(" ")[0]}</td>
+                        <td className="py-3 px-6 text-center font-medium opacity-60 uppercase">{item.fecha.split("T")[0]}</td>
+                        <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT1 > 0 ? 'text-foreground' : ''}>{countT1}/{esperados / 2}</span></td>
+                        <td className="py-3 px-6 text-center font-black text-muted-foreground/30"><span className={countT2 > 0 ? 'text-foreground' : ''}>{countT2}/{esperados / 2}</span></td>
+                        <td className="py-3 px-6 text-center font-black"><span className={metaAlcanzada ? 'text-primary' : 'text-destructive/70'}>{realizados}/{esperados}</span></td>
+                        <td className="py-3 px-6 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[9px] font-black border ${statusColor}`}>{status}</span>
+                        </td>
+                        <td className="text-center">
+                          <button onClick={() => setSelectedSupervisor(item)} className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90">
+                            <Eye className="w-4.5 h-4.5" />
+                          </button>
+                          <button onClick={() => setObservacionModal({item: item, isOpen: true})} className={`p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90`} hidden={item.observacion === null}>
+                            <NotebookIcon className="w-4.5 h-4.5" />
+                          </button>
+                        </td>
+                      </tr>
                   )
                 }) : (
                   <tr>
@@ -332,13 +333,14 @@ export default function JefeOperacionesView() {
                 )}
               </tbody>
             </table>
+            <ObservacionModalSuper
+              observacion={observacionModal}
+              setObservacion={setObservacionModal}
+            />
           </div>
         )}
       </div>
-      <ObservacionSombraSuper
-        observacion={observacionModal}
-        setObservacion={setObservacionModal}
-      />
+
       {/* Modal supervisor shifts */}
       <AnimatePresence>
         {selectedSupervisor && (
@@ -359,7 +361,7 @@ export default function JefeOperacionesView() {
                     {selectedSupervisor.supervisor}
                   </h2>
                   <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-1">
-                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.registros}/{selectedSupervisor.num_esperado} Realizados
+                    {selectedSupervisor.agencia} • {selectedSupervisor.fecha} • {selectedSupervisor.num_realizado}/{selectedSupervisor.min_num} Realizados
                   </p>
                 </div>
                 <button onClick={() => setSelectedSupervisor(null)} className="p-2 hover:bg-muted bg-background border border-border rounded-xl transition-all">
@@ -368,8 +370,8 @@ export default function JefeOperacionesView() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 sidebar-scroll bg-[radial-gradient(circle_at_top_right,var(--primary-rgb)/3,transparent)]">
-                <SombraTable title="Turno 1 -" sombras={(selectedSupervisor.sombra || []).filter((s) => +s.turno! == 1 || s.turno === '1')} />
-                <SombraTable title="Turno 2 - " sombras={(selectedSupervisor.sombra || []).filter((s) => +s.turno! == 2 || s.turno === '2')} />
+                <SombraTable title={turnos[0]?.nombre ?? 'Turno 1'} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === turnos[0]?.nombre)} />
+                <SombraTable title={turnos[1]?.nombre ?? 'Turno 2'} sombras={(selectedSupervisor.escucha || []).filter((s: Escucha) => s.turno === turnos[1]?.nombre)} />
               </div>
             </motion.div>
           </>
@@ -407,29 +409,35 @@ export default function JefeOperacionesView() {
                 <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
                   <h3 className="text-[10px] font-black uppercase text-primary tracking-widest mb-4">Criterios de Sesión</h3>
                   <div className="space-y-4">
-                    {FORM_ITEMS.map((item, idx) => {
-                      const key = `p${idx + 1}`
-                      const answer = selectedFormDetail.formulario?.[key]
+                    {(selectedFormDetail.formulario || []).map((item: Formulario, idx: number) => {
+                      const isPositive: boolean = item.respuesta === 'SI'
+                      const isNegative: boolean = item.respuesta === 'NO'
+                            if (item.criterio === "detalle"){
+                                return (
+                                <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
+                                    <p className="text-[11px] font-bold leading-snug text-foreground/80 uppercase tracking-wide">{item.criterio}</p>
+                                    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-2">
+                                        <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap break-words">
+                                            {item.respuesta || "Sin detalle registrado."}
+                                        </p>
+                                    </div>
+                                </div>
+                                )
+                            }
                       return (
                         <div key={idx} className="space-y-2 pb-4 border-b border-border/50 last:border-0 last:pb-0">
                           <div className="flex justify-between gap-4">
-                            <p className="text-[11px] font-bold leading-snug text-foreground/80">{item}</p>
+                            <p className="text-[11px] font-bold leading-snug text-foreground/80">{item.criterio}</p>
                             <div className="flex gap-1 shrink-0">
-                              {answer?.check === 'SI' ? (
-                                <span className="p-1.5 bg-emerald-500 rounded-lg text-white"><Check className="w-3 h-3" /></span>
-                              ) : answer?.check === 'NO' ? (
-                                <span className="p-1.5 bg-red-500 rounded-lg text-white"><MinusCircle className="w-3 h-3" /></span>
+                              {isPositive ? (
+                                <span className="p-1.5 bg-emerald-500 rounded-lg text-white self-center"><Check className="w-3 h-3" /></span>
+                              ) : isNegative ? (
+                                <span className="p-1.5 bg-red-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                               ) : (
-                                <span className="p-1.5 bg-muted rounded-lg text-muted-foreground"><MinusCircle className="w-3 h-3" /></span>
+                                <span className="p-1.5 bg-orange-500 rounded-lg text-white self-center"><MinusCircle className="w-3 h-3" /></span>
                               )}
                             </div>
                           </div>
-                          {answer?.detalle && (
-                            <div className="bg-muted/60 rounded-xl p-3 border border-border/40 flex items-start gap-2.5 shadow-inner">
-                              <MessageSquare className="w-3 h-3 text-primary/60 mt-0.5" />
-                              <p className="text-xs text-muted-foreground leading-relaxed italic">{answer.detalle}</p>
-                            </div>
-                          )}
                         </div>
                       )
                     })}
