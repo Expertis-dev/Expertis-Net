@@ -265,7 +265,15 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
       {
         title: "Escuchas",
         href: "/dashboard/seguimiento-asesor/escuchas",
+        permiso: "AcompañamientosAsesor-ver",
+        modulo: "SeguimientoAsesor"
       },
+      {
+        title: "Escuchas Jefe Operaciones",
+        href: "/dashboard/seguimiento-asesor/escuchas/jefeOperaciones",
+        permiso: "AcompañamientoSupervisor-ver",
+        modulo: "SeguimientoAsesor"
+      }
     ],
   },
   {
