@@ -34,7 +34,7 @@ import { LoadingModal } from "@/components/loading-modal";
 
 const criterios = Object.entries(Object.groupBy(preguntas, v => v.grupo)).map(v => v[0])
 criterios.push("Detalle")
-const minFormTime = 2 * 60;
+const minFormTime = 10 * 60;
 const FALLBACK_ROUTE = "/dashboard/seguimiento-asesor/escuchas";
 
 type AudioFormValues = {
