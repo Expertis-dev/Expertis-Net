@@ -88,6 +88,7 @@ export const tienePermiso = (
   permiso?: string
 ): boolean => {
   if (!modulo || !permiso) return true
+
   if (!permisos) return false
 
   // Normalizar texto: quitar tildes, eñes y pasar a minúsculas
@@ -251,25 +252,19 @@ const MENU_CONFIG = (usrInsert: string | null, idEmpleado: number | null): MenuI
     icon: Users,
     href: "#",
     modulo: "SeguimientoAsesor",
+
     permiso: "Acompañamiento-ver",
     subItems: [
       {
         title: "Acompañamiento",
         href: "/dashboard/seguimiento-asesor/acompanamiento",
         modulo: "SeguimientoAsesor",
+
         permiso: "Acompañamiento-ver"
       },
       {
         title: "Escuchas",
         href: "/dashboard/seguimiento-asesor/escuchas",
-        modulo: "SeguimientoAsesor",
-        permiso: "AcompañamientosAsesor-ver"
-      },
-      {
-        title: "Escuchas Jefe Operaciones",
-        href: "/dashboard/seguimiento-asesor/escuchas/jefeOperaciones",
-        modulo: "SeguimientoAsesor",
-        permiso: "AcompañamientoSupervisor-ver"
       },
     ],
   },

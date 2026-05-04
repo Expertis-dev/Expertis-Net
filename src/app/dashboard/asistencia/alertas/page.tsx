@@ -79,7 +79,7 @@ export default function AlertasPage() {
             return;
         }
 
-        const URL_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/alertaIncidencias/?codMes=4`;
+        const URL_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/alertaIncidencias/?codMes=5`;
 
         const fetchData = async () => {
             setLoading(true);

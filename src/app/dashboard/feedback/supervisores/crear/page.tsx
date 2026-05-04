@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 
 import { CrearFbSupervisorForm } from "@/components/feedback/supervisor/crear/CrearFbSupervisorForm";
 import { Empleado } from "@/types/feedback/interfaces";
