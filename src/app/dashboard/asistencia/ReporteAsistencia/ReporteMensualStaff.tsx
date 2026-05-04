@@ -38,9 +38,10 @@ import { SuccessModal } from "@/components/success-modal";
 
 // --- CONFIGURACIÓN DE GRUPOS ---
 const GRUPOS_HORARIO = [
-    { id: '6-3', label: 'Grupo 6am - 3pm', entrada: '06:00', salida: '15:00', tolerancia: 10 },
+    // { id: '6-3', label: 'Grupo 6am - 3pm', entrada: '06:00', salida: '15:00', tolerancia: 10 },
     { id: '7-5', label: 'Grupo 7am - 5pm', entrada: '07:00', salida: '17:00', tolerancia: 5 },
     { id: '8-5', label: 'Grupo 8am - 5pm', entrada: '08:00', salida: '17:00', tolerancia: 0 },
+    { id: '8-6', label: 'Grupo 8am - 6pm', entrada: '08:00', salida: '18:00', tolerancia: 0 },
     { id: '8:30-5:30', label: 'Grupo 8:30am - 5:30pm', entrada: '08:30', salida: '17:30', tolerancia: 0 },
     { id: '9-6', label: 'Grupo 9am - 6pm', entrada: '09:00', salida: '18:00', tolerancia: 0 },
 ];
@@ -75,6 +76,9 @@ const CONFIG_EMPLEADOS_ESTATICA: Record<string, string[]> = {
         "LEONOR NAVARRO",
         "JORGE VASQUEZ",
         "ROBERTO INZUA"
+    ],
+    '8-6': [
+        "DIXOR GAYOSO"
     ],
     '8-5': [
         "MAURO ADAUTO",
