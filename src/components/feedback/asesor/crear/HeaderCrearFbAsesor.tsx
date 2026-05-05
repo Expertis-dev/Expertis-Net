@@ -18,10 +18,10 @@ interface Props {
 }
 
 export interface Colaborador {
-    Id: number,
+    Id?: number,
     usuario: string,
     idEmpleado: number,
-    dni: string
+    dni?: string
 }
 
 export const HeaderCrearFbAsesor = ({
@@ -40,17 +40,17 @@ export const HeaderCrearFbAsesor = ({
     const { user } = useUser()
     useEffect(() => {
         const fetchAsesores = async (): Promise<Colaborador[]> => {
-            const asesores = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/obtenerListaColaboradores`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario: user?.usuario || "" })
-            }).then(r => r.json())
-            return asesores
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asesores`).then(r => r.json())
+            // Mapeamos 'alias' a 'usuario' para mantener compatibilidad con el resto del componente
+            return res.map((a: any) => ({
+                idEmpleado: a.idEmpleado,
+                usuario: a.alias || a.usuario || ""
+            }))
         }
         fetchAsesores().then((r) => {
             setAsesorOptions(r)
         })
-    }, [user?.usuario])
+    }, [])
 
     const {
         filteredOptions,
@@ -62,8 +62,8 @@ export const HeaderCrearFbAsesor = ({
         selectOption
     } = useCombobox({
         options: asesorOptions,
-        getLabel: (v) => v.usuario,
-        filterOption: (v, q) => v.usuario.toLowerCase().includes(q),
+        getLabel: (v) => v.usuario || "",
+        filterOption: (v, q) => (v.usuario || "").toLowerCase().includes(q),
         initialQuery: `${USUARIO}`
     });
 
@@ -72,7 +72,7 @@ export const HeaderCrearFbAsesor = ({
         setQuery(USUARIO)
         setIsOpen(false)
         const exactMatch = asesorOptions.find(
-            (v) => v.usuario.toLowerCase() === USUARIO.trim().toLowerCase()
+            (v) => (v.usuario || "").toLowerCase() === USUARIO.trim().toLowerCase()
         )
         setAsesor(exactMatch)
     }, [USUARIO, asesorOptions, setAsesor, setQuery, setIsOpen])
@@ -88,7 +88,7 @@ export const HeaderCrearFbAsesor = ({
             return
         }
         const exactMatch = asesorOptions.find(
-            (v) => v.usuario.toLowerCase() === normalized
+            (v) => (v.usuario || "").toLowerCase() === normalized
         )
         setAsesor(exactMatch)
     }, [query, asesorOptions, setAsesor])
@@ -104,6 +104,7 @@ export const HeaderCrearFbAsesor = ({
     const showPeriodoInput = !!setPeriodoRutina || !!setPeriodoNegativa
 
     const onPeriodoChange = (value: string) => {
+        console.log("Periodo cambiado a:", value)
         if (isRutina) {
             setPeriodoRutina?.(value)
             return
@@ -201,7 +202,7 @@ export const HeaderCrearFbAsesor = ({
                                 }`}
                             onClick={() => {
                                 if (!!USUARIO) return;
-                                setCurrentFeedback("negativo")
+                                setCurrentFeedback("negativa")
                             }}
                         >
                             Negativa

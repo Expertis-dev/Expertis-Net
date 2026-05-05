@@ -152,7 +152,7 @@ export const CrearFbAsesorForm = ({
     const [isFetching, setIsFetching] = useState(false)
     const [isDisable, setIsDisable] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    
+
     const buildDefaults = (fields?: Form): Form => ({
         recupero: fields === undefined ? "" : fields.recupero,
         recuperoMeta: fields === undefined ? "" : fields.recuperoMeta,
@@ -226,7 +226,9 @@ export const CrearFbAsesorForm = ({
             }
             return ""
         }
-        const periodoIso = toIso(periodoSeleccionado)
+        console.log(periodoSeleccionado)
+        const periodoIso = (toIso(periodoSeleccionado).split("T")[0])
+        console.log(periodoIso)
 
         if (!defaultValues) {
             if (!periodoIso) {
@@ -264,15 +266,18 @@ export const CrearFbAsesorForm = ({
                 setIsLoading(false)
             })
         } else {
+            console.log("Actualizando feedback con periodo:", periodoIso)
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${idFeedback}`, {
                 headers: { "Content-Type": "application/json" },
                 method: "PUT",
                 body: JSON.stringify({
+                    idEmpleado: asesor.idEmpleado,
+                    tipoEvaluacion: currentFeedback.toUpperCase(),
                     estadoFeedback: type === "PUBLICAR" ? "PUBLICADO" : "BORRADOR",
                     observacionesGenerales: observacionesGenerales,
                     analisisResultados: null,
                     compromisoMejora: null,
-                    periodo: periodoIso,
+                    periodo: periodoIso.toString(),
                     resultadoEvaluacion: JSON.stringify({
                         recupero: data.recupero,
                         recuperoMeta: data.recuperoMeta,
@@ -287,6 +292,9 @@ export const CrearFbAsesorForm = ({
                         faltasInjustificadas: data.faltasInjustificadas,
                         tardanzasInjustificadas: data.tardanzasInjustificadas,
                     }),
+                    usrInsert: user?.usuario,
+                    tipoEmpleado: "ASESOR",
+                    USUARIO: asesor.usuario,
                     usuario: user?.usuario
                 })
             }).then((res) => {
@@ -366,9 +374,9 @@ export const CrearFbAsesorForm = ({
                                 <div className="flex flex-col p-2" key={field.name}>
                                     <div className="flex flex-row justify-between">
                                         <h4>{field.name} </h4>
-                                        {field.name === "Recupero" ? 
+                                        {field.name === "Recupero" ?
                                             <p className="font-extralight">Alcance recupero: {isNaN(+calculateRatioAlcance()) ? "" : calculateRatioAlcance() + "%"}</p>
-                                        : <></>}
+                                            : <></>}
                                     </div>
                                     {errors[field.values[0].name] && <span className="text-red-600 text-xs">{errors[field.values[0].name]!.message}</span>}
                                     {errors[field.values[1].name] && <span className="text-red-600 text-xs">{errors[field.values[1].name]!.message}</span>}
