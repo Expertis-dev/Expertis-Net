@@ -3,6 +3,7 @@ import { useCombobox } from "@/hooks/feedback/combobox"
 import { useUser } from "@/Provider/UserProvider"
 import { LockIcon, SearchIcon } from "lucide-react"
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
+import { Empleado } from "@/types/feedback/interfaces"
 
 interface Props {
     currentFeedback: string,
@@ -42,9 +43,9 @@ export const HeaderCrearFbAsesor = ({
         const fetchAsesores = async (): Promise<Colaborador[]> => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/asesores`).then(r => r.json())
             // Mapeamos 'alias' a 'usuario' para mantener compatibilidad con el resto del componente
-            return res.map((a: any) => ({
+            return res.map((a: Empleado) => ({
                 idEmpleado: a.idEmpleado,
-                usuario: a.alias || a.usuario || ""
+                usuario: a.alias || ""
             }))
         }
         fetchAsesores().then((r) => {

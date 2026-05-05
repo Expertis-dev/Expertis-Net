@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
@@ -102,49 +102,12 @@ export default function AcompanamientoPage() {
   const warningShownRef = useRef(false)
   const [isFinalizing, setIsFinalizing] = useState(false)
 
-  const fetchSombras = async (fechaInicio?: string, fechaFin?: string) => {
-    if (!user?.usuario) return
-    setIsLoading(true)
-    try {
-      const hoy = new Date().toISOString().split('T')[0]
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-sombras-realizadas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
-      })
-      if (res.ok) {
-        const data: FetchNumeroSombrasRealizadas = await res.json()
-        setSombrasData({
-          realizadas: data.numeroDeSombrasRealizadas,
-          faltantes: data.numeroDeSombrasFaltantes,
-          id_acom: String(data.id_acom),
-          supervisor: data.supervisor
-        })
-
-        if (data.id_acom) {
-          await fetchDetalleAcompanamientos(fechaInicio, fechaFin)
-        } else {
-          setLogs([])
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching sombras:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (observacionSombra.isOpen) return;
-    fetchSombras(startDate, endDate)
-  }, [user?.usuario, startDate, endDate, observacionSombra.isOpen])
-
-  const fetchDetalleAcompanamientos = async (fechaInicio?: string, fechaFin?: string) => {
+  const fetchDetalleAcompanamientos = useCallback(async (fechaInicio?: string, fechaFin?: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/detalle-acompanamientos`, {
         method: 'POST', // Aseguramos que sea POST para que el backend lea req.body
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grupo: user?.usuario, fechaInicio: fechaInicio || undefined, fechaFin: fechaFin || undefined})
+        body: JSON.stringify({ grupo: user?.usuario, fechaInicio: fechaInicio || undefined, fechaFin: fechaFin || undefined })
       })
 
       if (res.ok) {
@@ -185,7 +148,115 @@ export default function AcompanamientoPage() {
     } catch (error) {
       console.error("Error fetching details:", error)
     }
-  }
+  }, [user?.usuario])
+
+  const fetchSombras = useCallback(async (fechaInicio?: string, fechaFin?: string) => {
+    if (!user?.usuario) return
+    setIsLoading(true)
+    try {
+      const hoy = new Date().toISOString().split('T')[0]
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/numero-de-sombras-realizadas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha: hoy, usuario: user.usuario })
+      })
+      if (res.ok) {
+        const data: FetchNumeroSombrasRealizadas = await res.json()
+        setSombrasData({
+          realizadas: data.numeroDeSombrasRealizadas,
+          faltantes: data.numeroDeSombrasFaltantes,
+          id_acom: String(data.id_acom),
+          supervisor: data.supervisor
+        })
+
+        if (data.id_acom) {
+          await fetchDetalleAcompanamientos(fechaInicio, fechaFin)
+        } else {
+          setLogs([])
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching sombras:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user?.usuario, fetchDetalleAcompanamientos])
+
+  const handleFinalize = useCallback(async (wasAutoSave = false) => {
+    console.log("DATOS A ENVIAR:", {
+      id_acom: sombrasData.id_acom,
+      turno: datosValidacion?.turnoId || 1,
+      supervisor: sombrasData.supervisor,
+      asesor: currentAdvisorId,
+      horaInicio: datosValidacion?.hora,
+      formulario: formulario
+    })
+
+    const elapsedSeconds = (20 * 60) - timeLeft
+    const minRequiredSeconds = 60 * 17
+
+    if (!currentAdvisorId) {
+      if (wasAutoSave) {
+        setView('dashboard')
+        return
+      }
+      setValidationError("Debes seleccionar un asesor para poder finalizar.")
+      return
+    }
+
+    if (!wasAutoSave && elapsedSeconds < minRequiredSeconds) {
+      setValidationError(`Debes esperar al menos 17 minutos (Llevas ${Math.floor(elapsedSeconds / 60)} min).`);
+      return;
+    }
+
+    if (!wasAutoSave && Object.keys(formulario).length < FORM_ITEMS.length) {
+      setValidationError("Por favor, completa todos los criterios de evaluación (Sí/No) antes de finalizar.")
+      return
+    }
+
+    if (finalizeInFlightRef.current) return
+    finalizeInFlightRef.current = true
+    setIsFinalizing(true)
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrar-sombra`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_acom: sombrasData.id_acom,
+          turno: datosValidacion?.turnoId || 1,
+          supervisor: sombrasData.supervisor,
+          asesor: currentAdvisorId,
+          horaInicio: datosValidacion?.hora,
+          formulario: formulario
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.mensaje || "No se pudo registrar la sombra.")
+        finalizeInFlightRef.current = false
+        setIsFinalizing(false)
+        return
+      }
+
+      toast.success("¡Acompañamiento registrado correctamente!")
+      // Refrescamos los datos completos (contadores e historial)
+      fetchSombras()
+      setView('dashboard')
+    } catch (error) {
+      finalizeInFlightRef.current = false
+      setIsFinalizing(false)
+      console.error("Error registering shadow:", error)
+      toast.error("Error de conexión al registrar la sombra.")
+    }
+  }, [currentAdvisorId, datosValidacion?.hora, datosValidacion?.turnoId, fetchSombras, formulario, sombrasData.id_acom, sombrasData.supervisor, timeLeft])
+
+  useEffect(() => {
+    if (observacionSombra.isOpen) return;
+    fetchSombras(startDate, endDate)
+  }, [fetchSombras, startDate, endDate, observacionSombra.isOpen])
 
   useEffect(() => {
     if (view === 'form') {
@@ -269,7 +340,7 @@ export default function AcompanamientoPage() {
         handleFinalize(true)
       }
     }
-  }, [timeLeft, view])
+  }, [timeLeft, view, handleFinalize])
 
   useEffect(() => {
     if (view === "dashboard") return;
@@ -283,7 +354,7 @@ export default function AcompanamientoPage() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [])
+  }, [view])
 
   useEffect(() => {
     if (view !== 'form') {
@@ -349,76 +420,6 @@ export default function AcompanamientoPage() {
     setCurrentAdvisorId(id)
   }
 
-  const handleFinalize = async (wasAutoSave = false) => {
-    console.log("DATOS A ENVIAR:", {
-      id_acom: sombrasData.id_acom,
-      turno: datosValidacion?.turnoId || 1,
-      supervisor: sombrasData.supervisor,
-      asesor: currentAdvisorId,
-      horaInicio: datosValidacion?.hora,
-      formulario: formulario
-    })
-
-    const elapsedSeconds = (20 * 60) - timeLeft
-    const minRequiredSeconds = 60 * 17
-
-    if (!currentAdvisorId) {
-      if (wasAutoSave) {
-        setView('dashboard')
-        return
-      }
-      setValidationError("Debes seleccionar un asesor para poder finalizar.")
-      return
-    }
-
-    if (!wasAutoSave && elapsedSeconds < minRequiredSeconds) {
-      setValidationError(`Debes esperar al menos 17 minutos (Llevas ${Math.floor(elapsedSeconds / 60)} min).`);
-      return;
-    }
-
-    if (!wasAutoSave && Object.keys(formulario).length < FORM_ITEMS.length) {
-      setValidationError("Por favor, completa todos los criterios de evaluación (Sí/No) antes de finalizar.")
-      return
-    }
-
-    if (finalizeInFlightRef.current) return
-    finalizeInFlightRef.current = true
-    setIsFinalizing(true)
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/registrar-sombra`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_acom: sombrasData.id_acom,
-          turno: datosValidacion?.turnoId || 1,
-          supervisor: sombrasData.supervisor,
-          asesor: currentAdvisorId,
-          horaInicio: datosValidacion?.hora,
-          formulario: formulario
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        toast.error(data.mensaje || "No se pudo registrar la sombra.")
-        finalizeInFlightRef.current = false
-        setIsFinalizing(false)
-        return
-      }
-
-      toast.success("¡Acompañamiento registrado correctamente!")
-      // Refrescamos los datos completos (contadores e historial)
-      fetchSombras()
-      setView('dashboard')
-    } catch (error) {
-      finalizeInFlightRef.current = false
-      setIsFinalizing(false)
-      console.error("Error registering shadow:", error)
-      toast.error("Error de conexión al registrar la sombra.")
-    }
-  }
 
   const handleStartForm = async () => {
     try {
