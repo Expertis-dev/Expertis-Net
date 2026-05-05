@@ -135,7 +135,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                 router={router}
                 setModal={setModal}
                 defaultValues={form}
-                periodoSeleccionado={periodoRutina}
+                periodoSeleccionado={currentFeedback === "rutina" ? periodoRutina : periodoNegativa}
                 currentFeedback={currentFeedback}
             />
         </div>

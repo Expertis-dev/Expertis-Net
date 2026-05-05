@@ -210,16 +210,25 @@ export const CrearFbAsesorForm = ({
             return
         }
         const message = type === "PUBLICAR" ? "Feedback de asesor publicado con éxito" : "Borrador guardado con éxito"
-        if (!defaultValues) {
-            const toIsoFromMonth = (value?: string) => {
-                if (!value) return ""
-                const [year, month] = value.split("-")
-                if (!year || !month) return ""
+        const toIso = (value?: string) => {
+            if (!value) return ""
+            const parts = value.split("-")
+            if (parts.length === 2) {
+                // YYYY-MM
+                const [year, month] = parts
                 const fecha = new Date(`${year}-${month}-01T00:00:00Z`)
-                if (Number.isNaN(fecha.getTime())) return ""
-                return fecha.toISOString()
+                return Number.isNaN(fecha.getTime()) ? "" : fecha.toISOString()
+            } else if (parts.length === 3) {
+                // YYYY-MM-DD
+                const [year, month, day] = parts
+                const fecha = new Date(`${year}-${month}-${day}T00:00:00Z`)
+                return Number.isNaN(fecha.getTime()) ? "" : fecha.toISOString()
             }
-            const periodoIso = toIsoFromMonth(periodoSeleccionado)
+            return ""
+        }
+        const periodoIso = toIso(periodoSeleccionado)
+
+        if (!defaultValues) {
             if (!periodoIso) {
                 setError("root", { type: "manual", message: "Selecciona un periodo valido." })
                 setIsLoading(false)
@@ -263,6 +272,7 @@ export const CrearFbAsesorForm = ({
                     observacionesGenerales: observacionesGenerales,
                     analisisResultados: null,
                     compromisoMejora: null,
+                    periodo: periodoIso,
                     resultadoEvaluacion: JSON.stringify({
                         recupero: data.recupero,
                         recuperoMeta: data.recuperoMeta,
