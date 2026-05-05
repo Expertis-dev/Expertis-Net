@@ -13,6 +13,7 @@ const SUPERVISORES_INTERNOS = [
     "SANDY LOPEZ",
     "LEONOR NAVARRO",
     "JORGE VASQUEZ",
+    "LISELY MERA",
 ];
 
 const NO_ASISTENCIA = [

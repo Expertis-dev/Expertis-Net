@@ -75,7 +75,9 @@ const CONFIG_EMPLEADOS_ESTATICA: Record<string, string[]> = {
         "KENNETH CUBA",
         "LEONOR NAVARRO",
         "JORGE VASQUEZ",
-        "ROBERTO INZUA"
+        "ROBERTO INZUA",
+        "LISELY MERA",
+        "JORDAN MAYA"
     ],
     '8-6': [
         "DIXOR GAYOSO"
@@ -83,7 +85,6 @@ const CONFIG_EMPLEADOS_ESTATICA: Record<string, string[]> = {
     '8-5': [
         "MAURO ADAUTO",
         "FIORELLA DIAZ",
-        "JORDAN MAYA",
         "JHON PULACHE"
     ],
     '8:30-5:30': [

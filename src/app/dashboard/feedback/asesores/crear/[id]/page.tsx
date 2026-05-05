@@ -126,7 +126,7 @@ export default function EditarFeedbackAsesorPage({params}: {
                 periodoNegativa={periodoNegativa}
                 setPeriodoRutina={setPeriodoRutina}
                 setPeriodoNegativa={setPeriodoNegativa}
-                periodoDisabled={true}
+                periodoDisabled={data?.estadoFeedback !== "BORRADOR"}
             />
             
             <CrearFbAsesorForm

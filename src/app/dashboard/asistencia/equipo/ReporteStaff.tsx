@@ -60,6 +60,7 @@ const SUPERVISORES_ESP = [
     "LEONOR NAVARRO",
     "JORGE VASQUEZ",
     "MAYRA LLIMPE",
+    "LISELY MERA",
     "ROBERTO INZUA",
 ];
 
