@@ -249,18 +249,17 @@ export const HeaderCrearFbAsesor = ({
                                     type={isRutina ? "month" : "date"}
                                     value={periodoValue}
                                     onChange={(e) => onPeriodoChange(e.target.value)}
-                                    disabled={periodoDisabled}
                                     onPointerDown={(e) => {
                                         if (periodoDisabled) return
                                         try {
-                                            ;(e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()
+                                            ; (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()
                                         } catch { }
                                     }}
                                     onKeyDown={(e) => {
                                         if (periodoDisabled) return
                                         if (e.key !== "Enter" && e.key !== " ") return
                                         try {
-                                            ;(e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()
+                                            ; (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()
                                         } catch { }
                                     }}
                                     className="w-full rounded-sm border border-zinc-300 bg-zinc-50 px-2 py-1 text-[13px] text-zinc-900 shadow-sm outline-none transition hover:bg-zinc-100 focus:border-zinc-500 focus:bg-white focus:ring-2 focus:ring-zinc-300/60 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 dark:focus:border-zinc-400 dark:focus:bg-zinc-900 dark:focus:ring-zinc-500/40"
